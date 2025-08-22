@@ -1,0 +1,25 @@
+
+localhost
+ServerVersion: Apache/123
+ServerMPM: Prefork
+Apache Lounge VS17 Server built: Sep  4 2024 10:31:52
+CurrentTime: Tuesday, 01-Jul-2025 22:41:40 Paris, Madrid (heure d’été)
+RestartTime: Tuesday, 01-Jul-2025 22:39:31 Paris, Madrid (heure d’été)
+ParentServerConfigGeneration: 1
+ParentServerMPMGeneration: 0
+ServerUptimeSeconds: 129
+ServerUptime: 2 minutes 9 seconds
+Load1: 1.00
+Load15: 3.10
+Total Accesses: 8
+Total kBytes: 5
+Total Duration: 119
+Uptime: 129
+ReqPerSec: .0620155
+BytesPerSec: 39.6899
+BytesPerReq: 640
+DurationPerReq: 14.875
+BusyWorkers: 3
+GracefulWorkers: 0
+IdleWorkers: 61
+Scoreboard: ____________________________________________________________RW_R

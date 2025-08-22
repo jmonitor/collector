@@ -1,0 +1,60 @@
+{
+    "name": "jmonitor/collector",
+    "description": "Simple php web server monitoring library",
+    "keywords": ["monitoring", "metrics", "collector", "mysql", "apache", "php", "redis", "nginx", "system"],
+    "homepage": "https://jmonitor.io/",
+    "type": "library",
+    "license": "AGPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Johndodev",
+            "homepage": "https://jonathan-plantey.fr/"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": "^7.4|^8.0",
+        "ext-json": "*",
+        "php-http/discovery": "^1.17",
+        "psr/http-client": "^1.0",
+        "psr/http-client-implementation": "*",
+        "psr/http-factory-implementation": "*"
+    },
+    "require-dev": {
+        "ext-pdo": "*",
+        "doctrine/dbal": "^3.0|^4.2",
+        "friendsofphp/php-cs-fixer": "^3.86",
+        "nyholm/psr7": "^1.8",
+        "php-http/message": "^1.0",
+        "phpstan/phpstan": "^1.10",
+        "phpunit/phpunit": "^9.0|^10.0|^11.5",
+        "predis/predis": "^3.0",
+        "symfony/http-client": "^5.4.45 || ^6.4 || ^7.0"
+    },
+    "suggest": {
+        "ext-pdo": "If you want to collect mysql datas with Pdo as driver.",
+        "doctrine/dbal": "If you want to collect mysql datas with Doctrine DBAL as driver."
+    },
+    "autoload": {
+        "psr-4": {
+            "Jmonitor\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Jmonitor\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": false
+        }
+    },
+    "scripts": {
+        "lint:check": "./vendor/bin/php-cs-fixer check --verbose --config=.php-cs-fixer.dist.php --using-cache=no --diff",
+        "lint:fix": "./vendor/bin/php-cs-fixer fix --verbose --config=.php-cs-fixer.dist.php --using-cache=no  --diff",
+        "phpstan": "./vendor/bin/phpstan",
+        "phpunit": "./vendor/bin/phpunit tests"
+    }
+}
