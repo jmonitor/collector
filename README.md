@@ -52,6 +52,12 @@ $client = new Psr18Client()->withOptions(...);
 $jmonitor = new Jmonitor('apiKey', $client);
 ```
 
+Setup a cron
+-----------
+If you use this package as standalone (without [symfony bundle](https://github.com/jmonitor/jmonitor-bundle)), you'll need to setup a cron to periodically send metrics to Jmonitor.io.  
+/!\ You cannot use the `$jmonitor->collect();` in every request on a page of your website, this is not the way.  
+Minimum time between collection is 15 seconds (This may change in the future in accordance to the evolution of Jmonitor).
+
 Collectors
 -----------
 
@@ -155,3 +161,8 @@ Collectors
   
   $collector = new CaddyCollector('http://localhost:2019/metrics');
   ```
+
+Integrations
+------------
+- [Symfony bundle](https://github.com/jmonitor/jmonitor-bundle)
+- Laravel package [soon]
