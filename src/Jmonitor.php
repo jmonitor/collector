@@ -15,7 +15,6 @@ namespace Jmonitor;
 
 use Jmonitor\Collector\CollectorInterface;
 use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\ResponseInterface;
 
 class Jmonitor
 {
@@ -41,29 +40,48 @@ class Jmonitor
         $this->collectors[] = $collector;
     }
 
-    public function collect(): ResponseInterface
+    public function collect(): CollectionResult
     {
+        $result = new CollectionResult();
+
         if (count($this->collectors) === 0) {
-            throw new \RuntimeException('Please add some collectors before sending metrics.');
+            return $result->setConclusion('Nothing to collect. Please add some collectors.');
         }
 
         $metrics = [];
 
         foreach ($this->collectors as $collector) {
-            $time = microtime(true);
+            $started = microtime(true);
 
-            $collector->beforeCollect();
-
-            $metrics[] = [
+            $entry = [
                 'version' => $collector->getVersion(),
                 'name' => $collector->getName(),
-                'metrics' => $collector->collect(),
-                'time' => microtime(true) - $time,
+                'metrics' => null,
+                'time' => 0.0,
             ];
 
-            $collector->afterCollect();
+            try {
+                $collector->beforeCollect();
+
+                $collector->beforeCollect();
+                $entry['metrics'] = $collector->collect();
+                $collector->afterCollect();
+                $entry['time'] = microtime(true) - $started;
+
+                $metrics[] = $entry;
+            } catch (\Throwable $e) {
+                $result->addError($e);
+
+                continue;
+            }
         }
 
-        return $this->client->sendMetrics($metrics);
+        $result->setMetrics($metrics);
+
+        if ($metrics) {
+            $result->setResponse($this->client->sendMetrics($metrics));
+        }
+
+        return $result->setConclusion(count($metrics) . ' metric(s) collected with ' . count($result->getErrors()) . ' error(s).');
     }
 }
