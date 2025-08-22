@@ -121,8 +121,7 @@ Collectors
   ```
 
 - ### Php <a name="php"></a>
-  Collects PHP metrics like loaded extensions, some ini settings, opcache status, etc.  
-  Php FPM status URL support is coming soon.
+  Collects PHP metrics like loaded extensions, some ini settings, fpm, opcache status, etc.
 
   ```php
   use Jmonitor\Collector\Php\PhpCollector
