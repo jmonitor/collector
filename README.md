@@ -165,3 +165,8 @@ Integrations
 ------------
 - [Symfony bundle](https://github.com/jmonitor/jmonitor-bundle)
 - Laravel package [soon]
+
+Roadmap
+-------
+- Nginx, Caddy, finish FrankenPHP
+- Memcached

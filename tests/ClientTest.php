@@ -32,10 +32,11 @@ class ClientTest extends TestCase
         $httpClient = new Psr18Client($httpClient);
 
         $client = new Client('test-api-key', $httpClient);
-        $response = $client->sendMetrics($requestData);
+        $result = $client->sendMetrics($requestData);
 
         $expectedRequestHeaders = [
             'Host: collector.jmonitor.io',
+            'User-Agent: jmonitor-collector/1.0 (+https://jmonitor.io)',
             'X-JMONITOR-VERSION: 1.0',
             'X-JMONITOR-API-KEY: test-api-key',
         ];
