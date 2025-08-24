@@ -64,13 +64,6 @@ class Client
         $json = json_encode($metrics, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
         $headers = $this->buildHeaders();
 
-        if (strlen($json) > 1024) {
-            $json = gzencode($json, 6);
-            $headers['Content-Encoding'] = 'gzip';
-            $headers['Accept-Encoding'] = 'gzip';
-            $headers['Content-Length'] = strlen($json);
-        }
-
         $request = $this->createRequest('POST', $this->baseUrl . '/metrics', $headers, $json);
 
         return $this->sendRequest($request);
