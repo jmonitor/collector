@@ -22,18 +22,16 @@ class MysqlQueriesCountCollectorTest extends TestCase
         $dbMock = $this->createMock(MysqlAdapterInterface::class);
 
         $expectedData = [
-            [
-                'schema_name' => 'test_database',
-                'total_select_queries' => 150,
-                'total_insert_queries' => 50,
-                'total_update_queries' => 30,
-                'total_delete_queries' => 20,
-            ],
+            'schema_name' => 'test_database',
+            'total_select_queries' => 150,
+            'total_insert_queries' => 50,
+            'total_update_queries' => 30,
+            'total_delete_queries' => 20,
         ];
 
         $dbMock->expects($this->once())
             ->method('fetchAllAssociative')
-            ->willReturn($expectedData);
+            ->willReturn([$expectedData]);
 
         $collector = new MysqlQueriesCountCollector($dbMock, 'test_database');
 
