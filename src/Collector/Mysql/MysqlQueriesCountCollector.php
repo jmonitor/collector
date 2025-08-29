@@ -45,11 +45,9 @@ class MysqlQueriesCountCollector extends AbstractCollector
         FROM
             performance_schema.events_statements_summary_by_digest
         WHERE
-            schema_name = :dbName
-        GROUP BY
-            schema_name";
+            schema_name = :dbName";
 
-        return $this->db->fetchAllAssociative($sql, ['dbName' => $this->dbName]);
+        return $this->db->fetchAllAssociative($sql, ['dbName' => $this->dbName])[0] ?? [];
     }
 
     public function getVersion(): int

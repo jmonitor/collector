@@ -45,7 +45,7 @@ class Jmonitor
      * Collect metrics from all collectors and send them to the server.
      * If an error is thrown on a collector, it will not throw an exception but the error will be added to the CollectionResult.
      *
-     * @param bool $throwOnFailure Only for httpRequest, if treu, will throw an exception if the response status code is >= 400, else will return the response
+     * @param bool $throwOnFailure Only for httpRequest, if true, will throw an exception if the response status code is >= 400, else will return the response
      */
     public function collect(bool $throwOnFailure = true): CollectionResult
     {
