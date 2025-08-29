@@ -95,15 +95,7 @@ class Client
 
     private function sendRequest(RequestInterface $request): ResponseInterface
     {
-        $response = $this->httpClient->sendRequest($request);
-
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode >= 300) {
-            throw new InvalidServerResponseException((string) $request->getUri(), $statusCode);
-        }
-
-        return $response;
+        return $this->httpClient->sendRequest($request);
     }
 
     /**

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Jmonitor;
 
 use Jmonitor\Collector\CollectorInterface;
+use Jmonitor\Exceptions\InvalidServerResponseException;
 use Psr\Http\Client\ClientInterface;
 
 class Jmonitor
@@ -40,7 +41,13 @@ class Jmonitor
         $this->collectors[] = $collector;
     }
 
-    public function collect(): CollectionResult
+    /**
+     * Collect metrics from all collectors and send them to the server.
+     * If an error is thrown on a collector, it will not throw an exception but the error will be added to the CollectionResult.
+     *
+     * @param bool $throwOnFailure Only for httpRequest, if treu, will throw an exception if the response status code is >= 400, else will return the response
+     */
+    public function collect(bool $throwOnFailure = true): CollectionResult
     {
         $result = new CollectionResult();
 
@@ -80,6 +87,14 @@ class Jmonitor
 
         if ($metrics) {
             $result->setResponse($this->client->sendMetrics($metrics));
+
+            if ($result->getResponse()->getStatusCode() >= 400) {
+                if ($throwOnFailure) {
+                    throw new InvalidServerResponseException('Error while sending metrics to the server', $result->getResponse()->getStatusCode());
+                }
+
+                return $result->setConclusion('Http error while sending ' . count($metrics) . ' metrics to the server');
+            }
         }
 
         return $result->setConclusion(count($metrics) . ' metric(s) collected with ' . count($result->getErrors()) . ' error(s).');
