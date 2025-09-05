@@ -34,6 +34,7 @@ $jmonitor->addCollector(new SystemCollector());
 // see the documentation below for more collectors
 
 // send metrics periodically to jmonitor (ex. every 15 seconds)
+// See debug section below to see how to handle errors
 $jmonitor->collect();
 ```
 
@@ -55,8 +56,38 @@ $jmonitor = new Jmonitor('apiKey', $client);
 Setup a cron
 -----------
 If you use this package as standalone (without [symfony bundle](https://github.com/jmonitor/jmonitor-bundle)), you'll need to setup a cron to periodically send metrics to Jmonitor.io.  
-/!\ You cannot use the `$jmonitor->collect();` in every request on a page of your website, this is not the way.  
+:warning: You cannot use the `$jmonitor->collect();` in every request on a page of your website, this is not the way.  
 Minimum time between collection is 15 seconds (This may change in the future in accordance to the evolution of Jmonitor).
+
+Debug
+------
+Each collector is independent and wrapped around a try/catch block.  
+Use the result of the `collect()` method to debug your collectors.
+
+The `collect()` method will throw a `InvalidServerResponseException` if the response status code from the server >= 400.  
+You can prevent this behavior by passing `throwOnFailure: false` to `collect()` method (default is `true`).
+```php
+use Psr\Http\Message\ResponseInterface;
+use Jmonitor\CollectionResult;
+
+/** @var CollectionResult $result */
+$result = $jmonitor->collect(throwOnFailure: false);
+
+/** @var string $conclusion */
+$conclusion = $result->getConclusion(); // simple summary of what happened
+
+/** @var \Throwable[] $errors */
+$errors = $result->getErrors(); // list of Exceptions if any
+
+/** @var ResponseInterface|null $response */
+$response = $result->getResponse(); // the response from the jmonitor server, if any
+
+/** @var mixed[] $metrics */
+$metrics = $result->getMetrics(); // all metrics collected by the collectors
+```
+
+
+ 
 
 Collectors
 -----------

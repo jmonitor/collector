@@ -86,7 +86,13 @@ class Jmonitor
         $result->setMetrics($metrics);
 
         if ($metrics) {
-            $result->setResponse($this->client->sendMetrics($metrics));
+            try {
+                $result->setResponse($this->client->sendMetrics($metrics));
+            } catch (\Throwable $e) {
+                $result->addError($e);
+
+                return $result->setConclusion('Error while sending metrics to the server');
+            }
 
             if ($result->getResponse()->getStatusCode() >= 400) {
                 if ($throwOnFailure) {
