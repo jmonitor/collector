@@ -68,25 +68,39 @@ Debugging and Error Handling
 Each collector is isolated and executed within a try/catch block.  
 Use the CollectionResult returned by `collect()` method to inspect outcomes.
 
+By default, collect() call send metrics to the server.  
+You can disable this by passing `send: false`
+
 By default, collect() throws InvalidServerResponseException when the server response status code is >= 400.  
 You can disable this by passing `throwOnFailure: false`
+
 ```php
 use Psr\Http\Message\ResponseInterface;
 use Jmonitor\CollectionResult;
 
-/** @var CollectionResult $result */
-$result = $jmonitor->collect(throwOnFailure: false);
 
-// @var string - Human-readable summary
+/**
+ * Send metrics, you can :
+ * - Disable throwing an exception on error
+ * - Disable sending metrics to the server
+ */
+$result = $jmonitor->collect(throwOnFailure: false);
+// Or disable completely the sending of metrics to the server
+$result = $jmonitor->collect(send: false);
+
+/**
+ * Use $result to inspect
+ */
+// Human-readable summary (string)
 $conclusion = $result->getConclusion(); 
 
-// @var \Throwable[] - list of Exceptions if any
+// List of Exceptions if any (\Throwable[])
 $errors = $result->getErrors(); 
 
-// @var ResponseInterface|null - the raw response from jmonitor, if any */
+// The raw response from jmonitor, if any (ResponseInterface|null)
 $response = $result->getResponse(); 
 
-// @var mixed[] - all metrics collected
+// All metrics collected (mixed[])
 $metrics = $result->getMetrics();
 ```
 

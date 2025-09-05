@@ -47,7 +47,7 @@ class Jmonitor
      *
      * @param bool $throwOnFailure Only for httpRequest, if true, will throw an exception if the response status code is >= 400, else will return the response
      */
-    public function collect(bool $throwOnFailure = true): CollectionResult
+    public function collect(bool $send = true, bool $throwOnFailure = true): CollectionResult
     {
         $result = new CollectionResult();
 
@@ -83,7 +83,7 @@ class Jmonitor
 
         $result->setMetrics($metrics);
 
-        if ($metrics) {
+        if ($metrics && $send) {
             try {
                 $result->setResponse($this->client->sendMetrics($metrics));
             } catch (\Throwable $e) {

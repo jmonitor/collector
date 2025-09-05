@@ -94,7 +94,7 @@ class JmonitorTest extends TestCase
 
         $jmonitor->addCollector($collector);
 
-        $result = $jmonitor->collect(false);
+        $result = $jmonitor->collect(true, false);
 
         $this->assertSame('Http error while sending 1 metrics to the server', $result->getConclusion());
         $this->assertSame(500, $result->getResponse()->getStatusCode());
@@ -115,6 +115,6 @@ class JmonitorTest extends TestCase
 
         $jmonitor->addCollector($collector);
 
-        $jmonitor->collect(true);
+        $jmonitor->collect(true, true);
     }
 }
