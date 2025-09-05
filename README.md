@@ -3,9 +3,12 @@ Jmonitor
 
 Simple monitoring for PHP applications and web servers.
 
-[Jmonitor.io](https://jmonitor.io) is a SaaS monitoring service that provides insights, alerting and premade dashboards from multiple sources commonly found in PHP web project stack (MySQL, Redis, Apache, Nginx, etc.).
+Jmonitor.io is a SaaS monitoring service that provides insights, alerting and premade dashboards from multiple sources commonly found in PHP web project stack (MySQL, Redis, Apache, Nginx, etc.).
 
 This package provides collectors that gather metrics and send them to Jmonitor.io.
+
+- Website: https://jmonitor.io
+- Symfony integration: https://github.com/jmonitor/jmonitor-bundle
 
 ## Requirements
 - PHP 7.4
@@ -105,8 +108,11 @@ Collectors
 
   ```php
   use Jmonitor\Collector\System\SystemCollector;
-    
+  
   $collector = new SystemCollector();
+  
+  // There is actually a "RandomAdapter" you can use on a Windows OS for testing purposes
+  $collector = new SystemCollector(new RandomAdapter());
   ```
 
 - ### Apache <a name="apache"></a> 
