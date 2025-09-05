@@ -24,7 +24,7 @@ Quick Start
 ---------------
 Create a project in [jmonitor.io](https://jmonitor.io) and get your API key.
 
-Then, create a `Jmonitor` instance and add some collectors.
+Then, create a separate script and start collecting metrics:
 
 ```php
 use Jmonitor\Jmonitor;
