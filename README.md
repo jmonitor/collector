@@ -170,39 +170,38 @@ Collectors
 
 - ### PHP <a name="php"></a>
   Collects PHP metrics (loaded extensions, some ini keys, FPM, opcache, etc.).  
-> [!IMPORTANT]
->
-> PHP configuration can differ significantly between CLI and web server SAPIs.  
-> If you need web‑context metrics from a CLI script, expose an HTTP endpoint that returns these metrics as JSON (see below).
-  
+  > [!IMPORTANT]
+  >
+  > PHP configuration can differ significantly between CLI and web server SAPIs.  
+  > If you need web‑context metrics from a CLI script, expose an HTTP endpoint that returns these metrics as JSON (see below).
+
   - Collect CLI-context metrics
     ```php
     use Jmonitor\Collector\Php\PhpCollector;
-  
+   
     $collector = new PhpCollector();
     ```
 
   - Collect web-context metrics from CLI  
-  Expose a metrics endpoint (and **make sure it is properly secured**). You can reuse php-exposer.php from this repo or create your own:
-  ```php
-  <?php
+    Expose a metrics endpoint (and **make sure it is properly secured**). You can reuse php-exposer.php from this repo or create your own:
+    ```php
+    <?php
   
-  use Jmonitor\Collector\Php\PhpCollector;
+    use Jmonitor\Collector\Php\PhpCollector;
   
-  require __DIR__ . '/../vendor/autoload.php';
+    require __DIR__ . '/../vendor/autoload.php';
 
-  header('Content-Type: application/json');
+    header('Content-Type: application/json');
   
-  echo json_encode((new PhpCollector())->collect(), JSON_THROW_ON_ERROR);
-  ```
+    echo json_encode((new PhpCollector())->collect(), JSON_THROW_ON_ERROR);
+    ```
 
-  Then, in your CLI script, point the collector to that URL:
-    
-  ```php
-  use Jmonitor\Collector\Php\PhpCollector;
+  Then, in your CLI script, point the collector to that URL:    
+    ```php
+    use Jmonitor\Collector\Php\PhpCollector;
 
-  $collector = new PhpCollector('https://localhost/php-metrics.php');
-  ```
+    $collector = new PhpCollector('https://localhost/php-metrics.php');
+    ```
 
 - ### Redis <a name="redis"></a>
   Collects Redis metrics from the INFO command.
