@@ -170,10 +170,10 @@ Collectors
 
 - ### PHP <a name="php"></a>
   Collects PHP metrics (loaded extensions, some ini keys, FPM, opcache, etc.).  
-  > [!IMPORTANT]
-  > 
-  > PHP configuration can differ significantly between CLI and web server SAPIs.  
-  > If you need web‑context metrics from a CLI script, expose an HTTP endpoint that returns these metrics as JSON (see below).  
+> [!IMPORTANT]
+>
+> PHP configuration can differ significantly between CLI and web server SAPIs.  
+> If you need web‑context metrics from a CLI script, expose an HTTP endpoint that returns these metrics as JSON (see below).
   
   - Collect CLI-context metrics
     ```php
