@@ -172,19 +172,18 @@ Collectors
   Collects PHP metrics (loaded extensions, some ini keys, FPM, opcache, etc.).  
   > [!IMPORTANT]
   > 
-  > PHP configuration may be very different from CLI to web server.    
-  > To collect metrics web context metrics from a CLI script, you can use a endpoint URL. See below.    
+  > PHP configuration can differ significantly between CLI and web server SAPIs.  
+  > If you need web‑context metrics from a CLI script, expose an HTTP endpoint that returns these metrics as JSON (see below).  
   
-  - Collect CLI context metrics
+  - Collect CLI-context metrics
     ```php
-    use Jmonitor\Collector\Php\PhpCollector
+    use Jmonitor\Collector\Php\PhpCollector;
   
     $collector = new PhpCollector();
     ```
 
-  - Collect Web context metrics from CLI  
-  You will need to expose an URL to expose metrics, which will be used from CLI. **You should secure this URL !**  
-  You can use php-exposer.php from this repo or create your own: 
+  - Collect web-context metrics from CLI  
+  Expose a metrics endpoint (and **make sure it is properly secured**). You can reuse php-exposer.php from this repo or create your own:
   ```php
   <?php
   
@@ -197,10 +196,10 @@ Collectors
   echo json_encode((new PhpCollector())->collect(), JSON_THROW_ON_ERROR);
   ```
 
-  Then use the collector with the URL in your CLI script:
+  Then, in your CLI script, point the collector to that URL:
     
   ```php
-  use Jmonitor\Collector\Php\PhpCollector
+  use Jmonitor\Collector\Php\PhpCollector;
 
   $collector = new PhpCollector('https://localhost/php-metrics.php');
   ```
