@@ -17,10 +17,22 @@ use Jmonitor\Collector\AbstractCollector;
 
 class PhpCollector extends AbstractCollector
 {
+    private ?string $endpointUrl;
+
+    public function __construct(?string $endpointUrl = null)
+    {
+        $this->endpointUrl = $endpointUrl;
+    }
+
     public function collect(): array
     {
+        if ($this->endpointUrl) {
+            return $this->collectFromUrl();
+        }
+
         return [
             'version' => phpversion(),
+            'sapi_name' => php_sapi_name(),
             'ini_file' => php_ini_loaded_file(),
             'ini_files' => $this->getIniFiles(),
             'memory_limit' => ini_get('memory_limit'),
@@ -32,6 +44,13 @@ class PhpCollector extends AbstractCollector
             'opcache' => $this->getOpcacheInfos(),
             'fpm' => $this->getFpm(),
         ];
+    }
+
+    private function collectFromUrl(): array
+    {
+        $metrics = file_get_contents($this->endpointUrl);
+
+        return json_decode($metrics, true);
     }
 
     public function getVersion(): int
@@ -86,10 +105,10 @@ class PhpCollector extends AbstractCollector
 
     private function getFpm(): array
     {
-        if (!function_exists('fpm_get_status')) {
-            return [];
+        if (function_exists('fpm_get_status')) {
+            return fpm_get_status();
         }
 
-        return fpm_get_status();
+        return [];
     }
 }
