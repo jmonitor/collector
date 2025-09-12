@@ -22,6 +22,7 @@ class PhpCollectorTest extends TestCase
         $result = $collector->collect();
 
         $this->assertArrayHasKey('version', $result);
+        $this->assertArrayHasKey('sapi_name', $result);
         $this->assertArrayHasKey('ini_file', $result);
         $this->assertArrayHasKey('ini_files', $result);
         $this->assertArrayHasKey('memory_limit', $result);
@@ -34,7 +35,22 @@ class PhpCollectorTest extends TestCase
         $this->assertArrayHasKey('fpm', $result);
     }
 
-    public function testGetVersion()
+    public function testCollectFromUrl(): void
+    {
+        $expected = [
+            'version' => '8.3.0',
+            'custom' => 'value',
+        ];
+        $json = json_encode($expected);
+        $url = 'data://text/plain;base64,' . base64_encode($json);
+
+        $collector = new PhpCollector($url);
+        $result = $collector->collect();
+
+        $this->assertSame($expected, $result);
+    }
+
+    public function testGetVersion(): void
     {
         $collector = new PhpCollector();
 

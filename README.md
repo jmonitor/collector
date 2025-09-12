@@ -32,10 +32,10 @@ use Jmonitor\Collector\Apache\ApacheCollector;
 
 $jmonitor = new Jmonitor('apiKey');
 
-// Add some collectors 
+// Add some collectors... see the documentation below for more collectors
 $jmonitor->addCollector(new ApacheCollector('https://example.com/server-status'));
 $jmonitor->addCollector(new SystemCollector());
-// see the documentation below for more collectors
+// ... 
 
 // send metrics to Jmonitor (see "Scheduling" section)
 $jmonitor->collect();
@@ -168,14 +168,41 @@ Collectors
   $collector = new MysqlQueriesCountCollector($adapter, 'your_db_name');
   ```
 
-- ### Php <a name="php"></a>
-  Collects PHP metrics (loaded extensions, some ini keys, FPM, opcache, etc.).
-  Note that some metrics may vary depending on the loaded php.ini, which can differ between the CLI and the web server.
+- ### PHP <a name="php"></a>
+  Collects PHP metrics (loaded extensions, some ini keys, FPM, opcache, etc.).  
+  > [!IMPORTANT]
+  > 
+  > PHP configuration may be very different from CLI to web server.    
+  > To collect metrics web context metrics from a CLI script, you can use a endpoint URL. See below.    
+  
+  - Collect CLI context metrics
+    ```php
+    use Jmonitor\Collector\Php\PhpCollector
+  
+    $collector = new PhpCollector();
+    ```
 
+  - Collect Web context metrics from CLI  
+  You will need to expose an URL to expose metrics, which will be used from CLI. **You should secure this URL !**  
+  You can use php-exposer.php from this repo or create your own: 
+  ```php
+  <?php
+  
+  use Jmonitor\Collector\Php\PhpCollector;
+  
+  require __DIR__ . '/../vendor/autoload.php';
+
+  header('Content-Type: application/json');
+  
+  echo json_encode((new PhpCollector())->collect(), JSON_THROW_ON_ERROR);
+  ```
+
+  Then use the collector with the URL in your CLI script:
+    
   ```php
   use Jmonitor\Collector\Php\PhpCollector
-  
-  $collector = new PhpCollector();
+
+  $collector = new PhpCollector('https://localhost/php-metrics.php');
   ```
 
 - ### Redis <a name="redis"></a>
