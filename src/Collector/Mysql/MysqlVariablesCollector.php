@@ -46,6 +46,7 @@ class MysqlVariablesCollector extends AbstractCollector
         'collation_connection',  // a checker
         'collation_server',  // a checker
         'collation_server',  // a checker
+        'wait_timeout',
     ];
 
     /**

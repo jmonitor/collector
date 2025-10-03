@@ -35,7 +35,6 @@ class MysqlStatusCollector extends AbstractCollector
         'Com_update',
         'Com_delete',
         'Max_used_connections',
-        'wait_timeout',
     ];
 
     public function __construct(MysqlAdapterInterface $db)
