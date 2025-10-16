@@ -1,14 +1,18 @@
 Jmonitor
 =========
 
-Easy monitoring for PHP web server.  
-[Jmonitor.io](https://jmonitor.io) is a simple monitoring sass for PHP applications and web servers that provides insights and alerting from various sources like MySQL, Redis, Apache, Nginx...
+Simple monitoring for PHP applications and web servers.
 
-This package provide the collectors which send metrics to Jmonitor.io.
+Jmonitor.io is a SaaS monitoring service that provides insights, alerting and premade dashboards from multiple sources commonly found in PHP web project stack (MySQL, Redis, Apache, Nginx, etc.).
+
+This package provides collectors that gather metrics and send them to Jmonitor.io.
+
+- Website: https://jmonitor.io
+- Symfony integration: https://github.com/jmonitor/jmonitor-bundle
 
 ## Requirements
 - PHP 7.4
-- Having a project with a [Composer](https://getcomposer.org/) dependency manager
+- A project using [Composer](https://getcomposer.org/)
 
 ## Installation
 
@@ -16,11 +20,11 @@ This package provide the collectors which send metrics to Jmonitor.io.
 composer require jmonitor/collector
 ```
 
-Getting Started
+Quick Start
 ---------------
 Create a project in [jmonitor.io](https://jmonitor.io) and get your API key.
 
-Then, in your project, create a `Jmonitor` instance and add some collectors.
+Then, create a separate script and start collecting metrics:
 
 ```php
 use Jmonitor\Jmonitor;
@@ -28,16 +32,17 @@ use Jmonitor\Collector\Apache\ApacheCollector;
 
 $jmonitor = new Jmonitor('apiKey');
 
-// Add some collectors 
+// Add some collectors... see the documentation below for more collectors
 $jmonitor->addCollector(new ApacheCollector('https://example.com/server-status'));
 $jmonitor->addCollector(new SystemCollector());
-// see the documentation below for more collectors
+// ... 
 
-// send metrics periodically to jmonitor (ex. every 15 seconds)
+// send metrics to Jmonitor (see "Scheduling" section)
 $jmonitor->collect();
 ```
 
-You can customize your HttpClient, for example, if you want to use the [Symfony HttpClient](https://symfony.com/doc/current/http_client.html#psr-18-and-psr-17) or Guzzle.
+### HTTP Client (PSR-18)
+You can inject any PSR-18 HTTP client (e.g., Symfony HttpClient via Psr18Client, Guzzle via an adapter, etc.). Example :
 
 ```bash
 composer require symfony/http-client nyholm/psr7
@@ -52,11 +57,52 @@ $client = new Psr18Client()->withOptions(...);
 $jmonitor = new Jmonitor('apiKey', $client);
 ```
 
-Setup a cron
+Scheduling
 -----------
-If you use this package as standalone (without [symfony bundle](https://github.com/jmonitor/jmonitor-bundle)), you'll need to setup a cron to periodically send metrics to Jmonitor.io.  
-/!\ You cannot use the `$jmonitor->collect();` in every request on a page of your website, this is not the way.  
-Minimum time between collection is 15 seconds (This may change in the future in accordance to the evolution of Jmonitor).
+**Do not call `$jmonitor->collect()` on every web request**. Create a specific script and run it in a separate scheduled process, like a cron job.
+
+The minimum time between collections is 15 seconds (subject to change as Jmonitor evolves).
+
+Debugging and Error Handling
+-----------------------------
+Each collector is isolated and executed within a try/catch block.  
+Use the CollectionResult returned by `collect()` method to inspect outcomes.
+
+By default, collect() call send metrics to the server.  
+You can disable this by passing `send: false`
+
+By default, collect() throws InvalidServerResponseException when the server response status code is >= 400.  
+You can disable this by passing `throwOnFailure: false`
+
+```php
+use Psr\Http\Message\ResponseInterface;
+use Jmonitor\CollectionResult;
+
+
+/**
+ * Send metrics, you can :
+ * - Disable throwing an exception on error
+ * - Disable sending metrics to the server
+ */
+$result = $jmonitor->collect(throwOnFailure: false);
+// Or disable completely the sending of metrics to the server
+$result = $jmonitor->collect(send: false);
+
+/**
+ * Use $result to inspect
+ */
+// Human-readable summary (string)
+$conclusion = $result->getConclusion(); 
+
+// List of Exceptions if any (\Throwable[])
+$errors = $result->getErrors(); 
+
+// The raw response from jmonitor, if any (ResponseInterface|null)
+$response = $result->getResponse(); 
+
+// All metrics collected (mixed[])
+$metrics = $result->getMetrics();
+```
 
 Collectors
 -----------
@@ -71,24 +117,24 @@ Collectors
 - [Caddy (todo)](#caddy)
 
 - ### System <a name="system"></a>
-  Collects system metrics like CPU usage, memory usage, disk usage, etc.  
-  Only Linux is supported for now, feel free to open an issue if you need support for another OS.
+  Collects system metrics like CPU usage, memory usage, disk usage, etc.
+  Linux only for now. Feel free to open an issue if you need other OS support.
 
   ```php
   use Jmonitor\Collector\System\SystemCollector;
-    
+  
   $collector = new SystemCollector();
+  
+  // There is actually a "RandomAdapter" you can use on a Windows OS for testing purposes
+  $collector = new SystemCollector(new RandomAdapter());
   ```
 
 - ### Apache <a name="apache"></a> 
-  Collects Apache server metrics from a server status URL.  
-  You'll need to enable the `mod_status` module in Apache and set up a server status URL.
+  Collects metrics from Apache server-status. Enable mod_status and expose a status URL.
   There are some resources to help you with that:
-  - Apache doc :https://httpd.apache.org/docs/current/mod/mod_status.html.
-  - Blogpost in English : https://statuslist.app/apache/apache-status-page-simple-setup-guide/
-  - Blogpost in French : https://www.blog.florian-bogey.fr/activer-et-configurer-le-server-status-apache-mod_status.html  
-
-  Then you'll be able to use the `ApacheCollector` class to collect metrics from the server status URL.
+  - Apache docs :https://httpd.apache.org/docs/current/mod/mod_status.html.
+  - Guide (EN) : https://statuslist.app/apache/apache-status-page-simple-setup-guide/
+  - Guide (FR) : https://www.blog.florian-bogey.fr/activer-et-configurer-le-server-status-apache-mod_status.html  
 
   ```php
   use Jmonitor\Collector\Apache\ApacheCollector;
@@ -96,9 +142,11 @@ Collectors
   $collector = new ApacheCollector('http://localhost/server-status');
   ```
 
+- ### Nginx <a name="nginx"></a>
+  Planned.
+
 - ### Mysql <a name="mysql"></a>
-    Collects MySQL server variables and status.  
-    You'll need to use PDO or Doctrine to connect to your MySQL database. If you need support for other drivers, like Mysqli, please open an issue.
+  Collects MySQL variables and status. Connect via PDO or Doctrine DBAL (open an issue if you need other drivers, e.g., mysqli).
     
   ```php
   use Jmonitor\Collector\Mysql\MysqlCollector;
@@ -108,11 +156,11 @@ Collectors
   use Jmonitor\Collector\Mysql\MysqlVariablesCollector;
   use Jmonitor\Collector\Mysql\MysqlQueriesCountCollector;
   
-  // with PDO
-  $adapter = new PdoAdapter($pdo); // retrieve your \PDO connection
+  // Using PDO
+  $adapter = new PdoAdapter($pdo); // your \PDO instance
   
-  // or Doctrine DBAL
-  $adapter = new DoctrineAdapter($connection) /* retrieve your Doctrine\DBAL\Connection connection*/ );
+  // or using Doctrine DBAL
+  $adapter = new DoctrineAdapter($connection); // your Doctrine\DBAL\Connection instance
   
   // Mysql has multiple collectors, use the same adapter for all of them
   $collector = new MysqlStatusCollector($adapter);
@@ -120,31 +168,56 @@ Collectors
   $collector = new MysqlQueriesCountCollector($adapter, 'your_db_name');
   ```
 
-- ### Php <a name="php"></a>
-  Collects PHP metrics like loaded extensions, some ini settings, fpm, opcache status, etc.
-
-  ```php
-  use Jmonitor\Collector\Php\PhpCollector
+- ### PHP <a name="php"></a>
+  Collects PHP metrics (loaded extensions, some ini keys, FPM, opcache, etc.).  
   
-  $collector = new PhpCollector();
-  ```
+> [!IMPORTANT]
+>
+> PHP configuration can differ significantly between CLI and web server SAPIs.  
+> If you need web‑context metrics from a CLI script, expose an HTTP endpoint that returns these metrics as JSON (see below).
+
+  - Collect CLI-context metrics
+    ```php
+    use Jmonitor\Collector\Php\PhpCollector;
+   
+    $collector = new PhpCollector();
+    ```
+
+  - Collect web-context metrics from CLI  
+    Expose a metrics endpoint (and **make sure it is properly secured**). You can reuse php-exposer.php from this repo or create your own:
+    ```php
+    <?php
+  
+    use Jmonitor\Collector\Php\PhpCollector;
+  
+    require __DIR__ . '/../vendor/autoload.php';
+
+    header('Content-Type: application/json');
+  
+    echo json_encode((new PhpCollector())->collect(), JSON_THROW_ON_ERROR);
+    ```
+
+  Then, in your CLI script, point the collector to that URL:    
+    ```php
+    use Jmonitor\Collector\Php\PhpCollector;
+
+    $collector = new PhpCollector('https://localhost/php-metrics.php');
+    ```
 
 - ### Redis <a name="redis"></a>
-  Collects Redis metrics from info command.
+  Collects Redis metrics from the INFO command.
   
   ```php
   use Jmonitor\Collector\Redis\RedisCollector;
   
-  // You can use any Redis client that supports the info command, like Predis or PhpRedis.
-  $redisClient = new \Redis([...]);
-  $redisClient = new Predis\Client();
-  // also support \RedisArray, \RedisCluster, Relay... feel free to open an issue if you need support for another client.
+  // Any client supporting INFO: PhpRedis, Predis, RedisArray, RedisCluster, Relay...
+  $redis = new \Redis([...]);
   
   $collector = new RedisCollector($redis);
   ```
 
 - ### Frankenphp <a name="frankenphp"></a>
-  Collects metrics from [FrankenPHP](https://frankenphp.dev/docs/metrics/) metrics endpoint (which is a Caddy endpoint actually).
+  Collects from the [FrankenPHP](https://frankenphp.dev/docs/metrics/) metrics endpoint.
 
   ```php
   use Jmonitor\Collector\Frankenphp\FrankenphpCollector
@@ -153,7 +226,8 @@ Collectors
   ```
 
 - ### Caddy <a name="caddy"></a>
-  Collects metrics from [Caddy](https://caddyserver.com/docs/metrics) metrics endpoint.
+  Planned.  
+  Collects from the [Caddy](https://caddyserver.com/docs/metrics) metrics endpoint.
 
   ```php
   use Jmonitor\Collector\Caddy\CaddyCollector
@@ -163,10 +237,17 @@ Collectors
 
 Integrations
 ------------
-- [Symfony bundle](https://github.com/jmonitor/jmonitor-bundle)
-- Laravel package [soon]
+- Symfony: https://github.com/jmonitor/jmonitor-bundle
+- Laravel: planned
 
 Roadmap
 -------
-- Nginx, Caddy, finish FrankenPHP
-- Memcached
+- Nginx, Caddy, FrankenPHP
+- Laravel integration
+- Custom metrics collection
+
+---
+
+Need help?
+- Open an issue on this repo https://github.com/jmonitor/collector/issues
+- Open a discussion on https://github.com/orgs/jmonitor/discussions
