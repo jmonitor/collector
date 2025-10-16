@@ -38,7 +38,24 @@ class Jmonitor
 
     public function addCollector(CollectorInterface $collector): void
     {
-        $this->collectors[] = $collector;
+        if (isset($this->collectors[$collector->getName()])) {
+            throw new \InvalidArgumentException('A collector with the same name already exists');
+        }
+
+        $this->collectors[$collector->getName()] = $collector;
+    }
+
+    public function withCollector(string $name): self
+    {
+        if (!isset($this->collectors[$name])) {
+            throw new \InvalidArgumentException('No collector with the name ' . $name.' found. Please add it first.');
+        }
+
+        $clone = clone $this;
+
+        $clone->collectors = [$this->collectors[$name]];
+
+        return $clone;
     }
 
     /**
