@@ -9,7 +9,7 @@ return (new PhpCsFixer\Config())
     ->setParallelConfig(PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect())
     ->setRules([
         '@PER-CS' => true,
-        '@PHP74Migration' => true,
+        '@PHP7x4Migration' => true,
     ])
     ->setFinder($finder)
     ;

@@ -48,7 +48,7 @@ class Jmonitor
     public function withCollector(string $name): self
     {
         if (!isset($this->collectors[$name])) {
-            throw new \InvalidArgumentException('No collector with the name ' . $name.' found. Please add it first.');
+            throw new \InvalidArgumentException('No collector with the name ' . $name . ' found. Please add it first.');
         }
 
         $clone = clone $this;
