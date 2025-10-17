@@ -46,16 +46,20 @@ class PhpCollector extends AbstractCollector
         ];
     }
 
-    private function collectFromUrl(): array
+    public function getName(): string
     {
-        $metrics = file_get_contents($this->endpointUrl);
-
-        return json_decode($metrics, true);
+        return 'php';
     }
 
     public function getVersion(): int
     {
         return 1;
+    }
+    private function collectFromUrl(): array
+    {
+        $metrics = file_get_contents($this->endpointUrl);
+
+        return json_decode($metrics, true);
     }
 
     /**
@@ -78,29 +82,21 @@ class PhpCollector extends AbstractCollector
             return [];
         }
 
-        $status = \opcache_get_status(false);
+        if (!function_exists('\opcache_get_configuration')) {
+            return [];
+        }
 
-        if ($status === false) {
-            return [
-                'enabled' => ini_get('opcache.enable'),
-                'enabled_cli' => ini_get('opcache.enable_cli'),
-            ];
+        $status = \opcache_get_status(false);
+        $config = \opcache_get_configuration();
+
+        if ($status === false || $config === false) {
+            return [];
         }
 
         return [
-            'enabled' => ini_get('opcache.enable'),
-            'enabled_cli' => ini_get('opcache.enable_cli'),
-            'cache_full' => $status['cache_full'],
-            'memory_usage' => $status['memory_usage'] ?? [],
-            'interned_strings_usage' => $status['interned_strings_usage'] ?? [],
-            'statistics' => $status['opcache_statistics'] ?? [],
-            'jit' => $status['jit'] ?? [],
+            'config' => $config,
+            'status' => $status,
         ];
-    }
-
-    public function getName(): string
-    {
-        return 'php';
     }
 
     private function getFpm(): array
