@@ -93,6 +93,8 @@ class PhpCollector extends AbstractCollector
             return [];
         }
 
+        unset($status['preload_statistics']);
+
         return [
             'config' => $config,
             'status' => $status,
