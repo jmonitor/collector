@@ -54,6 +54,7 @@ class LinuxAdapter implements AdapterInterface
         if (!isset($this->propertyCache['core_count'])) {
             $this->propertyCache['core_count'] = (int) trim(shell_exec('nproc --all'));
         }
+
         return $this->propertyCache['core_count'];
     }
 
@@ -92,6 +93,11 @@ class LinuxAdapter implements AdapterInterface
         }
 
         return null;
+    }
+
+    public function getTimeZone(): ?string
+    {
+        return $this->propertyCache['timezone'] ??= $this->doGetTimeZone();
     }
 
     public function reset(): void
@@ -175,5 +181,10 @@ class LinuxAdapter implements AdapterInterface
         }
 
         return $osRelease;
+    }
+
+    private function doGetTimeZone(): ?string
+    {
+        return $_SERVER['TZ'] ?? file_get_contents('/etc/timezone') ?? null;
     }
 }

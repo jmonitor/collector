@@ -71,5 +71,10 @@ class RandomAdapter implements AdapterInterface
         return random_int(3600, 1000 * 3600);
     }
 
+    public function getTimeZone(): ?string
+    {
+        return 'Europe/Paris';
+    }
+
     public function reset(): void {}
 }

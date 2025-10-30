@@ -57,7 +57,7 @@ class SystemCollector extends AbstractCollector
                 'uptime' => $this->adapter->getUptime(),
             ],
             'time' => time(),
-            'timezone' => date_default_timezone_get(),
+            'timezone' => $this->adapter->getTimezone(),
             'hostname' => gethostname(),
         ];
     }
