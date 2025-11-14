@@ -225,8 +225,18 @@ Collectors
   $collector = new FrankenphpCollector('http://localhost:2019/metrics');
   ```
 
+  If you also use Caddy collector, you can share the same provider between collectors, avoiding an extra HTTP request.
+  ```php
+  use Jmonitor\Collector\Frankenphp\CaddyCollector
+  use Jmonitor\Collector\Frankenphp\FrankenphpCollector
+  use Jmonitor\Prometheus\PrometheusMetricsProvider;
+  
+  $provider = new PrometheusMetricsProvider('http://localhost:2019/metrics');
+  $frankenCollector = new FrankenphpCollector($provider);
+  $caddyCollector = new CaddyCollector($provider); 
+  ```
+
 - ### Caddy <a name="caddy"></a>
-  Planned.  
   Collects from the [Caddy](https://caddyserver.com/docs/metrics) metrics endpoint.
 
   ```php
@@ -235,6 +245,17 @@ Collectors
   $collector = new CaddyCollector('http://localhost:2019/metrics');
   ```
 
+  If you also use Frankenphp collector, you can share the same provider between collectors, avoiding an extra HTTP request.
+  ```php
+  use Jmonitor\Collector\Frankenphp\CaddyCollector
+  use Jmonitor\Collector\Frankenphp\FrankenphpCollector
+  use Jmonitor\Prometheus\PrometheusMetricsProvider;
+  
+  $provider = new PrometheusMetricsProvider('http://localhost:2019/metrics');
+  $frankenCollector = new FrankenphpCollector($provider);
+  $caddyCollector = new CaddyCollector($provider); 
+  ```
+  
 Integrations
 ------------
 - Symfony: https://github.com/jmonitor/jmonitor-bundle
@@ -242,7 +263,8 @@ Integrations
 
 Roadmap
 -------
-- Nginx, Caddy, FrankenPHP
+- Nginx
+- Memcached
 - Laravel integration
 - Custom metrics collection
 

@@ -14,28 +14,27 @@ declare(strict_types=1);
 namespace Jmonitor\Collector\Caddy;
 
 use Jmonitor\Collector\AbstractCollector;
-use Jmonitor\Exceptions\CollectorException;
+use Jmonitor\Prometheus\PrometheusMetricsProvider;
 
 /**
  * Collects metrics using Caddy metrics url
  * https://caddyserver.com/docs/metrics
- * TODO factoriser avec frankenphp
  */
 class CaddyCollector extends AbstractCollector
 {
-    /**
-     * @var string
-     */
-    private $metricsUrl;
+    private PrometheusMetricsProvider $metricsProvider;
 
     /**
-     * @var array<string, mixed>
+     * the endpoint or a PrometheusMetricsProvider
+     * @param string|PrometheusMetricsProvider $metrics
      */
-    private $datas = []; // @phpstan-ignore-line
-
-    public function __construct(string $metricsUrl)
+    public function __construct($metrics)
     {
-        $this->metricsUrl = $metricsUrl;
+        if (is_string($metrics)) {
+            $metrics = new PrometheusMetricsProvider($metrics);
+        }
+
+        $this->metricsProvider = $metrics;
     }
 
     /**
@@ -43,10 +42,30 @@ class CaddyCollector extends AbstractCollector
      */
     public function collect(): array
     {
-        $this->loadDatas();
+        $metrics = $this->metricsProvider->getMetrics('caddy');
 
         return [
+            'requests_total' => $metrics->get('caddy_http_requests_total'),
+            'requests_in_flight' => $metrics->get('caddy_http_requests_in_flight'),
+            'response_size_bytes_count' => $metrics->get('caddy_http_response_size_bytes_count'),
 
+            // Temps jusqu’au premier octet de réponse (TTFB, plus parlant pour UX).
+            'response_duration_seconds_count' => $metrics->get('caddy_http_response_duration_seconds_count'),
+            'response_duration_seconds_sum' => $metrics->get('caddy_http_response_duration_seconds_sum'),
+            'response_duration_seconds_bucket' => $metrics->get('caddy_http_response_duration_seconds_bucket'),
+
+            // Durée « tour complet » de la requête (RTT).
+            'request_duration_seconds_sum' => $metrics->get('caddy_http_request_duration_seconds_sum'),
+            'request_duration_seconds_count' => $metrics->get('caddy_http_request_duration_seconds_count'),
+
+            // Poids des requêtes / réponses
+            'request_size_bytes_sum' => $metrics->get('caddy_http_request_size_bytes_sum'),
+            'request_size_bytes_count' => $metrics->get('caddy_http_request_size_bytes_count'),
+
+
+            // CPU / ram Caddy
+            'process_cpu_seconds_total' => $metrics->get('process_cpu_seconds_total'),
+            'process_resident_memory_bytes' => $metrics->get('process_resident_memory_bytes'),
         ];
     }
 
@@ -54,51 +73,6 @@ class CaddyCollector extends AbstractCollector
     {
         return 1;
     }
-
-    /**
-     * testing purpose
-     * @return string|false
-     */
-    private function getMetricsUrlContent()
-    {
-        return file_get_contents($this->metricsUrl);
-    }
-
-    private function loadDatas(): void
-    {
-        $this->datas = [];
-
-        $content = $this->getMetricsUrlContent();
-
-        if (!$content) {
-            throw new CollectorException('Could not fetch data from ' . $this->metricsUrl, __CLASS__);
-        }
-
-        $lines = explode("\n", $content);
-
-        foreach ($lines as $line) {
-            if (empty($line) || strpos($line, '#') === 0) {
-                continue;
-            }
-
-            $parts = explode(' ', $line);
-            $this->datas[$parts[0]] = isset($parts[1]) ? trim($parts[1]) : null;
-        }
-    }
-
-    //    /**
-    //     * @return mixed
-    //     */
-    //    private function getData(string $key, ?string $type = null)
-    //    {
-    //        if (isset($this->datas[$key])) {
-    //            $type && settype($this->datas[$key], $type);
-    //
-    //            return $this->datas[$key];
-    //        }
-    //
-    //        return null;
-    //    }
 
     public function getName(): string
     {
