@@ -47,6 +47,7 @@ class MysqlVariablesCollector extends AbstractCollector
         'collation_server',  // a checker
         'collation_server',  // a checker
         'wait_timeout',
+        'log_bin',
     ];
 
     /**
