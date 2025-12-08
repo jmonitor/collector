@@ -35,11 +35,20 @@ class PhpCollector extends AbstractCollector
             'sapi_name' => php_sapi_name(),
             'ini_file' => php_ini_loaded_file(),
             'ini_files' => $this->getIniFiles(),
-            'memory_limit' => ini_get('memory_limit'),
-            'max_execution_time' => ini_get('max_execution_time'),
-            'post_max_size' => ini_get('post_max_size'),
-            'upload_max_filesize' => ini_get('upload_max_filesize'),
-            'date.timezone' => ini_get('date.timezone'),
+            'expose_php' => $this->getIniValue('expose_php', 'bool'),
+            'memory_limit' =>  $this->getIniValue('memory_limit'), // string conservé pour les unités (ex 128M)
+            'max_execution_time' => $this->getIniValue('max_execution_time', 'int'),
+            'max_input_time' => $this->getIniValue('max_input_time', 'int'),
+            'max_input_vars' => $this->getIniValue('max_input_vars', 'int'),
+            'realpath_cache_size' => $this->getIniValue('realpath_cache_size'),
+            'post_max_size' => $this->getIniValue('post_max_size'),
+            'upload_max_filesize' => $this->getIniValue('upload_max_filesize'),
+            'display_errors' => $this->getIniValue('display_errors'),
+            'display_startup_errors' => $this->getIniValue('display_startup_errors', 'bool'),
+            'log_errors' => $this->getIniValue('log_errors', 'bool'),
+            'error_log' => $this->getIniValue('error_log'),
+            'error_reporting' => $this->getIniValue('error_reporting', 'int'),
+            'date.timezone' => $this->getIniValue('date.timezone'),
             'loaded_extensions' => get_loaded_extensions(),
             'opcache' => $this->getOpcacheInfos(),
             'fpm' => $this->getFpm(),
@@ -55,11 +64,33 @@ class PhpCollector extends AbstractCollector
     {
         return 1;
     }
+
     private function collectFromUrl(): array
     {
         $metrics = file_get_contents($this->endpointUrl);
 
         return json_decode($metrics, true);
+    }
+
+    /**
+     * @return mixed
+     */
+    private function getIniValue(string $key, string $type = 'string')
+    {
+        $value = ini_get($key);
+
+        if ($value === false) {
+            return null;
+        }
+
+        switch ($type) {
+            case 'bool':
+                return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+            case 'int':
+                return (int) $value;
+            default:
+                return $value;
+        }
     }
 
     /**
