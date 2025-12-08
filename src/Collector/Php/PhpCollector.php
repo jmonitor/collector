@@ -40,7 +40,7 @@ class PhpCollector extends AbstractCollector
             'max_execution_time' => $this->getIniValue('max_execution_time', 'int'),
             'max_input_time' => $this->getIniValue('max_input_time', 'int'),
             'max_input_vars' => $this->getIniValue('max_input_vars', 'int'),
-            'realpath_cache_size' => $this->getIniValue('realpath_cache_size'),
+            'realpath_cache_size' => realpath_cache_size(),
             'post_max_size' => $this->getIniValue('post_max_size'),
             'upload_max_filesize' => $this->getIniValue('upload_max_filesize'),
             'display_errors' => $this->getIniValue('display_errors'),
