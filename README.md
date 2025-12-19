@@ -113,8 +113,7 @@ Collectors
 - [Mysql](#mysql)
 - [Php](#php)
 - [Redis](#redis)
-- [FrankenPHP](#frankenphp)
-- [Caddy (todo)](#caddy)
+- [Caddy (+FrankenPHP)](#caddy)
 
 - ### System <a name="system"></a>
   Collects system metrics like CPU usage, memory usage, disk usage, etc.
@@ -173,17 +172,17 @@ Collectors
   
 > [!IMPORTANT]
 >
-> PHP configuration can differ significantly between CLI and web server SAPIs.  
-> If you need web‑context metrics from a CLI script, expose an HTTP endpoint that returns these metrics as JSON (see below).
+> PHP configuration can differ significantly between CLI and web server.  
+> To collect web‑server context metrics from a CLI script, which is probably what you want to do, expose an HTTP endpoint that returns these metrics as JSON (see below).
 
-  - Collect CLI-context metrics
+  - Collect CLI-context metrics (current context)
     ```php
     use Jmonitor\Collector\Php\PhpCollector;
    
     $collector = new PhpCollector();
     ```
 
-  - Collect web-context metrics from CLI  
+  - Collect web-server context metrics from CLI  
     Expose a metrics endpoint (and **make sure it is properly secured**). You can reuse php-exposer.php from this repo or create your own:
     ```php
     <?php
@@ -197,7 +196,7 @@ Collectors
     echo json_encode((new PhpCollector())->collect(), JSON_THROW_ON_ERROR);
     ```
 
-  Then, in your CLI script, point the collector to that URL:    
+    Then, in your CLI script, point the collector to that URL:    
     ```php
     use Jmonitor\Collector\Php\PhpCollector;
 
@@ -216,44 +215,13 @@ Collectors
   $collector = new RedisCollector($redis);
   ```
 
-- ### Frankenphp <a name="frankenphp"></a>
-  Collects from the [FrankenPHP](https://frankenphp.dev/docs/metrics/) metrics endpoint.
-
-  ```php
-  use Jmonitor\Collector\Frankenphp\FrankenphpCollector
-  
-  $collector = new FrankenphpCollector('http://localhost:2019/metrics');
-  ```
-
-  If you also use Caddy collector, you can share the same provider between collectors, avoiding an extra HTTP request.
-  ```php
-  use Jmonitor\Collector\Frankenphp\CaddyCollector
-  use Jmonitor\Collector\Frankenphp\FrankenphpCollector
-  use Jmonitor\Prometheus\PrometheusMetricsProvider;
-  
-  $provider = new PrometheusMetricsProvider('http://localhost:2019/metrics');
-  $frankenCollector = new FrankenphpCollector($provider);
-  $caddyCollector = new CaddyCollector($provider); 
-  ```
-
-- ### Caddy <a name="caddy"></a>
-  Collects from the [Caddy](https://caddyserver.com/docs/metrics) metrics endpoint.
+- ### Caddy / FrankenPHP <a name="caddy"></a>
+  Collects from the [Caddy](https://caddyserver.com/docs/metrics) metrics endpoint. It will also gather [FrankenPHP](https://frankenphp.dev/docs/metrics/) metrics if available.
 
   ```php
   use Jmonitor\Collector\Caddy\CaddyCollector
   
   $collector = new CaddyCollector('http://localhost:2019/metrics');
-  ```
-
-  If you also use Frankenphp collector, you can share the same provider between collectors, avoiding an extra HTTP request.
-  ```php
-  use Jmonitor\Collector\Frankenphp\CaddyCollector
-  use Jmonitor\Collector\Frankenphp\FrankenphpCollector
-  use Jmonitor\Prometheus\PrometheusMetricsProvider;
-  
-  $provider = new PrometheusMetricsProvider('http://localhost:2019/metrics');
-  $frankenCollector = new FrankenphpCollector($provider);
-  $caddyCollector = new CaddyCollector($provider); 
   ```
   
 Integrations

@@ -368,3 +368,14 @@ promhttp_metric_handler_requests_in_flight 1
 promhttp_metric_handler_requests_total{code="200"} 11
 promhttp_metric_handler_requests_total{code="500"} 0
 promhttp_metric_handler_requests_total{code="503"} 0
+hello
+# HELP frankenphp_busy_threads Number of busy PHP threads
+# TYPE frankenphp_busy_threads gauge
+frankenphp_busy_threads 1
+# HELP frankenphp_queue_depth Number of regular queued requests
+# TYPE frankenphp_queue_depth gauge
+frankenphp_queue_depth 12
+# HELP frankenphp_total_threads Total number of PHP threads
+# TYPE frankenphp_total_threads counter
+frankenphp_total_threads 32
+coucou

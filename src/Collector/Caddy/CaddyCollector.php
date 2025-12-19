@@ -14,27 +14,20 @@ declare(strict_types=1);
 namespace Jmonitor\Collector\Caddy;
 
 use Jmonitor\Collector\AbstractCollector;
-use Jmonitor\Prometheus\PrometheusMetricsProvider;
+use Jmonitor\Exceptions\JmonitorException;
+use Jmonitor\Prometheus\PrometheusMetrics;
 
 /**
- * Collects metrics using Caddy metrics url
+ * Collects metrics using Caddy metrics url, collect frankenphp metrics is present
  * https://caddyserver.com/docs/metrics
  */
 class CaddyCollector extends AbstractCollector
 {
-    private PrometheusMetricsProvider $metricsProvider;
+    private ?string $endpointUrl;
 
-    /**
-     * the endpoint or a PrometheusMetricsProvider
-     * @param string|PrometheusMetricsProvider $metrics
-     */
-    public function __construct($metrics)
+    public function __construct(?string $endpointUrl = null)
     {
-        if (is_string($metrics)) {
-            $metrics = new PrometheusMetricsProvider($metrics);
-        }
-
-        $this->metricsProvider = $metrics;
+        $this->endpointUrl = $endpointUrl;
     }
 
     /**
@@ -42,7 +35,7 @@ class CaddyCollector extends AbstractCollector
      */
     public function collect(): array
     {
-        $metrics = $this->metricsProvider->getMetrics('caddy');
+        $metrics = $this->getPrometheusMetrics();
 
         return [
             'requests_total' => $metrics->get('caddy_http_requests_total'),
@@ -62,10 +55,14 @@ class CaddyCollector extends AbstractCollector
             'request_size_bytes_sum' => $metrics->get('caddy_http_request_size_bytes_sum'),
             'request_size_bytes_count' => $metrics->get('caddy_http_request_size_bytes_count'),
 
-
             // CPU / ram Caddy
             'process_cpu_seconds_total' => $metrics->get('process_cpu_seconds_total'),
             'process_resident_memory_bytes' => $metrics->get('process_resident_memory_bytes'),
+
+            // frankenphp
+            'frankenphp_busy_threads' => $metrics->firstValue('frankenphp_busy_threads', 'int'),
+            'frankenphp_total_threads' => $metrics->firstValue('frankenphp_total_threads', 'int'),
+            'frankenphp_queue_depth' => $metrics->firstValue('frankenphp_queue_depth', 'int'),
         ];
     }
 
@@ -77,5 +74,21 @@ class CaddyCollector extends AbstractCollector
     public function getName(): string
     {
         return 'caddy';
+    }
+
+    private function getPrometheusMetrics(): PrometheusMetrics
+    {
+        return new PrometheusMetrics($this->getEndpointContent());
+    }
+
+    private function getEndpointContent(): string
+    {
+        $content = file_get_contents($this->endpointUrl);
+
+        if (!$content) {
+            throw new JmonitorException('Failed to fetch metrics from endpoint: ' . $this->endpointUrl);
+        }
+
+        return $content;
     }
 }
