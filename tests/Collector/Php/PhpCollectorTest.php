@@ -32,6 +32,7 @@ class PhpCollectorTest extends TestCase
         $this->assertArrayHasKey('date.timezone', $result);
         $this->assertArrayHasKey('loaded_extensions', $result);
         $this->assertArrayHasKey('opcache', $result);
+        $this->assertArrayHasKey('apcu', $result);
         $this->assertArrayHasKey('fpm', $result);
     }
 
