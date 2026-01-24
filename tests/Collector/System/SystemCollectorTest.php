@@ -1,14 +1,5 @@
 <?php
 
-/*
- * This file is part of jmonitor/collector
- *
- * (c) Jonathan Plantey <jonathan.plantey@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
 namespace Jmonitor\Tests\Collector\System;
 
 use Jmonitor\Collector\System\Adapter\AdapterInterface;
