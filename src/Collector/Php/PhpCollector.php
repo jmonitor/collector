@@ -135,20 +135,23 @@ class PhpCollector extends AbstractCollector
 
     private function getApcuInfos(): array
     {
-        if (!function_exists('\apcu_cache_info') || !function_exists('\apcu_sma_info')) {
+        if (!function_exists('\apcu_cache_info') || !function_exists('\apcu_sma_info') || !function_exists('\apcu_enabled')) {
             return [];
         }
+
+        // enabled in current context ?
+        $enabled = apcu_enabled();
 
         return [
             'config' => [
                 'apc.enabled' => $this->getIniValue('apc.enabled', 'bool'),
+                'apc.enable_cli' => $this->getIniValue('apc.enable_cli', 'bool'),
                 'apc.shm_size' => $this->getIniValue('apc.shm_size'),
                 'apc.shm_segments' => $this->getIniValue('apc.shm_segments', 'int'),
                 'apc.ttl' => $this->getIniValue('apc.ttl', 'int'),
-                'apc.enable_cli' => $this->getIniValue('apc.enable_cli', 'bool'),
             ],
-            'cache_info' => \apcu_cache_info(true),
-            'sma_info' => \apcu_sma_info(true),
+            'cache_info' => $enabled ? \apcu_cache_info(true) : [],
+            'sma_info' => $enabled ? \apcu_sma_info(true) : [],
         ];
     }
 
