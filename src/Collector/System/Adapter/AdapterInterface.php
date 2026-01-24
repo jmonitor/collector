@@ -35,5 +35,7 @@ interface AdapterInterface
 
     public function getUptime(): ?int;
 
+    public function getTimeZone(): ?string;
+
     public function reset(): void;
 }

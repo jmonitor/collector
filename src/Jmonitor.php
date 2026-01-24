@@ -83,7 +83,7 @@ class Jmonitor
 
             try {
                 $collector->beforeCollect();
-                $entry['metrics'] = $collector->collect();
+                $entry['metrics'] = array_filter($collector->collect(), fn($value) => $value !== null);
                 $collector->afterCollect();
                 $entry['time'] = microtime(true) - $started;
 

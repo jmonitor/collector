@@ -29,6 +29,7 @@ class SystemCollectorTest extends TestCase
         $adapterMock->method('getAvailableMemory')->willReturn(4000000000);
         $adapterMock->method('getOsPrettyName')->willReturn('Ubuntu 20.04 LTS');
         $adapterMock->method('getUptime')->willReturn(86400);
+        $adapterMock->method('getTimezone')->willReturn('Europe/Paris');
 
         $adapterMock->expects($this->once())->method('getCoreCount');
         $adapterMock->expects($this->once())->method('getTotalMemory');

@@ -69,6 +69,11 @@ class ApacheCollector extends AbstractCollector
         ];
     }
 
+    public function getName(): string
+    {
+        return 'apache';
+    }
+
     public function getVersion(): int
     {
         return 1;
@@ -136,10 +141,5 @@ class ApacheCollector extends AbstractCollector
         }
 
         return \apache_get_modules();
-    }
-
-    public function getName(): string
-    {
-        return 'apache';
     }
 }
