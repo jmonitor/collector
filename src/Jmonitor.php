@@ -110,7 +110,7 @@ class Jmonitor
                 return $result->setConclusion('Error while sending metrics to the server');
             }
 
-            if ($result->getResponse()->getStatusCode() >= 428) {
+            if ($result->getResponse()->getStatusCode() === 428) {
                 $waitSeconds = $result->getResponse()->getHeader('x-ratelimit-retry-after')[0] ?? 0;
 
                 return $result->setConclusion('Rate limit reached, please wait ' . $waitSeconds . ' seconds.');
