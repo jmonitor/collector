@@ -15,7 +15,6 @@ namespace Jmonitor;
 
 use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18ClientDiscovery;
-use Jmonitor\Exceptions\InvalidServerResponseException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;

@@ -24,12 +24,9 @@ class Jmonitor
     /**
      * @var CollectorInterface[]
      */
-    private $collectors = [];
+    private array $collectors = [];
 
-    /**
-     * @var Client
-     */
-    private $client;
+    private Client $client;
 
     public function __construct(string $projectApiKey, ?ClientInterface $httpClient = null)
     {
@@ -104,9 +101,19 @@ class Jmonitor
             try {
                 $result->setResponse($this->client->sendMetrics($metrics));
             } catch (\Throwable $e) {
+                if ($throwOnFailure) {
+                    throw $e;
+                }
+
                 $result->addError($e);
 
                 return $result->setConclusion('Error while sending metrics to the server');
+            }
+
+            if ($result->getResponse()->getStatusCode() >= 428) {
+                $waitSeconds = $result->getResponse()->getHeader('x-ratelimit-retry-after')[0] ?? 0;
+
+                return $result->setConclusion('Rate limit reached, please wait ' . $waitSeconds . ' seconds.');
             }
 
             if ($result->getResponse()->getStatusCode() >= 400) {

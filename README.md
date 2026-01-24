@@ -1,8 +1,6 @@
 Jmonitor
 =========
 
-Simple monitoring for PHP applications and web servers.
-
 Jmonitor.io is a SaaS monitoring service that provides insights, alerting and premade dashboards from multiple sources commonly found in PHP web project stack (MySQL, Redis, Apache, Nginx, etc.).
 
 This package provides collectors that gather metrics and send them to Jmonitor.io.
@@ -57,11 +55,14 @@ $client = new Psr18Client()->withOptions(...);
 $jmonitor = new Jmonitor('apiKey', $client);
 ```
 
-Scheduling
------------
+Running the collector
+-------------------
 **Do not call `$jmonitor->collect()` on every web request**. Create a specific script and run it in a separate scheduled process, like a cron job.
 
-The minimum time between collections is 15 seconds (subject to change as Jmonitor evolves).
+The minimum time between collections varies by Jmonitor plan. On the free plan, it’s 30 seconds.
+
+You can also run a worker script. The response headers include the delay before the next request, which you can use to schedule subsequent runs.   
+One example is provided in the examples folder.
 
 Debugging and Error Handling
 -----------------------------
@@ -197,7 +198,8 @@ Collectors
     echo json_encode((new PhpCollector())->collect(), JSON_THROW_ON_ERROR);
     ```
 
-  Then, in your CLI script, point the collector to that URL:    
+    Then, in your CLI script, point the collector to that URL:    
+    
     ```php
     use Jmonitor\Collector\Php\PhpCollector;
 
