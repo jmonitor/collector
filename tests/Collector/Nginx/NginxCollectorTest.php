@@ -23,7 +23,7 @@ class NginxCollectorTest extends TestCase
         $this->assertIsArray($metrics);
 
         $this->assertSame(291, $metrics['active']);
-        $this->assertSame(16630948, $metrics['accepted']);
+        $this->assertSame(16630948, $metrics['accepts']);
         $this->assertSame(16630948, $metrics['handled']);
         $this->assertSame(31070465, $metrics['requests']);
         $this->assertSame(6, $metrics['reading']);

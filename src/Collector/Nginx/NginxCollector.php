@@ -36,7 +36,7 @@ class NginxCollector extends AbstractCollector
 
         return [
             'active' => isset($active[1]) ? (int) $active[1] : null,
-            'accepted' => isset($reqs[1]) ? (int) $reqs[1] : null,
+            'accepts' => isset($reqs[1]) ? (int) $reqs[1] : null,
             'handled' => isset($reqs[2]) ? (int) $reqs[2] : null,
             'requests' => isset($reqs[3]) ? (int) $reqs[3] : null,
             'reading' => isset($rw[1]) ? (int) $rw[1] : null,
