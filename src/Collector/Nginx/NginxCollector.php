@@ -14,6 +14,11 @@ class NginxCollector extends AbstractCollector
 {
     private string $endpoint;
 
+    /**
+     * @var mixed[]
+     */
+    private array $propertyCache = [];
+
     public function __construct(string $endpoint)
     {
         $this->endpoint = $endpoint;
@@ -23,6 +28,27 @@ class NginxCollector extends AbstractCollector
      * @return array<string, mixed>
      */
     public function collect(): array
+    {
+        $nginxV = $this->getNginxV();
+
+        return [
+            'version' => $nginxV['version'],
+            'modules' => $nginxV['modules'],
+            'status' => $this->getStatus(),
+        ];
+    }
+
+    public function getName(): string
+    {
+        return 'nginx';
+    }
+
+    public function getVersion(): int
+    {
+        return 1;
+    }
+
+    private function getStatus(): array
     {
         $content = file_get_contents($this->endpoint);
 
@@ -45,13 +71,52 @@ class NginxCollector extends AbstractCollector
         ];
     }
 
-    public function getName(): string
+    /**
+     * @return string|false|null
+     */
+    private function getShellOutput(string $command)
     {
-        return 'nginx';
+        return shell_exec($command);
     }
 
-    public function getVersion(): int
+    private function getNginxV(): array
     {
-        return 1;
+        if (!isset($this->propertyCache['nginx_info'])) {
+            $output = $this->getShellOutput('nginx -V') ?: '';
+
+            return $this->propertyCache['nginx_info'] = $this->parseNginxV($output);
+        }
+
+        return $this->propertyCache['nginx_info'];
+    }
+
+
+    private function parseNginxV(string $output): array
+    {
+        $result = [
+            'version' => null,
+            'modules' => [],
+        ];
+
+        if (!$output) {
+            return $result;
+        }
+
+        if (preg_match('/nginx version: nginx\/(?<version>[^\s]+)/', $output, $matches)) {
+            $result['version'] = $matches['version'];
+        }
+
+        if (preg_match('/configure arguments: (?<args>.*)$/m', $output, $matches)) {
+            $args = $matches['args'];
+            preg_match_all('/--with-(?<module>[^\s=]+)(?=\s|$|=)/', $args, $moduleMatches);
+            if (!empty($moduleMatches['module'])) {
+                $result['modules'] = array_filter($moduleMatches['module'], function ($module) use ($args) {
+                    return !str_contains($args, "--with-" . $module . "=");
+                });
+                $result['modules'] = array_values(array_unique($result['modules']));
+            }
+        }
+
+        return $result;
     }
 }
