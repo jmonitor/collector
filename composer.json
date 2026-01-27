@@ -19,7 +19,8 @@
         "php-http/discovery": "^1.17",
         "psr/http-client": "^1.0",
         "psr/http-client-implementation": "*",
-        "psr/http-factory-implementation": "*"
+        "psr/http-factory-implementation": "*",
+        "symfony/process": "^6.4|^7.4"
     },
     "require-dev": {
         "ext-pdo": "*",
@@ -30,7 +31,7 @@
         "phpstan/phpstan": "^1.10",
         "phpunit/phpunit": "^9.0|^10.0|^11.5",
         "predis/predis": "^3.0",
-        "symfony/http-client": "^5.4.45 || ^6.4 || ^7.0"
+        "symfony/http-client": "^6.4|^7.0"
     },
     "suggest": {
         "ext-pdo": "If you want to collect mysql datas with Pdo as driver.",

@@ -6,6 +6,7 @@ namespace Jmonitor\Collector\Nginx;
 
 use Jmonitor\Collector\AbstractCollector;
 use Jmonitor\Exceptions\CollectorException;
+use Jmonitor\Utils\ShellExecutor;
 
 /**
  * Collects metrics using the Nginx stub_status module.
@@ -13,15 +14,17 @@ use Jmonitor\Exceptions\CollectorException;
 class NginxCollector extends AbstractCollector
 {
     private string $endpoint;
+    private ShellExecutor $shellExecutor;
 
     /**
      * @var mixed[]
      */
     private array $propertyCache = [];
 
-    public function __construct(string $endpoint)
+    public function __construct(string $endpoint, ?ShellExecutor $shellExecutor = null)
     {
         $this->endpoint = $endpoint;
+        $this->shellExecutor = $shellExecutor ?? new ShellExecutor();
     }
 
     /**
@@ -71,18 +74,10 @@ class NginxCollector extends AbstractCollector
         ];
     }
 
-    /**
-     * @return string|false|null
-     */
-    private function getShellOutput(string $command)
-    {
-        return shell_exec($command);
-    }
-
     private function getNginxV(): array
     {
         if (!isset($this->propertyCache['nginx_info'])) {
-            $output = $this->getShellOutput('nginx -V') ?: '';
+            $output = $this->shellExecutor->execute('nginx -V') ?: '';
 
             return $this->propertyCache['nginx_info'] = $this->parseNginxV($output);
         }
