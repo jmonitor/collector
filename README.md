@@ -57,12 +57,17 @@ $jmonitor = new Jmonitor('apiKey', $client);
 
 Running the collector
 -------------------
-**Do not call `$jmonitor->collect()` on every web request**. Create a specific script and run it in a separate scheduled process, like a cron job.
+**Do not call `$jmonitor->collect()` on every web request**. Create a specific script and run it in a separate process.
 
-The minimum time between collections varies by Jmonitor plan. On the free plan, it’s 30 seconds.
+You are **strongly** encouraged to run it in a long-running worker process. The response headers include the delay before the next request, which you can use to schedule subsequent runs.   
+One example is provided in the `examples` folder.
 
-You can also run a worker script. The response headers include the delay before the next request, which you can use to schedule subsequent runs.   
-One example is provided in the examples folder.
+You also can take a look at the CollectorCommand from the Symfony bundle for a more advanced example:  
+https://github.com/jmonitor/jmonitor-bundle/blob/master/src/Command/CollectorCommand.php
+
+In production, it is recommended to run the worker under a process manager (e.g. Supervisor or systemd) to ensure it is kept running and restarted if necessary.
+For practical guidance, you can follow Symfony Messenger's recommendations:  
+https://symfony.com/doc/current/messenger.html#deploying-to-production
 
 Debugging and Error Handling
 -----------------------------
