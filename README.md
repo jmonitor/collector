@@ -110,7 +110,7 @@ Collectors
 
 - [System](#system)
 - [Apache](#apache)
-- [Nginx (todo)](#nginx)
+- [Nginx](#nginx)
 - [Mysql](#mysql)
 - [Php](#php)
 - [Redis](#redis)
@@ -130,11 +130,11 @@ Collectors
   ```
 
 - ### Apache <a name="apache"></a> 
-  Collects metrics from Apache server-status. Enable mod_status and expose a status URL.
+  Collects metrics from Apache "mod_status" module. Enable it and expose a status URL.
   There are some resources to help you with that:
-  - Apache docs :https://httpd.apache.org/docs/current/mod/mod_status.html.
-  - Guide (EN) : https://statuslist.app/apache/apache-status-page-simple-setup-guide/
-  - Guide (FR) : https://www.blog.florian-bogey.fr/activer-et-configurer-le-server-status-apache-mod_status.html  
+  - Apache docs (FR - EN): https://httpd.apache.org/docs/current/mod/mod_status.html.
+  - Guide (EN): https://statuslist.app/apache/apache-status-page-simple-setup-guide/
+  - Guide (FR): https://www.blog.florian-bogey.fr/activer-et-configurer-le-server-status-apache-mod_status.html  
 
   ```php
   use Jmonitor\Collector\Apache\ApacheCollector;
@@ -143,8 +143,17 @@ Collectors
   ```
 
 - ### Nginx <a name="nginx"></a>
-  Planned.
-
+  Collects metrics from Nginx "stub_status" module. Enable it and expose a status URL.
+  There are some resources to help you with that:
+  - Nginx docs (EN): https://nginx.org/en/docs/http/ngx_http_stub_status_module.html
+  - Stackoverflow (EN): https://stackoverflow.com/questions/62269902/nginx-how-to-create-status-with-stub-status
+  - Guide (EN): https://easyengine.io/tutorials/nginx/status-page/
+  
+  ```php
+  use Jmonitor\Collector\Nginx\NginxCollector;
+  
+  $collector = new NginxCollector('http://localhost/nginx_status');
+  ```
 - ### Mysql <a name="mysql"></a>
   Collects MySQL variables and status. Connect via PDO or Doctrine DBAL (open an issue if you need other drivers, e.g., mysqli).
     
@@ -232,7 +241,6 @@ Integrations
 
 Roadmap
 -------
-- Nginx
 - Memcached
 - Custom metrics collection
 
