@@ -7,9 +7,9 @@ namespace Jmonitor\Collector\System\Adapter;
 class LinuxAdapter implements AdapterInterface
 {
     /**
-     * @var array
+     * @var array<string, mixed>
      */
-    private $propertyCache = [];
+    private array $propertyCache = [];
 
     public function getDiskTotalSpace(string $path): int
     {
@@ -79,11 +79,7 @@ class LinuxAdapter implements AdapterInterface
 
         $uptime = explode(' ', $uptime);
 
-        if (isset($uptime[0])) {
-            return (int) $uptime[0];
-        }
-
-        return null;
+        return isset($uptime[0]) ? (int) $uptime[0] : null;
     }
 
     public function getTimeZone(): ?string
@@ -125,15 +121,13 @@ class LinuxAdapter implements AdapterInterface
         return $memInfos;
     }
 
-
     private function getOsRelease(string $key): ?string
     {
         if (!isset($this->propertyCache['os_release'])) {
             $this->propertyCache['os_release'] = $this->parseOsRelease();
         }
-        $osRelease = $this->propertyCache['os_release'];
 
-        return $osRelease[$key] ?? null;
+        return $this->propertyCache['os_release'][$key] ?? null;
     }
 
     /**

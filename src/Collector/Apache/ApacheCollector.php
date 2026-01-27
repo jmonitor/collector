@@ -12,15 +12,12 @@ use Jmonitor\Exceptions\CollectorException;
  */
 class ApacheCollector extends AbstractCollector
 {
-    /**
-     * @var string
-     */
-    private $modStatusUrl;
+    private string $modStatusUrl;
 
     /**
      * @var array<string, mixed>
      */
-    private $datas = [];
+    private array $datas = [];
 
     public function __construct(string $modStatusUrl)
     {
@@ -70,20 +67,11 @@ class ApacheCollector extends AbstractCollector
         return 1;
     }
 
-    /**
-     * testing purpose
-     * @return string|false
-     */
-    private function getModStatusContent()
-    {
-        return file_get_contents($this->modStatusUrl);
-    }
-
     private function loadDatas(): void
     {
         $this->datas = [];
 
-        $content = $this->getModStatusContent();
+        $content = file_get_contents($this->modStatusUrl);
 
         if (!$content) {
             throw new CollectorException('Could not fetch data from ' . $this->modStatusUrl, __CLASS__);

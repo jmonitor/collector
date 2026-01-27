@@ -10,15 +10,13 @@ use Jmonitor\Collector\System\Adapter\LinuxAdapter;
 
 class SystemCollector extends AbstractCollector
 {
-    /**
-     * @var AdapterInterface
-     */
-    private $adapter;
+    private AdapterInterface $adapter;
 
     /**
-     * @var array
+     * this cache never reset for the lifetime of the script execution
+     * @var array<string, mixed>
      */
-    private $longTermPropertyCache = [];
+    private array $longTermPropertyCache = [];
 
     public function __construct(?AdapterInterface $adapter = null)
     {

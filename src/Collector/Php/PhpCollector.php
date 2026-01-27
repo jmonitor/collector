@@ -6,6 +6,9 @@ namespace Jmonitor\Collector\Php;
 
 use Jmonitor\Collector\AbstractCollector;
 
+/**
+ * I guess INI-related values could be cached in a property cache, but is the performance impact real?
+ */
 class PhpCollector extends AbstractCollector
 {
     private ?string $endpointUrl;
