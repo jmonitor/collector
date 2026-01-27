@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Jmonitor\Tests\Collector\Nginx;
 
 use Jmonitor\Collector\Nginx\NginxCollector;
+use Jmonitor\Utils\ShellExecutor;
 use PHPUnit\Framework\TestCase;
 
 class NginxCollectorTest extends TestCase
@@ -18,12 +19,12 @@ class NginxCollectorTest extends TestCase
 
     public function testCollect(): void
     {
-        $collector = new class (__DIR__ . '/_fake_nginx_status.txt') extends NginxCollector {
-            protected function getShellOutput(string $command): ?string
-            {
-                return "nginx version: nginx/1.22.0\nconfigure arguments: --with-http_ssl_module";
-            }
-        };
+        $shellExecutor = $this->createMock(ShellExecutor::class);
+        $shellExecutor->method('execute')
+            ->with('nginx -V')
+            ->willReturn("nginx version: nginx/1.22.0\nconfigure arguments: --with-http_ssl_module");
+
+        $collector = new NginxCollector(__DIR__ . '/_fake_nginx_status.txt', $shellExecutor);
 
         $metrics = $collector->collect();
 
