@@ -4,12 +4,21 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\System\Adapter;
 
+use Jmonitor\Utils\ShellExecutor;
+
 class LinuxAdapter implements AdapterInterface
 {
+    private ShellExecutor $shellExecutor;
+
     /**
      * @var array<string, mixed>
      */
     private array $propertyCache = [];
+
+    public function __construct(?ShellExecutor $shellExecutor = null)
+    {
+        $this->shellExecutor = $shellExecutor ?? new ShellExecutor();
+    }
 
     public function getDiskTotalSpace(string $path): int
     {
@@ -43,7 +52,9 @@ class LinuxAdapter implements AdapterInterface
     public function getCoreCount(): int
     {
         if (!isset($this->propertyCache['core_count'])) {
-            $this->propertyCache['core_count'] = (int) trim(shell_exec('nproc --all'));
+            $output = $this->shellExecutor->execute('nproc --all');
+
+            $this->propertyCache['core_count'] = (int) trim($output);
         }
 
         return $this->propertyCache['core_count'];
@@ -104,7 +115,11 @@ class LinuxAdapter implements AdapterInterface
 
     private function parseMeminfos(): array
     {
-        $output = shell_exec('cat /proc/meminfo');
+        $output = $this->shellExecutor->execute('cat /proc/meminfo');
+
+        // on sait jamais
+        $output = $output ?: file_get_contents('/proc/meminfo');
+
         $lines = explode("\n", $output);
         $lines = array_filter($lines);
 
