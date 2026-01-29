@@ -74,7 +74,7 @@ class CaddyCollector extends AbstractCollector
 
     private function getEndpointContent(): string
     {
-        $content = file_get_contents($this->endpointUrl);
+        $content = @file_get_contents($this->endpointUrl);
 
         if (!$content) {
             throw new JmonitorException('Failed to fetch metrics from endpoint: ' . $this->endpointUrl);

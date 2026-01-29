@@ -62,7 +62,7 @@ class PhpCollector extends AbstractCollector
 
     private function collectFromUrl(): array
     {
-        $metrics = file_get_contents($this->endpointUrl);
+        $metrics = @file_get_contents($this->endpointUrl);
 
         return json_decode($metrics, true);
     }

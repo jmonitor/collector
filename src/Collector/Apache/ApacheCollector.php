@@ -71,7 +71,7 @@ class ApacheCollector extends AbstractCollector
     {
         $this->datas = [];
 
-        $content = file_get_contents($this->modStatusUrl);
+        $content = @file_get_contents($this->modStatusUrl);
 
         if (!$content) {
             throw new CollectorException('Could not fetch data from ' . $this->modStatusUrl, __CLASS__);

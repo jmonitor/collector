@@ -40,7 +40,7 @@ final class PrometheusMetricsProvider
 
     private function getContent(): string
     {
-        $content = file_get_contents($this->endpoint);
+        $content = @file_get_contents($this->endpoint);
 
         if (!$content) {
             throw new JmonitorException('Failed to fetch metrics from endpoint: ' . $this->endpoint);

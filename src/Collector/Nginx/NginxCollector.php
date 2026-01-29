@@ -50,7 +50,7 @@ class NginxCollector extends AbstractCollector
 
     private function getStatus(): array
     {
-        $content = file_get_contents($this->endpoint);
+        $content = @file_get_contents($this->endpoint);
 
         if (!$content) {
             throw new CollectorException('Could not fetch data from ' . $this->endpoint, __CLASS__);

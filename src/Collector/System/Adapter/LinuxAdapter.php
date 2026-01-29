@@ -71,7 +71,7 @@ class LinuxAdapter implements AdapterInterface
 
     public function getUptime(): ?int
     {
-        $uptime = file_get_contents('/proc/uptime');
+        $uptime = @file_get_contents('/proc/uptime');
 
         if ($uptime === false) {
             return null;
@@ -146,7 +146,7 @@ class LinuxAdapter implements AdapterInterface
      */
     private function parseOsRelease(): array
     {
-        $output = file_get_contents('/etc/os-release');
+        $output = @file_get_contents('/etc/os-release');
 
         if ($output === false) {
             return [];
@@ -170,6 +170,6 @@ class LinuxAdapter implements AdapterInterface
 
     private function doGetTimeZone(): ?string
     {
-        return $_SERVER['TZ'] ?? file_get_contents('/etc/timezone') ?: null;
+        return $_SERVER['TZ'] ?? @file_get_contents('/etc/timezone') ?: null;
     }
 }
