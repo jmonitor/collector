@@ -118,7 +118,7 @@ class LinuxAdapter implements AdapterInterface
         $output = $this->shellExecutor->execute('cat /proc/meminfo');
 
         // on sait jamais
-        $output = $output ?: file_get_contents('/proc/meminfo');
+        $output = $output ?: @file_get_contents('/proc/meminfo');
 
         $lines = explode("\n", $output);
         $lines = array_filter($lines);
