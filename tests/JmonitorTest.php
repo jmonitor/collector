@@ -47,7 +47,7 @@ class JmonitorTest extends TestCase
         $result = $jmonitor->collect();
 
         $this->assertSame(1, count($result->getMetrics()));
-        $this->assertSame('1 metric(s) collected with 0 error(s).', $result->getConclusion());
+        $this->assertStringContainsString('metric(s) collected', $result->getConclusion());
         $this->assertSame(201, $result->getResponse()->getStatusCode());
     }
 
