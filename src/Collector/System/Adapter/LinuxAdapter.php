@@ -196,8 +196,8 @@ class LinuxAdapter implements AdapterInterface
             return null;
         }
 
-        if (str_starts_with($localTime, '/usr/share/zoneinfo/')) {
-            return str_replace('/usr/share/zoneinfo/', '', $localTime);
+        if (str_contains($localTime, 'zoneinfo/')) {
+            return substr($localTime, strpos($localTime, 'zoneinfo/') + 9);
         }
 
         return null;
