@@ -101,19 +101,31 @@ class Jmonitor
                 return $result->setConclusion('Error while sending metrics to the server');
             }
 
-            if ($result->getResponse()->getStatusCode() === 428) {
+            if ($result->getResponse()->getStatusCode() === 429) {
                 $waitSeconds = $result->getResponse()->getHeader('x-ratelimit-retry-after')[0] ?? 0;
 
                 return $result->setConclusion('Rate limit reached, please wait ' . $waitSeconds . ' seconds.');
             }
 
-            if ($result->getResponse()->getStatusCode() >= 400) {
+            if ($result->getResponse()->getStatusCode() >= 500) {
                 if ($throwOnFailure) {
-                    throw new InvalidServerResponseException('Error while sending metrics to the server', $result->getResponse()->getStatusCode());
+                    throw new InvalidServerResponseException($result->getResponse()->getStatusCode());
                 }
 
-                return $result->setConclusion('Http error while sending ' . count($metrics) . ' metrics to the server');
+                return $result->setConclusion('Http error ' . $result->getResponse()->getStatusCode() . ' on Jmonitor side. Sorry about that. We were notified, please try again later or feel free to contact us on Github.');
             }
+
+            if ($result->getResponse()->getStatusCode() >= 400) {
+                if ($throwOnFailure) {
+                    throw new InvalidServerResponseException($result->getResponse()->getStatusCode());
+                }
+
+                return $result->setConclusion('Http error ' . $result->getResponse()->getStatusCode() . ' while sending ' . count($metrics) . ' metrics to the server. Inspect the response for more informations.');
+            }
+        }
+
+        if (count($result->getErrors()) === 0) {
+            return $result->setConclusion(count($metrics) . ' metric(s) collected.');
         }
 
         return $result->setConclusion(count($metrics) . ' metric(s) collected with ' . count($result->getErrors()) . ' error(s).');

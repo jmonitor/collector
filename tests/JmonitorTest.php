@@ -96,7 +96,7 @@ class JmonitorTest extends TestCase
 
         $result = $jmonitor->collect(true, false);
 
-        $this->assertSame('Http error while sending 1 metrics to the server', $result->getConclusion());
+        $this->assertStringContainsString('Http error', $result->getConclusion());
         $this->assertSame(500, $result->getResponse()->getStatusCode());
     }
 
