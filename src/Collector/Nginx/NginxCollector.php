@@ -191,6 +191,12 @@ class NginxCollector extends AbstractCollector
             }
         }
 
+        foreach (['worker_connections', 'types_hash_max_size', 'keepalive_timeout'] as $key) {
+            if (isset($result[$key])) {
+                $result[$key] = (int) $result[$key];
+            }
+        }
+
         return $result;
     }
 }

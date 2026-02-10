@@ -80,12 +80,12 @@ class NginxCollectorTest extends TestCase
         self::assertSame('/etc/nginx/nginx.conf', $metrics['config']['config_path']);
         self::assertSame('www-data', $metrics['config']['user']);
         self::assertSame('auto', $metrics['config']['worker_processes']);
-        self::assertSame('768', $metrics['config']['worker_connections']);
+        self::assertSame(768, $metrics['config']['worker_connections']);
         self::assertSame('on', $metrics['config']['sendfile']);
         self::assertSame('on', $metrics['config']['tcp_nopush']);
         self::assertSame('on', $metrics['config']['tcp_nodelay']);
-        self::assertSame('65', $metrics['config']['keepalive_timeout']);
-        self::assertSame('2048', $metrics['config']['types_hash_max_size']);
+        self::assertSame(65, $metrics['config']['keepalive_timeout']);
+        self::assertSame(2048, $metrics['config']['types_hash_max_size']);
         self::assertNull($metrics['config']['server_tokens']);
         self::assertSame('TLSv1 TLSv1.1 TLSv1.2 TLSv1.3', $metrics['config']['ssl_protocols']);
         self::assertSame('on', $metrics['config']['ssl_prefer_server_ciphers']);
