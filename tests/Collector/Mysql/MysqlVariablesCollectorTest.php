@@ -36,7 +36,7 @@ class MysqlVariablesCollectorTest extends TestCase
         $collector = new MysqlVariablesCollector($dbMock);
         $result = $collector->collect();
 
-        $this->assertEquals($expectedResult, $result);
+        self::assertEquals($expectedResult, $result);
     }
 
     public function testGetVersion(): void
@@ -44,6 +44,6 @@ class MysqlVariablesCollectorTest extends TestCase
         $dbMock = $this->createMock(MysqlAdapterInterface::class);
         $collector = new MysqlVariablesCollector($dbMock);
 
-        $this->assertSame(1, $collector->getVersion());
+        self::assertSame(1, $collector->getVersion());
     }
 }

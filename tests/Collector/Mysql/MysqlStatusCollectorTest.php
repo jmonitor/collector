@@ -36,7 +36,7 @@ class MysqlStatusCollectorTest extends TestCase
         $collector = new MysqlStatusCollector($dbMock);
         $result = $collector->collect();
 
-        $this->assertEquals($expectedResult, $result);
+        self::assertEquals($expectedResult, $result);
     }
 
     public function testGetVersion(): void
@@ -44,6 +44,6 @@ class MysqlStatusCollectorTest extends TestCase
         $dbMock = $this->createMock(MysqlAdapterInterface::class);
         $collector = new MysqlStatusCollector($dbMock);
 
-        $this->assertSame(1, $collector->getVersion());
+        self::assertSame(1, $collector->getVersion());
     }
 }

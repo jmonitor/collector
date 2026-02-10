@@ -42,6 +42,6 @@ class DoctrineAdapterTest extends TestCase
 
         // Exécution et vérification
         $result = $this->adapter->fetchAllAssociative($query);
-        $this->assertEquals($expectedResult, $result);
+        self::assertEquals($expectedResult, $result);
     }
 }

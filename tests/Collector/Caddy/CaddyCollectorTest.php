@@ -21,7 +21,7 @@ class CaddyCollectorTest extends TestCase
     {
         $metrics = $this->collector->collect();
 
-        $this->assertIsArray($metrics);
+        self::assertIsArray($metrics);
 
         // Vérifie la présence des clés attendues
         $expectedKeys = [
@@ -40,42 +40,42 @@ class CaddyCollectorTest extends TestCase
         ];
 
         foreach ($expectedKeys as $key) {
-            $this->assertArrayHasKey($key, $metrics, sprintf('La métrique "%s" est absente', $key));
-            $this->assertIsArray($metrics[$key], sprintf('La métrique "%s" doit être un tableau d\'échantillons', $key));
+            self::assertArrayHasKey($key, $metrics, sprintf('La métrique "%s" est absente', $key));
+            self::assertIsArray($metrics[$key], sprintf('La métrique "%s" doit être un tableau d\'échantillons', $key));
         }
 
         // Comptages connus d'après la fixture
-        $this->assertCount(4, $metrics['requests_total']);
-        $this->assertCount(4, $metrics['requests_in_flight']);
-        $this->assertCount(4, $metrics['response_size_bytes_count']);
-        $this->assertCount(4, $metrics['response_duration_seconds_count']);
-        $this->assertCount(4, $metrics['response_duration_seconds_sum']);
-        $this->assertGreaterThanOrEqual(1, count($metrics['response_duration_seconds_bucket']));
+        self::assertCount(4, $metrics['requests_total']);
+        self::assertCount(4, $metrics['requests_in_flight']);
+        self::assertCount(4, $metrics['response_size_bytes_count']);
+        self::assertCount(4, $metrics['response_duration_seconds_count']);
+        self::assertCount(4, $metrics['response_duration_seconds_sum']);
+        self::assertGreaterThanOrEqual(1, count($metrics['response_duration_seconds_bucket']));
 
-        $this->assertCount(4, $metrics['request_duration_seconds_sum']);
-        $this->assertCount(4, $metrics['request_duration_seconds_count']);
+        self::assertCount(4, $metrics['request_duration_seconds_sum']);
+        self::assertCount(4, $metrics['request_duration_seconds_count']);
 
-        $this->assertCount(4, $metrics['request_size_bytes_sum']);
-        $this->assertCount(4, $metrics['request_size_bytes_count']);
+        self::assertCount(4, $metrics['request_size_bytes_sum']);
+        self::assertCount(4, $metrics['request_size_bytes_count']);
 
         // Métriques de process: une seule valeur chacune dans la fixture
-        $this->assertCount(1, $metrics['process_cpu_seconds_total']);
-        $this->assertCount(1, $metrics['process_resident_memory_bytes']);
+        self::assertCount(1, $metrics['process_cpu_seconds_total']);
+        self::assertCount(1, $metrics['process_resident_memory_bytes']);
 
         // Vérifie la structure d'un échantillon (labels + value)
         $sample = $metrics['requests_total'][0];
-        $this->assertIsArray($sample);
-        $this->assertArrayHasKey('labels', $sample);
-        $this->assertArrayHasKey('value', $sample);
+        self::assertIsArray($sample);
+        self::assertArrayHasKey('labels', $sample);
+        self::assertArrayHasKey('value', $sample);
     }
 
     public function testGetVersion(): void
     {
-        $this->assertSame(1, $this->collector->getVersion());
+        self::assertSame(1, $this->collector->getVersion());
     }
 
     public function testGetName(): void
     {
-        $this->assertSame('caddy', $this->collector->getName());
+        self::assertSame('caddy', $this->collector->getName());
     }
 }

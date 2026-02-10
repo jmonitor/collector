@@ -12,19 +12,19 @@ class PhpCollectorTest extends TestCase
         $collector = new PhpCollector();
         $result = $collector->collect();
 
-        $this->assertArrayHasKey('version', $result);
-        $this->assertArrayHasKey('sapi_name', $result);
-        $this->assertArrayHasKey('ini_file', $result);
-        $this->assertArrayHasKey('ini_files', $result);
-        $this->assertArrayHasKey('memory_limit', $result);
-        $this->assertArrayHasKey('max_execution_time', $result);
-        $this->assertArrayHasKey('post_max_size', $result);
-        $this->assertArrayHasKey('upload_max_filesize', $result);
-        $this->assertArrayHasKey('date.timezone', $result);
-        $this->assertArrayHasKey('loaded_extensions', $result);
-        $this->assertArrayHasKey('opcache', $result);
-        $this->assertArrayHasKey('apcu', $result);
-        $this->assertArrayHasKey('fpm', $result);
+        self::assertArrayHasKey('version', $result);
+        self::assertArrayHasKey('sapi_name', $result);
+        self::assertArrayHasKey('ini_file', $result);
+        self::assertArrayHasKey('ini_files', $result);
+        self::assertArrayHasKey('memory_limit', $result);
+        self::assertArrayHasKey('max_execution_time', $result);
+        self::assertArrayHasKey('post_max_size', $result);
+        self::assertArrayHasKey('upload_max_filesize', $result);
+        self::assertArrayHasKey('date.timezone', $result);
+        self::assertArrayHasKey('loaded_extensions', $result);
+        self::assertArrayHasKey('opcache', $result);
+        self::assertArrayHasKey('apcu', $result);
+        self::assertArrayHasKey('fpm', $result);
     }
 
     public function testCollectFromUrl(): void
@@ -39,13 +39,13 @@ class PhpCollectorTest extends TestCase
         $collector = new PhpCollector($url);
         $result = $collector->collect();
 
-        $this->assertSame($expected, $result);
+        self::assertSame($expected, $result);
     }
 
     public function testGetVersion(): void
     {
         $collector = new PhpCollector();
 
-        $this->assertSame(1, $collector->getVersion());
+        self::assertSame(1, $collector->getVersion());
     }
 }

@@ -54,6 +54,6 @@ class PdoAdapterTest extends TestCase
 
         // Exécution et vérification
         $result = $this->adapter->fetchAllAssociative($query, $params);
-        $this->assertEquals($expectedResult, $result);
+        self::assertEquals($expectedResult, $result);
     }
 }

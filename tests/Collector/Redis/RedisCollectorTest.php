@@ -67,34 +67,34 @@ class RedisCollectorTest extends TestCase
         $collector = new RedisCollector($redisMock);
         $result = $collector->collect();
 
-        $this->assertSame('6.2.6', $result['server']['version']);
-        $this->assertSame('standalone', $result['server']['mode']);
-        $this->assertSame('6379', $result['server']['port']);
-        $this->assertSame('3600', $result['server']['uptime']);
-        $this->assertSame('10', $result['clients']['connected']);
-        $this->assertSame('10485760', $result['memory']['used']);
-        $this->assertSame('20971520', $result['memory']['used_rss']);
-        $this->assertSame('15728640', $result['memory']['used_peak']);
-        $this->assertSame('536870912', $result['memory']['max_memory']);
-        $this->assertSame('allkeys-lru', $result['memory']['max_memory_policy']);
-        $this->assertSame('1622547800', $result['persistence']['rdb_last_save_time']);
-        $this->assertSame('100', $result['persistence']['rdb_changes_since_last_save']);
-        $this->assertSame('1000', $result['stats']['total_connections_received']);
-        $this->assertSame('5000', $result['stats']['total_commands_processed']);
-        $this->assertSame('50', $result['stats']['instantaneous_ops_per_sec']);
-        $this->assertSame('master', $result['replication']['role']);
-        $this->assertSame('0', $result['replication']['connected_slaves']);
-        $this->assertSame('0.123', $result['cpu']['used_sys']);
-        $this->assertSame('0.456', $result['cpu']['used_user']);
-        $this->assertSame('100', $result['databases']['db0']['keys']);
-        $this->assertSame('10', $result['databases']['db0']['expires']);
-        $this->assertSame('5000', $result['databases']['db0']['avg_ttl']);
+        self::assertSame('6.2.6', $result['server']['version']);
+        self::assertSame('standalone', $result['server']['mode']);
+        self::assertSame('6379', $result['server']['port']);
+        self::assertSame('3600', $result['server']['uptime']);
+        self::assertSame('10', $result['clients']['connected']);
+        self::assertSame('10485760', $result['memory']['used']);
+        self::assertSame('20971520', $result['memory']['used_rss']);
+        self::assertSame('15728640', $result['memory']['used_peak']);
+        self::assertSame('536870912', $result['memory']['max_memory']);
+        self::assertSame('allkeys-lru', $result['memory']['max_memory_policy']);
+        self::assertSame('1622547800', $result['persistence']['rdb_last_save_time']);
+        self::assertSame('100', $result['persistence']['rdb_changes_since_last_save']);
+        self::assertSame('1000', $result['stats']['total_connections_received']);
+        self::assertSame('5000', $result['stats']['total_commands_processed']);
+        self::assertSame('50', $result['stats']['instantaneous_ops_per_sec']);
+        self::assertSame('master', $result['replication']['role']);
+        self::assertSame('0', $result['replication']['connected_slaves']);
+        self::assertSame('0.123', $result['cpu']['used_sys']);
+        self::assertSame('0.456', $result['cpu']['used_user']);
+        self::assertSame('100', $result['databases']['db0']['keys']);
+        self::assertSame('10', $result['databases']['db0']['expires']);
+        self::assertSame('5000', $result['databases']['db0']['avg_ttl']);
     }
 
     public function testGetVersion(): void
     {
         $collector = new RedisCollector($this->createMock(\Predis\Client::class));
 
-        $this->assertSame(1, $collector->getVersion());
+        self::assertSame(1, $collector->getVersion());
     }
 }
