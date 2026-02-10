@@ -46,7 +46,7 @@ class SystemCollector extends AbstractCollector
                 'uptime' => $this->adapter->getUptime(),
             ],
             'time' => time(),
-            'timezone' => $this->adapter->getTimezone(),
+            'timezone' => array_key_exists('timezone', $this->longTermPropertyCache) ? $this->longTermPropertyCache['timezone'] : $this->longTermPropertyCache['timezone'] = $this->adapter->getTimezone(),
             'hostname' => gethostname(),
         ];
     }

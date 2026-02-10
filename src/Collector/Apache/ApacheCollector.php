@@ -35,13 +35,17 @@ class ApacheCollector extends AbstractCollector
     {
         $this->loadDatas();
 
+        $load1 = $this->getData('Load1', 'float');
+        $load5 = $this->getData('Load5', 'float');
+        $load15 = $this->getData('Load15', 'float');
+
         return [
             'server_version' => $this->getData('ServerVersion'),
             'server_mpm' => $this->getData('ServerMPM'),
             'uptime' => $this->getData('Uptime', 'int'),
-            'load1' => $this->getData('Load1', 'float'),
-            'load5' => $this->getData('Load5', 'float'),
-            'load15' => $this->getData('Load15', 'float'),
+            'load1' => $load1 !== -1.0 ? $load1 : null,
+            'load5' => $load5 !== -1.0 ? $load5 : null,
+            'load15' => $load15 !== -1.0 ? $load15 : null,
             'total_accesses' => $this->getData('Total Accesses', 'int'),
             'total_bytes' => ($value = $this->getData('Total kBytes', 'int')) !== null ? $value * 1024 : null,
             'requests_per_second' => ($value = $this->getData('ReqPerSec', 'float')) !== null ? (int) round($value) : null,

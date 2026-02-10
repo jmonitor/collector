@@ -185,6 +185,21 @@ class LinuxAdapter implements AdapterInterface
 
     private function doGetTimeZone(): ?string
     {
-        return $_SERVER['TZ'] ?? @file_get_contents('/etc/timezone') ?: null;
+        return $_SERVER['TZ'] ?? @file_get_contents('/etc/timezone') ?: $this->getTimeZoneFromLocalTime();
+    }
+
+    private function getTimeZoneFromLocalTime(): ?string
+    {
+        $localTime = @readlink('/etc/localtime');
+
+        if (!$localTime) {
+            return null;
+        }
+
+        if (str_contains($localTime, 'zoneinfo/')) {
+            return substr($localTime, strpos($localTime, 'zoneinfo/') + 9);
+        }
+
+        return null;
     }
 }
