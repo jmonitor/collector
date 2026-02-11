@@ -33,26 +33,26 @@ class SystemCollectorTest extends TestCase
         $result2 = $collector->collect();
 
         // Vérification du résultat
-        $this->assertSame(1000000000, $result1['disk']['total']);
-        $this->assertSame(500000000, $result1['disk']['free']);
-        $this->assertSame(4, $result1['cpu']['cores']);
-        $this->assertSame(25, $result1['cpu']['load']);
-        $this->assertArrayHasKey('load1', $result1['cpu']);
-        $this->assertArrayHasKey('load5', $result1['cpu']);
-        $this->assertArrayHasKey('load15', $result1['cpu']);
-        $this->assertSame(8000000000, $result1['ram']['total']);
-        $this->assertSame(4000000000, $result1['ram']['available']);
-        $this->assertSame('Ubuntu 20.04 LTS', $result1['os']['pretty_name']);
-        $this->assertSame(86400, $result1['os']['uptime']);
-        $this->assertIsInt($result1['time']);
-        $this->assertIsString($result1['timezone']);
-        $this->assertSame(gethostname(), $result1['hostname']);
+        self::assertSame(1000000000, $result1['disk']['total']);
+        self::assertSame(500000000, $result1['disk']['free']);
+        self::assertSame(4, $result1['cpu']['cores']);
+        self::assertSame(25, $result1['cpu']['load']);
+        self::assertArrayHasKey('load1', $result1['cpu']);
+        self::assertArrayHasKey('load5', $result1['cpu']);
+        self::assertArrayHasKey('load15', $result1['cpu']);
+        self::assertSame(8000000000, $result1['ram']['total']);
+        self::assertSame(4000000000, $result1['ram']['available']);
+        self::assertSame('Ubuntu 20.04 LTS', $result1['os']['pretty_name']);
+        self::assertSame(86400, $result1['os']['uptime']);
+        self::assertIsInt($result1['time']);
+        self::assertIsString($result1['timezone']);
+        self::assertSame(gethostname(), $result1['hostname']);
     }
 
     public function testGetVersion(): void
     {
         $collector = new SystemCollector($this->createMock(AdapterInterface::class));
 
-        $this->assertSame(1, $collector->getVersion());
+        self::assertSame(1, $collector->getVersion());
     }
 }

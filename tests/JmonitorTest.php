@@ -22,10 +22,10 @@ class JmonitorTest extends TestCase
         $jmonitor = new Jmonitor('api');
         $result = $jmonitor->collect();
 
-        $this->assertInstanceOf(CollectionResult::class, $result);
-        $this->assertSame('Nothing to collect. Please add some collectors.', $result->getConclusion());
-        $this->assertSame([], $result->getMetrics());
-        $this->assertSame([], $result->getErrors());
+        self::assertInstanceOf(CollectionResult::class, $result);
+        self::assertSame('Nothing to collect. Please add some collectors.', $result->getConclusion());
+        self::assertSame([], $result->getMetrics());
+        self::assertSame([], $result->getErrors());
     }
 
     public function testCollectWithOneCollectorAndSuccessfulSend(): void
@@ -46,9 +46,9 @@ class JmonitorTest extends TestCase
 
         $result = $jmonitor->collect();
 
-        $this->assertSame(1, count($result->getMetrics()));
-        $this->assertStringContainsString('metric(s) collected', $result->getConclusion());
-        $this->assertSame(201, $result->getResponse()->getStatusCode());
+        self::assertSame(1, count($result->getMetrics()));
+        self::assertStringContainsString('metric(s) collected', $result->getConclusion());
+        self::assertSame(201, $result->getResponse()->getStatusCode());
     }
 
     public function testCollectAggregatesCollectorException(): void
@@ -76,9 +76,9 @@ class JmonitorTest extends TestCase
 
         $result = $jmonitor->collect();
 
-        $this->assertSame(1, count($result->getMetrics()));
-        $this->assertCount(1, $result->getErrors());
-        $this->assertSame('1 metric(s) collected with 1 error(s).', $result->getConclusion());
+        self::assertSame(1, count($result->getMetrics()));
+        self::assertCount(1, $result->getErrors());
+        self::assertSame('1 metric(s) collected with 1 error(s).', $result->getConclusion());
     }
 
     public function testCollectHttpErrorReturnsResultWhenNotThrowing(): void
@@ -96,8 +96,8 @@ class JmonitorTest extends TestCase
 
         $result = $jmonitor->collect(true, false);
 
-        $this->assertStringContainsString('Http error', $result->getConclusion());
-        $this->assertSame(500, $result->getResponse()->getStatusCode());
+        self::assertStringContainsString('Http error', $result->getConclusion());
+        self::assertSame(500, $result->getResponse()->getStatusCode());
     }
 
     public function testCollectHttpErrorThrowsWhenThrowOnFailureTrue(): void

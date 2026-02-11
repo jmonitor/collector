@@ -38,6 +38,7 @@ class NginxCollector extends AbstractCollector
             'version' => $nginxV['version'],
             'modules' => $nginxV['modules'],
             'status' => $this->getStatus(),
+            'config' => $this->getNginxT(),
         ];
     }
 
@@ -76,15 +77,14 @@ class NginxCollector extends AbstractCollector
 
     private function getNginxV(): array
     {
-        if (!isset($this->propertyCache['nginx_info'])) {
+        if (!isset($this->propertyCache['nginxV'])) {
             $output = $this->shellExecutor->execute('nginx -V') ?: '';
 
-            return $this->propertyCache['nginx_info'] = $this->parseNginxV($output);
+            return $this->propertyCache['nginxV'] = $this->parseNginxV($output);
         }
 
-        return $this->propertyCache['nginx_info'];
+        return $this->propertyCache['nginxV'];
     }
-
 
     private function parseNginxV(string $output): array
     {
@@ -109,6 +109,91 @@ class NginxCollector extends AbstractCollector
                     return !str_contains($args, "--with-" . $module . "=");
                 });
                 $result['modules'] = array_values(array_unique($result['modules']));
+            }
+        }
+
+        return $result;
+    }
+
+    private function getNginxT(): array
+    {
+        if (!isset($this->propertyCache['nginxT'])) {
+            $output = $this->shellExecutor->execute('nginx -T') ?: '';
+
+            return $this->propertyCache['nginxT'] = $this->parseNginxT($output);
+        }
+
+        return $this->propertyCache['nginxT'];
+    }
+
+    private function parseNginxT(string $output): array
+    {
+        $result = [
+            'config_path' => null,
+            'user' => null,
+            'worker_processes' => null,
+            'include' => [],
+            'worker_connections' => null,
+            'sendfile' => null,
+            'tcp_nopush' => null,
+            'tcp_nodelay' => null,
+            'keepalive_timeout' => null,
+            'types_hash_max_size' => null,
+            'server_tokens' => null,
+            'ssl_protocols' => null,
+            'ssl_prefer_server_ciphers' => null,
+            'access_log' => null,
+            'error_log' => null,
+            'gzip' => null,
+        ];
+
+        if (!$output) {
+            return $result;
+        }
+
+        $lines = explode("\n", $output);
+        $keys = [
+            'user', 'worker_processes', 'worker_connections', 'sendfile',
+            'tcp_nopush', 'tcp_nodelay', 'keepalive_timeout', 'types_hash_max_size',
+            'server_tokens', 'ssl_protocols', 'ssl_prefer_server_ciphers',
+            'access_log', 'error_log', 'gzip', 'include',
+        ];
+
+        $pattern = '/^(' . implode('|', $keys) . ')\s+([^;]+);/';
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+
+            if ($line === '') {
+                continue;
+            }
+
+            if (preg_match('/^# configuration file ([^:]+):/', $line, $matches)) {
+                if ($result['config_path'] === null) {
+                    $result['config_path'] = $matches[1];
+                }
+                continue;
+            }
+
+            if (isset($line[0]) && $line[0] === '#') {
+                continue;
+            }
+
+            if (preg_match($pattern, $line, $matches)) {
+                $key = $matches[1];
+                $value = $matches[2];
+
+                if ($key === 'include') {
+                    $result['include'][] = $value;
+                } else {
+                    $result[$key] = $value;
+                }
+            }
+        }
+
+        foreach (['worker_connections', 'types_hash_max_size', 'keepalive_timeout'] as $key) {
+            if (isset($result[$key])) {
+                $result[$key] = (int) $result[$key];
             }
         }
 

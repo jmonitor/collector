@@ -27,7 +27,7 @@ class MysqlQueriesCountCollectorTest extends TestCase
         $collector = new MysqlQueriesCountCollector($dbMock, 'test_database');
 
         $result = $collector->collect();
-        $this->assertSame($expectedData, $result);
+        self::assertSame($expectedData, $result);
     }
 
     public function testGetVersion(): void
@@ -35,6 +35,6 @@ class MysqlQueriesCountCollectorTest extends TestCase
         $dbMock = $this->createMock(MysqlAdapterInterface::class);
         $collector = new MysqlQueriesCountCollector($dbMock, 'test_database');
 
-        $this->assertSame(1, $collector->getVersion());
+        self::assertSame(1, $collector->getVersion());
     }
 }

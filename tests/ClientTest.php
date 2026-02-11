@@ -41,13 +41,13 @@ class ClientTest extends TestCase
             'X-JMONITOR-API-KEY: test-api-key',
         ];
 
-        $this->assertSame('POST', $mockResponse->getRequestMethod());
-        $this->assertSame('https://collector.jmonitor.io/metrics', $mockResponse->getRequestUrl());
+        self::assertSame('POST', $mockResponse->getRequestMethod());
+        self::assertSame('https://collector.jmonitor.io/metrics', $mockResponse->getRequestUrl());
         $options = $mockResponse->getRequestOptions();
-        $this->assertSame($expectedRequestHeaders[0], $options['headers'][0]);
-        $this->assertSame($expectedRequestHeaders[1], $options['headers'][1]);
-        $this->assertSame($expectedRequestHeaders[2], $options['headers'][2]);
+        self::assertSame($expectedRequestHeaders[0], $options['headers'][0]);
+        self::assertSame($expectedRequestHeaders[1], $options['headers'][1]);
+        self::assertSame($expectedRequestHeaders[2], $options['headers'][2]);
 
-        $this->assertSame(json_encode($requestData), $options['body']);
+        self::assertSame(json_encode($requestData), $options['body']);
     }
 }
