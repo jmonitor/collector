@@ -17,6 +17,11 @@ class RedisCollector extends AbstractCollector
     private $redis;
 
     /**
+     * On part du principe que s'il y a changement de config, il doit y avoir reboot du worker
+     */
+    private ?array $config = null;
+
+    /**
      * @param \Redis|\RedisArray|\RedisCluster|\Predis\ClientInterface|Relay|string $redis
      */
     public function __construct($redis)
@@ -98,12 +103,18 @@ class RedisCollector extends AbstractCollector
                 'used_user' => $infos['used_cpu_user'] ?? null,
             ],
             'databases' => iterator_to_array($this->getDatabases($infos)),
+            'config' => $this->getConfig(),
         ];
     }
 
     public function getVersion(): int
     {
         return 1;
+    }
+
+    public function getName(): string
+    {
+        return 'redis';
     }
 
     private function flatten(array $array): array
@@ -123,7 +134,7 @@ class RedisCollector extends AbstractCollector
         return $result;
     }
 
-    private function getDatabases(array $infos): \Traversable
+    private function getDatabases(array $infos): iterable
     {
         foreach ($infos as $k => $v) {
             if (substr($k, 0, 2) === 'db') {
@@ -132,8 +143,22 @@ class RedisCollector extends AbstractCollector
         }
     }
 
-    public function getName(): string
+    private function getConfig(): array
     {
-        return 'redis';
+        if (is_array($this->config)) {
+            return $this->config;
+        }
+
+        $this->config = [];
+
+        try {
+            $save = $this->redis->config('GET', 'save');
+        } catch (\Throwable $e) {
+            return [];
+        }
+
+        $this->config['save'] = $save['save'] ?? null;
+
+        return $this->config;
     }
 }

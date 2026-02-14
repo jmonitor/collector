@@ -59,10 +59,16 @@ class RedisCollectorTest extends TestCase
             ],
         ];
 
-        $redisMock->expects($this->once())
-            ->method('__call')
-            ->with('info', [])
-            ->willReturn($redisInfo);
+        $redisMock->method('__call')
+            ->willReturnCallback(function ($method, $args) use ($redisInfo) {
+                if ($method === 'info') {
+                    return $redisInfo;
+                }
+                if ($method === 'config' && $args === ['GET', 'save']) {
+                    return ['save' => '900 1 300 10 60 10000'];
+                }
+                return null;
+            });
 
         $collector = new RedisCollector($redisMock);
         $result = $collector->collect();
@@ -89,6 +95,7 @@ class RedisCollectorTest extends TestCase
         self::assertSame('100', $result['databases']['db0']['keys']);
         self::assertSame('10', $result['databases']['db0']['expires']);
         self::assertSame('5000', $result['databases']['db0']['avg_ttl']);
+        self::assertSame('900 1 300 10 60 10000', $result['config']['save']);
     }
 
     public function testGetVersion(): void
@@ -96,5 +103,12 @@ class RedisCollectorTest extends TestCase
         $collector = new RedisCollector($this->createMock(\Predis\Client::class));
 
         self::assertSame(1, $collector->getVersion());
+    }
+
+    public function testGetName(): void
+    {
+        $collector = new RedisCollector($this->createMock(\Predis\Client::class));
+
+        self::assertSame('redis', $collector->getName());
     }
 }
