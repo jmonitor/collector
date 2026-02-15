@@ -138,9 +138,35 @@ class RedisCollector extends AbstractCollector
     {
         foreach ($infos as $k => $v) {
             if (substr($k, 0, 2) === 'db') {
-                yield $k => $v;
+                yield $k => $this->parseDb($v);
             }
         }
+    }
+
+    /**
+     * @param string|array $db
+     */
+    private function parseDb($db): array
+    {
+        if (is_array($db)) {
+            return [
+                'keys' => $db['keys'] ?? null,
+                'expires' => $db['expires'] ?? null,
+                'avg_ttl' => $db['avg_ttl'] ?? null,
+            ];
+        }
+
+        $result = [];
+        $parts = explode(',', $db);
+
+        foreach ($parts as $part) {
+            [$key, $value] = explode('=', $part);
+            if (in_array($key, ['keys', 'expires', 'avg_ttl'])) {
+                $result[$key] = $value;
+            }
+        }
+
+        return $result;
     }
 
     private function getConfig(): array
