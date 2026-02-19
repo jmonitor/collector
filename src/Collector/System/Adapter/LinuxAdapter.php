@@ -49,12 +49,12 @@ class LinuxAdapter implements AdapterInterface
         return $this->getCoreCount() ? (int) ((sys_getloadavg()[0] * 100) / $this->getCoreCount()) : null;
     }
 
-    public function getCoreCount(): int
+    public function getCoreCount(): ?int
     {
-        if (!isset($this->propertyCache['core_count'])) {
+        if (!array_key_exists('core_count', $this->propertyCache)) {
             $output = $this->shellExecutor->execute('nproc --all');
 
-            $this->propertyCache['core_count'] = (int) trim($output);
+            $this->propertyCache['core_count'] = $output ? (int) trim($output) : null;
         }
 
         return $this->propertyCache['core_count'];

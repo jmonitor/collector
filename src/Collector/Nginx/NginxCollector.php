@@ -39,6 +39,7 @@ class NginxCollector extends AbstractCollector
             'modules' => $nginxV['modules'],
             'status' => $this->getStatus(),
             'config' => $this->getNginxT(),
+            'cpu_count' => $this->getCpuCount(),
         ];
     }
 
@@ -198,5 +199,20 @@ class NginxCollector extends AbstractCollector
         }
 
         return $result;
+    }
+
+    private function getCpuCount(): ?int
+    {
+        if (array_key_exists('cpuCount', $this->propertyCache)) {
+            return $this->propertyCache['cpuCount'];
+        }
+
+        if (PHP_OS_FAMILY === 'Linux') {
+            $output = $this->shellExecutor->execute('nproc --all');
+
+            return $this->propertyCache['cpuCount'] = $output ? (int) trim($output) : null;
+        }
+
+        return $this->propertyCache['cpuCount'] = null;
     }
 }
