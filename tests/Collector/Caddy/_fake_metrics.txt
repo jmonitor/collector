@@ -2688,28 +2688,28 @@ caddy_http_response_size_bytes_count{code="429",handler="vars",method="POST",ser
 frankenphp_busy_threads 3
 # HELP frankenphp_busy_workers Number of busy PHP workers for this worker
 # TYPE frankenphp_busy_workers gauge
-frankenphp_busy_workers{worker="m#/home/bas/app_97bc4c36-9c5f-4ad7-a311-eaba692982fe/public/index.php"} 0
+frankenphp_busy_workers{worker="lesuperworker"} 0
 # HELP frankenphp_queue_depth Number of regular queued requests
 # TYPE frankenphp_queue_depth gauge
 frankenphp_queue_depth 1
 # HELP frankenphp_ready_workers Running workers that have successfully called frankenphp_handle_request at least once
 # TYPE frankenphp_ready_workers gauge
-frankenphp_ready_workers{worker="m#/home/bas/app_97bc4c36-9c5f-4ad7-a311-eaba692982fe/public/index.php"} 2
+frankenphp_ready_workers{worker="lesuperworker"} 2
 # HELP frankenphp_total_threads Total number of PHP threads
 # TYPE frankenphp_total_threads counter
 frankenphp_total_threads 3
 # HELP frankenphp_total_workers Total number of PHP workers for this worker
 # TYPE frankenphp_total_workers gauge
-frankenphp_total_workers{worker="m#/home/bas/app_97bc4c36-9c5f-4ad7-a311-eaba692982fe/public/index.php"} 2
+frankenphp_total_workers{worker="lesuperworker"} 2
 # HELP frankenphp_worker_request_count
 # TYPE frankenphp_worker_request_count counter
-frankenphp_worker_request_count{worker="m#/home/bas/app_97bc4c36-9c5f-4ad7-a311-eaba692982fe/public/index.php"} 11971
+frankenphp_worker_request_count{worker="lesuperworker"} 11971
 # HELP frankenphp_worker_request_time
 # TYPE frankenphp_worker_request_time counter
-frankenphp_worker_request_time{worker="m#/home/bas/app_97bc4c36-9c5f-4ad7-a311-eaba692982fe/public/index.php"} 262.4853105699987
+frankenphp_worker_request_time{worker="lesuperworker"} 262.4853105699987
 # HELP frankenphp_worker_restarts Number of PHP worker restarts for this worker
 # TYPE frankenphp_worker_restarts counter
-frankenphp_worker_restarts{worker="m#/home/bas/app_97bc4c36-9c5f-4ad7-a311-eaba692982fe/public/index.php"} 23
+frankenphp_worker_restarts{worker="lesuperworker"} 23
 # HELP go_build_info Build information about the main Go module.
 # TYPE go_build_info gauge
 go_build_info{checksum="",path="caddy",version="(devel)"} 1
