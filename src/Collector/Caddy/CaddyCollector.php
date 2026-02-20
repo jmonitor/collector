@@ -16,13 +16,13 @@ use Jmonitor\Utils\ShellExecutor;
 class CaddyCollector extends AbstractCollector
 {
     private string $endpointUrl;
-    private ?ShellExecutor $shellExecutor;
+    private ShellExecutor $shellExecutor;
     private array $propertyCache = [];
 
     public function __construct(string $endpointUrl, ?ShellExecutor $shellExecutor = null)
     {
         $this->endpointUrl = $endpointUrl;
-        $this->shellExecutor = $shellExecutor;
+        $this->shellExecutor = $shellExecutor ?? new ShellExecutor();
     }
 
     /**
