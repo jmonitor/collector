@@ -6,6 +6,8 @@ namespace Jmonitor\Prometheus;
 
 /**
  * Parseur minimal du format texte Prometheus.
+ * Pour un seul "serveur"
+ *
  * Usage:
  *   $pm = new PrometheusMetrics($content);
  *   $all = $pm->all();
@@ -19,8 +21,22 @@ class PrometheusMetrics
      */
     private array $metrics;
 
-    public function __construct(string $content)
+    /**
+     * @var string|null
+     * le "nom" du serveur dans les métriques (ex: srv0 pour server="srv0")
+     * si pas fournie, on prendra le premier trouvé
+     * On filtre tout sur ce serveur
+     */
+    private ?string $server;
+
+    /**
+     * @param string $content
+     * @param string|null $server
+     *
+     */
+    public function __construct(string $content, ?string $server = null)
     {
+        $this->server = $server;
         $this->metrics = $this->parse($content);
     }
 
@@ -35,33 +51,78 @@ class PrometheusMetrics
     }
 
     /**
-     * Retourne les échantillons pour une métrique précise.
+     * Retourne les échantillons pour une métrique précise, éventuellement filtrés par labels
      *
+     * @param array<string, string> $labelFilters [label => value_required]
      * @return array<int, array{labels: array<string,string>, value: mixed}>
      */
-    public function get(string $metricName): array
+    public function getSamples(string $metricName, array $labelFilters = []): array
     {
-        return $this->metrics[$metricName] ?? [];
+        if (!$labelFilters) {
+            return $this->metrics[$metricName] ?? [];
+        }
+
+        $samples = $this->metrics[$metricName] ?? [];
+
+        if ($samples === []) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $samples,
+            function (array $sample) use ($labelFilters): bool {
+                foreach ($labelFilters as $key => $value) {
+                    if (($sample['labels'][$key] ?? null) !== $value) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        ));
     }
 
     /**
      * @return mixed
      */
-    public function firstValue(string $metricName, ?string $type = null)
+    public function getFirstValue(string $metricName, array $labelFilters = [], ?string $type = null)
     {
-        $entries = $this->get($metricName);
+        $samples = $this->getSamples($metricName, $labelFilters);
 
-        if (count($entries) === 0) {
+        if (count($samples) === 0) {
             return null;
         }
 
-        $value = $entries[0]['value'] ?? null;
+        $value = $samples[0]['value'] ?? null;
 
         if ($type !== null && $value !== null) {
             settype($value, $type);
         }
 
         return $value;
+    }
+
+    /**
+     * @return int|float|null
+     */
+    public function sumValues(string $metricName, array $labelFilters = [])
+    {
+        $samples = $this->getSamples($metricName, $labelFilters);
+
+        if (count($samples) === 0) {
+            return null;
+        }
+
+        $sum = 0;
+        foreach ($samples as $sample) {
+            $value = $sample['value'] ?? null;
+            if (!is_numeric($value)) {
+                continue;
+            }
+            $sum += $value;
+        }
+
+        return $sum;
     }
 
     /**
@@ -106,9 +167,21 @@ class PrometheusMetrics
 
         // Check if line contains labels (has curly braces)
         if (preg_match('/^([^{]+)\{([^}]+)\}\s*(.*)$/', $line, $matches)) {
+            $labels = $this->parseLabels($matches[2]);
+
+            // pas le bon serveur
+            if (isset($this->server) && isset($labels['server']) && $labels['server'] !== $this->server) {
+                return null;
+            }
+
+            // défini le serveur si c'était pas encore fait
+            if (!isset($this->server) && isset($labels['server'])) {
+                $this->server = $labels['server'];
+            }
+
             return [
                 'name' => trim($matches[1]),
-                'labels' => $this->parseLabels($matches[2]),
+                'labels' => $labels,
                 'value' => trim($matches[3]),
             ];
         } else {
