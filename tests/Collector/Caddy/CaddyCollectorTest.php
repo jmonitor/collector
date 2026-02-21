@@ -46,7 +46,7 @@ class CaddyCollectorTest extends TestCase
             'response_size_bytes_count',
             'response_duration_seconds_count',
             'response_duration_seconds_sum',
-            'response_duration_seconds_bucket',
+            'response_duration_seconds_bucket_le_250ms',
             'request_duration_seconds_sum',
             'request_duration_seconds_count',
             'request_size_bytes_sum',
@@ -57,32 +57,28 @@ class CaddyCollectorTest extends TestCase
 
         foreach ($expectedKeys as $key) {
             self::assertArrayHasKey($key, $metrics, sprintf('La métrique "%s" est absente de "caddy"', $key));
-            self::assertIsArray($metrics[$key], sprintf('La métrique "%s" doit être un tableau d\'échantillons', $key));
+            self::assertIsNumeric($metrics[$key], sprintf('La métrique "%s" doit être un nombre', $key));
         }
 
-        // Comptages connus d'après la fixture
-        self::assertCount(7, $metrics['requests_total']);
-        self::assertCount(7, $metrics['requests_in_flight']);
-        self::assertCount(53, $metrics['response_size_bytes_count']);
-        self::assertCount(53, $metrics['response_duration_seconds_count']);
-        self::assertCount(53, $metrics['response_duration_seconds_sum']);
-        self::assertGreaterThanOrEqual(1, count($metrics['response_duration_seconds_bucket']));
+        // Valeurs connues d'après la fixture (sommes pour les handlers: php, file_server, static_response, reverse_proxy)
+        // Note: Dans _fake_metrics.txt, on a handler="file_server", handler="encode", handler="headers", handler="mercure", etc.
+        // CaddyCollector filtre spécifiquement sur ['php', 'file_server', 'static_response', 'reverse_proxy']
 
-        self::assertCount(53, $metrics['request_duration_seconds_sum']);
-        self::assertCount(53, $metrics['request_duration_seconds_count']);
+        self::assertEquals(11971 + 97, $metrics['requests_total']); // php (11971) + file_server (97)
+        self::assertEquals(1, $metrics['requests_in_flight']); // php (1) + file_server (0)
+        self::assertEquals(11971 + 97, $metrics['response_size_bytes_count']);
+        self::assertEquals(11971 + 97, $metrics['response_duration_seconds_count']);
+        self::assertGreaterThan(0, $metrics['response_duration_seconds_sum']);
 
-        self::assertCount(53, $metrics['request_size_bytes_sum']);
-        self::assertCount(53, $metrics['request_size_bytes_count']);
+        self::assertEquals(11971 + 97, $metrics['request_duration_seconds_count']);
+        self::assertGreaterThan(0, $metrics['request_duration_seconds_sum']);
+
+        self::assertEquals(11971 + 97, $metrics['request_size_bytes_count']);
+        self::assertGreaterThan(0, $metrics['request_size_bytes_sum']);
 
         // Métriques de process
-        self::assertCount(1, $metrics['process_cpu_seconds_total']);
-        self::assertCount(1, $metrics['process_resident_memory_bytes']);
-
-        // Vérifie la structure d'un échantillon (labels + value)
-        $sample = $metrics['requests_total'][0];
-        self::assertIsArray($sample);
-        self::assertArrayHasKey('labels', $sample);
-        self::assertArrayHasKey('value', $sample);
+        self::assertGreaterThan(0, $metrics['process_cpu_seconds_total']);
+        self::assertGreaterThan(0, $metrics['process_resident_memory_bytes']);
 
         // FrankenPHP
         $franken = $result['frankenphp'];
