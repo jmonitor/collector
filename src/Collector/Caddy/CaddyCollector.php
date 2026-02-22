@@ -36,78 +36,61 @@ class CaddyCollector extends AbstractCollector
             'caddy' => [
                 'version' => $this->getCaddyVersion(),
 
-                'requests_total' => $this->sum([
-                    $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'php'], 'int'),
-                    $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'file_server'], 'int'),
-                    $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'static_response'], 'int'),
-                    $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'reverse_proxy'], 'int'),
-                ], 'int'),
-                'requests_in_flight' => $this->sum([
-                    $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'php'], 'int'),
-                    $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'file_server'], 'int'),
-                    $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'static_response'], 'int'),
-                    $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'reverse_proxy'], 'int'),
-                ], 'int'),
-                'response_size_bytes_count' => $this->sum([
-                    $metrics->sumValues('caddy_http_response_size_bytes_count', ['handler' => 'php']),
-                    $metrics->sumValues('caddy_http_response_size_bytes_count', ['handler' => 'file_server']),
-                    $metrics->sumValues('caddy_http_response_size_bytes_count', ['handler' => 'static_response']),
-                    $metrics->sumValues('caddy_http_response_size_bytes_count', ['handler' => 'reverse_proxy']),
-                ], 'int'),
+                'requests_total' => [
+                    'php' => $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'php'], 'int') ?? 0,
+                    'file_server' => $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'file_server'], 'int') ?? 0,
+                    'static_response' => $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'static_response'], 'int') ?? 0,
+                ],
+                'requests_in_flight' => [
+                    'php' => $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'php'], 'int') ?? 0,
+                    'file_server' => $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'file_server'], 'int') ?? 0,
+                    'static_response' => $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'static_response'], 'int') ?? 0,
+                ],
 
-                // Temps jusqu’au premier octet de réponse (TTFB, plus parlant pour UX).
-                'response_duration_seconds_count' => $this->sum([
-                    $metrics->sumValues('caddy_http_response_duration_seconds_count', ['handler' => 'php']),
-                    $metrics->sumValues('caddy_http_response_duration_seconds_count', ['handler' => 'file_server']),
-                    $metrics->sumValues('caddy_http_response_duration_seconds_count', ['handler' => 'static_response']),
-                    $metrics->sumValues('caddy_http_response_duration_seconds_count', ['handler' => 'reverse_proxy']),
-                ], 'int'),
-                'response_duration_seconds_sum' => $this->sum([
-                    $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'php']),
-                    $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'file_server']),
-                    $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'static_response']),
-                    $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'reverse_proxy']),
-                ], 'float'),
-                'response_duration_seconds_bucket_le_250ms' => $this->sum([
-                    $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'php', 'le' => '0.25']),
-                    $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'file_server', 'le' => '0.25']),
-                    $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'static_response', 'le' => '0.25']),
-                    $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'reverse_proxy', 'le' => '0.25']),
-                ], 'int'),
+                // taille des réponses en bytes
+                'response_size_bytes_sum' => [
+                    'php' => $metrics->sumValues('caddy_http_response_size_bytes_sum', ['handler' => 'php']),
+                    'file_server' => $metrics->sumValues('caddy_http_response_size_bytes_sum', ['handler' => 'file_server']),
+                    'static_response' => $metrics->sumValues('caddy_http_response_size_bytes_sum', ['handler' => 'static_response']),
+                ],
 
-                // Durée « tour complet » de la requête (RTT).
-                'request_duration_seconds_sum' => $this->sum([
-                    $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'php']),
-                    $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'file_server']),
-                    $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'static_response']),
-                    $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'reverse_proxy']),
-                ], 'float'),
-                'request_duration_seconds_count' => $this->sum([
-                    $metrics->sumValues('caddy_http_request_duration_seconds_count', ['handler' => 'php']),
-                    $metrics->sumValues('caddy_http_request_duration_seconds_count', ['handler' => 'file_server']),
-                    $metrics->sumValues('caddy_http_request_duration_seconds_count', ['handler' => 'static_response']),
-                    $metrics->sumValues('caddy_http_request_duration_seconds_count', ['handler' => 'reverse_proxy']),
-                ], 'int'),
+                // Temps de réponse de la requete (times to first byte in response bodies)
+                // Performance du code
+                'response_duration_seconds_sum' => [
+                    'php' => $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'php']),
+                    'file_server' => $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'file_server']),
+                    'static_response' => $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'static_response']),
+                ],
+                'response_duration_seconds_bucket_le_250ms' => [
+                    'php' => $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'php', 'le' => '0.25']),
+                    // useless ?
+                    'file_server' => $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'file_server', 'le' => '0.25']),
+                    // useless ?
+                    'static_response' => $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'static_response', 'le' => '0.25']),
+                ],
+
+                // Temps total de traitement (en secondes) pour calculer la "latence" totale (le temps de réponse quoi).
+                // Performance de l'expérience utilisateur globale (Code + Réseau).
+                'request_duration_seconds_sum' => [
+                    'php' => $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'php']),
+                    'file_server' => $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'file_server']),
+                    'static_response' => $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'static_response']),
+                ],
 
                 // Poids des requêtes / réponses
-                'request_size_bytes_sum' => $this->sum([
-                    $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'php']),
-                    $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'file_server']),
-                    $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'static_response']),
-                    $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'reverse_proxy']),
-                ], 'int'),
-                'request_size_bytes_count' => $this->sum([
-                    $metrics->sumValues('caddy_http_request_size_bytes_count', ['handler' => 'php']),
-                    $metrics->sumValues('caddy_http_request_size_bytes_count', ['handler' => 'file_server']),
-                    $metrics->sumValues('caddy_http_request_size_bytes_count', ['handler' => 'static_response']),
-                    $metrics->sumValues('caddy_http_request_size_bytes_count', ['handler' => 'reverse_proxy']),
-                ], 'int'),
+                'request_size_bytes_sum' => [
+                    'php' => $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'php']),
+                    // useless ?
+                    'file_server' => $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'file_server']),
+                    // useless ?
+                    'static_response' => $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'static_response']),
+                ],
 
                 // CPU / ram Caddy
                 'process_cpu_seconds_total' => $metrics->getFirstValue('process_cpu_seconds_total', [], 'float'),
                 'process_resident_memory_bytes' => $metrics->getFirstValue('process_resident_memory_bytes', [], 'int'),
 
-                //
+                // uptime
                 'process_start_time_seconds' => $metrics->getFirstValue('process_start_time_seconds', [], 'int'),
             ],
             'frankenphp' => [
