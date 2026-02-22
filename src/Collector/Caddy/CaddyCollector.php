@@ -159,7 +159,17 @@ class CaddyCollector extends AbstractCollector
             return $this->propertyCache['frankenPhpVersion'];
         }
 
-        return $this->propertyCache['frankenPhpVersion'] = $this->shellExecutor->execute('frankenphp version');
+        $version = $this->shellExecutor->execute('frankenphp version');
+
+        if ($version === null) {
+            return $this->propertyCache['frankenPhpVersion'] = null;
+        }
+
+        if (preg_match('/\bFrankenPHP\s+v(\d+\.\d+\.\d+)\b/i', $version, $m) === 1) {
+            return $this->propertyCache['frankenPhpVersion'] = $m[1];
+        }
+
+        return $this->propertyCache['frankenPhpVersion'] = null;
     }
 
     /**

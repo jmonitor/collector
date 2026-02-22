@@ -27,7 +27,7 @@ class CaddyCollectorTest extends TestCase
         $this->shellExecutor->method('execute')
             ->willReturnMap([
                 ['caddy version', 'v2.7.6'],
-                ['frankenphp version', '1.1.2'],
+                ['frankenphp version', 'FrankenPHP v1.9.1 PHP 8.8 Caddy v2.2 blablablaJi'],
             ]);
 
         $result = $this->collector->collect();
@@ -82,7 +82,7 @@ class CaddyCollectorTest extends TestCase
 
         // FrankenPHP
         $franken = $result['frankenphp'];
-        self::assertSame('1.1.2', $franken['version']);
+        self::assertSame('1.9.1', $franken['version']);
         self::assertSame('worker', $franken['mode']);
         self::assertSame(3, $franken['busy_threads']);
         self::assertSame(3, $franken['total_threads']);
