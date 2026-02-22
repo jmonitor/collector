@@ -43,38 +43,50 @@ class CaddyCollectorTest extends TestCase
         $expectedKeys = [
             'requests_total',
             'requests_in_flight',
-            'response_size_bytes_count',
-            'response_duration_seconds_count',
+            'response_size_bytes_sum',
             'response_duration_seconds_sum',
             'response_duration_seconds_bucket_le_250ms',
             'request_duration_seconds_sum',
-            'request_duration_seconds_count',
             'request_size_bytes_sum',
-            'request_size_bytes_count',
             'process_cpu_seconds_total',
             'process_resident_memory_bytes',
+            'process_start_time_seconds',
         ];
 
         foreach ($expectedKeys as $key) {
             self::assertArrayHasKey($key, $metrics, sprintf('La métrique "%s" est absente de "caddy"', $key));
-            self::assertIsNumeric($metrics[$key], sprintf('La métrique "%s" doit être un nombre', $key));
         }
 
-        // Valeurs connues d'après la fixture (sommes pour les handlers: php, file_server, static_response, reverse_proxy)
-        // Note: Dans _fake_metrics.txt, on a handler="file_server", handler="encode", handler="headers", handler="mercure", etc.
-        // CaddyCollector filtre spécifiquement sur ['php', 'file_server', 'static_response', 'reverse_proxy']
+        // Vérification des types pour les métriques groupées par handler
+        $groupedKeys = [
+            'requests_total',
+            'requests_in_flight',
+            'response_size_bytes_sum',
+            'response_duration_seconds_sum',
+            'response_duration_seconds_bucket_le_250ms',
+            'request_duration_seconds_sum',
+            'request_size_bytes_sum',
+        ];
 
-        self::assertEquals(11971 + 97, $metrics['requests_total']); // php (11971) + file_server (97)
-        self::assertEquals(1, $metrics['requests_in_flight']); // php (1) + file_server (0)
-        self::assertEquals(11971 + 97, $metrics['response_size_bytes_count']);
-        self::assertEquals(11971 + 97, $metrics['response_duration_seconds_count']);
-        self::assertGreaterThan(0, $metrics['response_duration_seconds_sum']);
+        foreach ($groupedKeys as $key) {
+            self::assertIsArray($metrics[$key], sprintf('La métrique "%s" doit être un tableau', $key));
+            self::assertArrayHasKey('php', $metrics[$key]);
+            self::assertArrayHasKey('file_server', $metrics[$key]);
+            self::assertArrayHasKey('static_response', $metrics[$key]);
+        }
 
-        self::assertEquals(11971 + 97, $metrics['request_duration_seconds_count']);
-        self::assertGreaterThan(0, $metrics['request_duration_seconds_sum']);
+        // Valeurs connues d'après la fixture
+        self::assertEquals(11971, $metrics['requests_total']['php']);
+        self::assertEquals(97, $metrics['requests_total']['file_server']);
+        self::assertEquals(0, $metrics['requests_total']['static_response']);
 
-        self::assertEquals(11971 + 97, $metrics['request_size_bytes_count']);
-        self::assertGreaterThan(0, $metrics['request_size_bytes_sum']);
+        self::assertEquals(1, $metrics['requests_in_flight']['php']);
+        self::assertEquals(0, $metrics['requests_in_flight']['file_server']);
+
+        self::assertGreaterThan(0, $metrics['response_size_bytes_sum']['php']);
+        self::assertGreaterThan(0, $metrics['response_duration_seconds_sum']['php']);
+        self::assertGreaterThan(0, $metrics['request_duration_seconds_sum']['php']);
+        self::assertGreaterThan(0, $metrics['request_size_bytes_sum']['php']);
 
         // Métriques de process
         self::assertGreaterThan(0, $metrics['process_cpu_seconds_total']);

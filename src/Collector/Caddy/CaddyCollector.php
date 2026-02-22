@@ -221,22 +221,4 @@ class CaddyCollector extends AbstractCollector
 
         return array_values($workers);
     }
-
-    /**
-     * @return int|float|null
-     */
-    private function sum(array $values, string $type)
-    {
-        $values = array_filter($values, static fn($value): bool => is_numeric($value));
-
-        if ($values === []) {
-            return null;
-        }
-
-        $sum = array_sum($values);
-
-        settype($sum, $type);
-
-        return $sum;
-    }
 }
