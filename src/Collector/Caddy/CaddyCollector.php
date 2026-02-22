@@ -106,6 +106,9 @@ class CaddyCollector extends AbstractCollector
                 // CPU / ram Caddy
                 'process_cpu_seconds_total' => $metrics->getFirstValue('process_cpu_seconds_total', [], 'float'),
                 'process_resident_memory_bytes' => $metrics->getFirstValue('process_resident_memory_bytes', [], 'int'),
+
+                //
+                'process_start_time_seconds' => $metrics->getFirstValue('process_start_time_seconds', [], 'int'),
             ],
             'frankenphp' => [
                 'version' => $this->getFrankenPhpVersion(),
