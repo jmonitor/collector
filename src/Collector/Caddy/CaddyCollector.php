@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Jmonitor\Collector\Caddy;
 
 use Jmonitor\Collector\AbstractCollector;
-use Jmonitor\Exceptions\JmonitorException;
-use Jmonitor\Prometheus\PrometheusMetrics;
+use Jmonitor\Prometheus\PrometheusMetricsProvider;
 use Jmonitor\Utils\ShellExecutor;
 
 /**
@@ -15,13 +14,13 @@ use Jmonitor\Utils\ShellExecutor;
  */
 class CaddyCollector extends AbstractCollector
 {
-    private string $endpointUrl;
+    private PrometheusMetricsProvider $prometheusMetricsProvider;
     private ShellExecutor $shellExecutor;
     private array $propertyCache = [];
 
-    public function __construct(string $endpointUrl, ?ShellExecutor $shellExecutor = null)
+    public function __construct(PrometheusMetricsProvider $prometheusMetricsProvider, ?ShellExecutor $shellExecutor = null)
     {
-        $this->endpointUrl = $endpointUrl;
+        $this->prometheusMetricsProvider = $prometheusMetricsProvider;
         $this->shellExecutor = $shellExecutor ?? new ShellExecutor();
     }
 
@@ -30,77 +29,67 @@ class CaddyCollector extends AbstractCollector
      */
     public function collect(): array
     {
-        $metrics = $this->getPrometheusMetrics();
+        $metrics = $this->prometheusMetricsProvider->getMetrics('caddy');
 
         return [
-            'caddy' => [
-                'version' => $this->getCaddyVersion(),
+            'version' => $this->getCaddyVersion(),
 
-                'requests_total' => [
-                    'php' => $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'php'], 'int') ?? 0,
-                    'file_server' => $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'file_server'], 'int') ?? 0,
-                    'static_response' => $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'static_response'], 'int') ?? 0,
-                ],
-                'requests_in_flight' => [
-                    'php' => $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'php'], 'int') ?? 0,
-                    'file_server' => $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'file_server'], 'int') ?? 0,
-                    'static_response' => $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'static_response'], 'int') ?? 0,
-                ],
-
-                // taille des réponses en bytes
-                'response_size_bytes_sum' => [
-                    'php' => $metrics->sumValues('caddy_http_response_size_bytes_sum', ['handler' => 'php']),
-                    'file_server' => $metrics->sumValues('caddy_http_response_size_bytes_sum', ['handler' => 'file_server']),
-                    'static_response' => $metrics->sumValues('caddy_http_response_size_bytes_sum', ['handler' => 'static_response']),
-                ],
-
-                // Temps de réponse de la requete (times to first byte in response bodies)
-                // Performance du code
-                'response_duration_seconds_sum' => [
-                    'php' => $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'php']),
-                    'file_server' => $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'file_server']),
-                    'static_response' => $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'static_response']),
-                ],
-                'response_duration_seconds_bucket_le_250ms' => [
-                    'php' => $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'php', 'le' => '0.25']),
-                    // useless ?
-                    'file_server' => $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'file_server', 'le' => '0.25']),
-                    // useless ?
-                    'static_response' => $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'static_response', 'le' => '0.25']),
-                ],
-
-                // Temps total de traitement (en secondes) pour calculer la "latence" totale (le temps de réponse quoi).
-                // Performance de l'expérience utilisateur globale (Code + Réseau).
-                'request_duration_seconds_sum' => [
-                    'php' => $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'php']),
-                    'file_server' => $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'file_server']),
-                    'static_response' => $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'static_response']),
-                ],
-
-                // Poids des requêtes / réponses
-                'request_size_bytes_sum' => [
-                    'php' => $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'php']),
-                    // useless ?
-                    'file_server' => $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'file_server']),
-                    // useless ?
-                    'static_response' => $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'static_response']),
-                ],
-
-                // CPU / ram Caddy
-                'process_cpu_seconds_total' => $metrics->getFirstValue('process_cpu_seconds_total', [], 'float'),
-                'process_resident_memory_bytes' => $metrics->getFirstValue('process_resident_memory_bytes', [], 'int'),
-
-                // uptime
-                'process_start_time_seconds' => $metrics->getFirstValue('process_start_time_seconds', [], 'int'),
+            'requests_total' => [
+                'php' => $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'php'], 'int') ?? 0,
+                'file_server' => $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'file_server'], 'int') ?? 0,
+                'static_response' => $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'static_response'], 'int') ?? 0,
             ],
-            'frankenphp' => [
-                'version' => $this->getFrankenPhpVersion(),
-                'mode' => $this->getFrankenPhpMode($metrics),
-                'busy_threads' => $metrics->getFirstValue('frankenphp_busy_threads', [], 'int'),
-                'total_threads' => $metrics->getFirstValue('frankenphp_total_threads', [], 'int'),
-                'queue_depth' => $metrics->getFirstValue('frankenphp_queue_depth', [], 'int'),
-                'workers' => $this->getWorkersMetrics($metrics),
+            'requests_in_flight' => [
+                'php' => $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'php'], 'int') ?? 0,
+                'file_server' => $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'file_server'], 'int') ?? 0,
+                'static_response' => $metrics->getFirstValue('caddy_http_requests_in_flight', ['handler' => 'static_response'], 'int') ?? 0,
             ],
+
+            // taille des réponses en bytes
+            'response_size_bytes_sum' => [
+                'php' => $metrics->sumValues('caddy_http_response_size_bytes_sum', ['handler' => 'php']),
+                'file_server' => $metrics->sumValues('caddy_http_response_size_bytes_sum', ['handler' => 'file_server']),
+                'static_response' => $metrics->sumValues('caddy_http_response_size_bytes_sum', ['handler' => 'static_response']),
+            ],
+
+            // Temps de réponse de la requete (times to first byte in response bodies)
+            // Performance du code
+            'response_duration_seconds_sum' => [
+                'php' => $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'php']),
+                'file_server' => $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'file_server']),
+                'static_response' => $metrics->sumValues('caddy_http_response_duration_seconds_sum', ['handler' => 'static_response']),
+            ],
+            'response_duration_seconds_bucket_le_250ms' => [
+                'php' => $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'php', 'le' => '0.25']),
+                // useless ?
+                'file_server' => $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'file_server', 'le' => '0.25']),
+                // useless ?
+                'static_response' => $metrics->sumValues('caddy_http_response_duration_seconds_bucket', ['handler' => 'static_response', 'le' => '0.25']),
+            ],
+
+            // Temps total de traitement (en secondes) pour calculer la "latence" totale (le temps de réponse quoi).
+            // Performance de l'expérience utilisateur globale (Code + Réseau).
+            'request_duration_seconds_sum' => [
+                'php' => $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'php']),
+                'file_server' => $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'file_server']),
+                'static_response' => $metrics->sumValues('caddy_http_request_duration_seconds_sum', ['handler' => 'static_response']),
+            ],
+
+            // Poids des requêtes / réponses
+            'request_size_bytes_sum' => [
+                'php' => $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'php']),
+                // useless ?
+                'file_server' => $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'file_server']),
+                // useless ?
+                'static_response' => $metrics->sumValues('caddy_http_request_size_bytes_sum', ['handler' => 'static_response']),
+            ],
+
+            // CPU / ram Caddy
+            'process_cpu_seconds_total' => $metrics->getFirstValue('process_cpu_seconds_total', [], 'float'),
+            'process_resident_memory_bytes' => $metrics->getFirstValue('process_resident_memory_bytes', [], 'int'),
+
+            // uptime
+            'process_start_time_seconds' => $metrics->getFirstValue('process_start_time_seconds', [], 'int'),
         ];
     }
 
@@ -114,22 +103,6 @@ class CaddyCollector extends AbstractCollector
         return 'caddy';
     }
 
-    private function getPrometheusMetrics(): PrometheusMetrics
-    {
-        return new PrometheusMetrics($this->getEndpointContent());
-    }
-
-    private function getEndpointContent(): string
-    {
-        $content = @file_get_contents($this->endpointUrl);
-
-        if (!$content) {
-            throw new JmonitorException('Failed to fetch metrics from endpoint: ' . $this->endpointUrl);
-        }
-
-        return $content;
-    }
-
     private function getCaddyVersion(): ?string
     {
         if (array_key_exists('caddyVersion', $this->propertyCache)) {
@@ -137,88 +110,5 @@ class CaddyCollector extends AbstractCollector
         }
 
         return $this->propertyCache['caddyVersion'] = $this->shellExecutor->execute('caddy version');
-    }
-
-    private function getFrankenPhpVersion(): ?string
-    {
-        if (array_key_exists('frankenPhpVersion', $this->propertyCache)) {
-            return $this->propertyCache['frankenPhpVersion'];
-        }
-
-        $version = $this->shellExecutor->execute('frankenphp version');
-
-        if ($version === null) {
-            return $this->propertyCache['frankenPhpVersion'] = null;
-        }
-
-        if (preg_match('/\bFrankenPHP\s+v(\d+\.\d+\.\d+)\b/i', $version, $m) === 1) {
-            return $this->propertyCache['frankenPhpVersion'] = $m[1];
-        }
-
-        return $this->propertyCache['frankenPhpVersion'] = null;
-    }
-
-    /**
-     * @return 'classic'|'worker'
-     */
-    private function getFrankenPhpMode(PrometheusMetrics  $metrics): ?string
-    {
-        if (array_key_exists('frankenPhpMode', $this->propertyCache)) {
-            return $this->propertyCache['frankenPhpMode'];
-        }
-
-        $isWorkerMode = $metrics->getSamples('frankenphp_total_workers') !== [];
-        $isClassicMode = !$isWorkerMode && $metrics->getSamples('frankenphp_total_threads') !== [];
-
-        return $this->propertyCache['frankenPhpMode'] = $isWorkerMode ? 'worker' : ($isClassicMode ? 'classic' : null);
-    }
-
-    private function getWorkersMetrics(PrometheusMetrics $metrics): array
-    {
-        if ($this->getFrankenPhpMode($metrics) !== 'worker') {
-            return [];
-        }
-
-        static $definitions = [
-            // prom metric name => [output key, cast type]
-            'frankenphp_total_workers' => ['total_workers', 'int'],
-            'frankenphp_busy_workers' => ['busy_workers', 'int'],
-            'frankenphp_worker_request_time' => ['worker_request_time', 'float'],
-            'frankenphp_worker_request_count' => ['worker_request_count', 'int'],
-            'frankenphp_ready_workers' => ['ready_workers', 'int'],
-            'frankenphp_worker_crashes' => ['worker_crashes', 'int'],
-            'frankenphp_worker_restarts' => ['worker_restarts', 'int'],
-            'frankenphp_worker_queue_depth' => ['worker_queue_depth', 'int'],
-        ];
-
-        /** @var array<string, array{name: string, total_workers?: int, busy_workers?: int, worker_request_time?: float, worker_request_count?: int, ready_workers?: int, worker_crashes?: int, worker_restarts?: int, worker_queue_depth?: int}> $workers */
-        $workers = [];
-
-        foreach ($definitions as $metricName => $def) {
-            $outKey = $def[0];
-            $cast = $def[1];
-
-            foreach ($metrics->getSamples($metricName) as $sample) {
-                $workerName = $sample['labels']['worker'] ?? null;
-
-                if ($workerName === null || $workerName === '') {
-                    continue;
-                }
-
-                if (!isset($workers[$workerName])) {
-                    $workers[$workerName] = ['name' => $workerName];
-                }
-
-                $value = $sample['value'] ?? null;
-                if ($value === null) {
-                    continue;
-                }
-
-                settype($value, $cast);
-                $workers[$workerName][$outKey] = $value;
-            }
-        }
-
-        return array_values($workers);
     }
 }

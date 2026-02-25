@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Jmonitor\Tests\Collector\Caddy;
 
 use Jmonitor\Collector\Caddy\CaddyCollector;
+use Jmonitor\Prometheus\PrometheusMetricsProvider;
 use Jmonitor\Utils\ShellExecutor;
 use PHPUnit\Framework\TestCase;
 
@@ -13,13 +14,17 @@ class CaddyCollectorTest extends TestCase
     /** @var CaddyCollector */
     private $collector;
 
+    /** @var PrometheusMetricsProvider */
+    private $prometheusMetricsProvider;
+
     /** @var ShellExecutor&\PHPUnit\Framework\MockObject\MockObject */
     private $shellExecutor;
 
     protected function setUp(): void
     {
         $this->shellExecutor = $this->createMock(ShellExecutor::class);
-        $this->collector = new CaddyCollector(__DIR__ . '/_fake_metrics.txt', $this->shellExecutor);
+        $this->prometheusMetricsProvider = new PrometheusMetricsProvider(__DIR__ . '/_fake_metrics.txt');
+        $this->collector = new CaddyCollector($this->prometheusMetricsProvider, $this->shellExecutor);
     }
 
     public function testCollect(): void
@@ -27,16 +32,11 @@ class CaddyCollectorTest extends TestCase
         $this->shellExecutor->method('execute')
             ->willReturnMap([
                 ['caddy version', 'v2.7.6'],
-                ['frankenphp version', 'FrankenPHP v1.9.1 PHP 8.8 Caddy v2.2 blablablaJi'],
             ]);
 
-        $result = $this->collector->collect();
+        $metrics = $this->collector->collect();
 
-        self::assertIsArray($result);
-        self::assertArrayHasKey('caddy', $result);
-        self::assertArrayHasKey('frankenphp', $result);
-
-        $metrics = $result['caddy'];
+        self::assertIsArray($metrics);
         self::assertSame('v2.7.6', $metrics['version']);
 
         // Vérifie la présence des clés attendues dans caddy
@@ -54,7 +54,7 @@ class CaddyCollectorTest extends TestCase
         ];
 
         foreach ($expectedKeys as $key) {
-            self::assertArrayHasKey($key, $metrics, sprintf('La métrique "%s" est absente de "caddy"', $key));
+            self::assertArrayHasKey($key, $metrics, sprintf('La métrique "%s" est absente', $key));
         }
 
         // Vérification des types pour les métriques groupées par handler
@@ -91,21 +91,6 @@ class CaddyCollectorTest extends TestCase
         // Métriques de process
         self::assertGreaterThan(0, $metrics['process_cpu_seconds_total']);
         self::assertGreaterThan(0, $metrics['process_resident_memory_bytes']);
-
-        // FrankenPHP
-        $franken = $result['frankenphp'];
-        self::assertSame('1.9.1', $franken['version']);
-        self::assertSame('worker', $franken['mode']);
-        self::assertSame(3, $franken['busy_threads']);
-        self::assertSame(3, $franken['total_threads']);
-        self::assertSame(1, $franken['queue_depth']);
-        self::assertIsArray($franken['workers']);
-        self::assertCount(1, $franken['workers']);
-
-        $worker = $franken['workers'][0];
-        self::assertStringContainsString('super', $worker['name']);
-        self::assertSame(2, $worker['total_workers']);
-        self::assertSame(0, $worker['busy_workers']);
     }
 
     public function testGetVersion(): void

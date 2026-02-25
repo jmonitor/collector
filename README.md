@@ -119,7 +119,8 @@ Collectors
 - [Mysql](#mysql)
 - [Php](#php)
 - [Redis](#redis)
-- [Caddy (+FrankenPHP)](#caddy)
+- [Caddy](#caddy)
+- [FrankenPHP](#frankenphp)
 
 - ### System <a name="system"></a>
   Collects system metrics like CPU usage, memory usage, disk usage, etc.
@@ -231,13 +232,28 @@ Collectors
   $collector = new RedisCollector($redis);
   ```
 
-- ### Caddy / FrankenPHP <a name="caddy"></a>
-  Collects from the [Caddy](https://caddyserver.com/docs/metrics) metrics endpoint. It will also gather [FrankenPHP](https://frankenphp.dev/docs/metrics/) metrics if available.
+- ### Caddy <a name="caddy"></a>
+  Collects from the [Caddy](https://caddyserver.com/docs/metrics) metrics endpoint. See below if you also use FrankenPhp.
 
   ```php
   use Jmonitor\Collector\Caddy\CaddyCollector
+  use Jmonitor\Prometheus\PrometheusMetricsProvider;
   
-  $collector = new CaddyCollector('http://localhost:2019/metrics');
+  $collector = new CaddyCollector(new PrometheusMetricsProvider('http://localhost:2019/metrics'));
+  ```
+- ### FrankenPHP <a name="frankenphp"></a>
+  Collects from the [Caddy](https://caddyserver.com/docs/metrics) metrics endpoint of [FrankenPHP](https://frankenphp.dev/docs/metrics/).
+  You must reuse the PrometheusMetricsProvider instance for both collectors to avoid an unnecessary extra HTTP request.
+
+  ```php
+  use Jmonitor\Collector\Caddy\CaddyCollector
+  use Jmonitor\Prometheus\PrometheusMetricsProvider;
+  use Jmonitor\Collector\FrankenPhp\FrankenPhpCollector;
+  
+  $metricsProvider = new PrometheusMetricsProvider('http://localhost:2019/metrics');
+  
+  $caddyCollector = new CaddyCollector($metricsProvider);
+  $frankenPhpCollector = new FrankenPhpCollector($metricsProvider);
   ```
 
 Integrations

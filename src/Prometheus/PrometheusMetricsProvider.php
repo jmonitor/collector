@@ -27,13 +27,12 @@ final class PrometheusMetricsProvider
      */
     public function getMetrics(string $consumerName): PrometheusMetrics
     {
-        if (in_array($consumerName, $this->consumedBy, true)) {
-            $this->metrics = new PrometheusMetrics($this->getContent());
-
+        if (isset($this->consumedBy[$consumerName])) {
+            $this->metrics = null;
             $this->consumedBy = [];
         }
 
-        $this->consumedBy[] = $consumerName;
+        $this->consumedBy[$consumerName] = true;
 
         return $this->metrics ??= new PrometheusMetrics($this->getContent());
     }
