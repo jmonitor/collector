@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\System;
 
-use Jmonitor\Collector\AbstractCollector;
+use Jmonitor\Collector\CollectorInterface;
+use Jmonitor\Collector\ResettableCollectorInterface;
 use Jmonitor\Collector\System\Adapter\AdapterInterface;
 use Jmonitor\Collector\System\Adapter\LinuxAdapter;
 
-class SystemCollector extends AbstractCollector
+class SystemCollector implements CollectorInterface, ResettableCollectorInterface
 {
     private AdapterInterface $adapter;
 
@@ -56,7 +57,7 @@ class SystemCollector extends AbstractCollector
         return 1;
     }
 
-    public function afterCollect(): void
+    public function reset(): void
     {
         $this->adapter->reset();
     }

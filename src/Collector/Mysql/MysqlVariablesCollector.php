@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Mysql;
 
-use Jmonitor\Collector\AbstractCollector;
+use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 
-class MysqlVariablesCollector extends AbstractCollector
+class MysqlVariablesCollector implements CollectorInterface
 {
     private const VARIABLES = [
         'innodb_buffer_pool_size',

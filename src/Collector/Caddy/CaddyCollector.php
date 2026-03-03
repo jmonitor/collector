@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Caddy;
 
-use Jmonitor\Collector\AbstractCollector;
+use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Prometheus\PrometheusMetricsProvider;
 use Jmonitor\Utils\ShellExecutor;
 
@@ -12,7 +12,7 @@ use Jmonitor\Utils\ShellExecutor;
  * Collects metrics using Caddy metrics url, collect frankenphp metrics is present
  * https://caddyserver.com/docs/metrics
  */
-class CaddyCollector extends AbstractCollector
+class CaddyCollector implements CollectorInterface
 {
     private PrometheusMetricsProvider $prometheusMetricsProvider;
     private ShellExecutor $shellExecutor;

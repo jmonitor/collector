@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\FrankenPhp;
 
-use Jmonitor\Collector\AbstractCollector;
+use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Prometheus\PrometheusMetrics;
 use Jmonitor\Prometheus\PrometheusMetricsProvider;
 use Jmonitor\Utils\ShellExecutor;
 
-class FrankenPhpCollector extends AbstractCollector
+class FrankenPhpCollector implements CollectorInterface
 {
     private ShellExecutor $shellExecutor;
     private array $propertyCache = [];

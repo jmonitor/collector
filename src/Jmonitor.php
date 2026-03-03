@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace Jmonitor;
 
+use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
+use Jmonitor\Collector\ResettableCollectorInterface;
 use Jmonitor\Exceptions\InvalidServerResponseException;
 use Psr\Http\Client\ClientInterface;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class Jmonitor
 {
@@ -19,9 +24,14 @@ class Jmonitor
 
     private Client $client;
 
-    public function __construct(string $projectApiKey, ?ClientInterface $httpClient = null)
+    private LoggerInterface $logger;
+
+    private bool $booted = false;
+
+    public function __construct(string $projectApiKey, ?ClientInterface $httpClient = null, ?LoggerInterface $logger = null)
     {
         $this->client = new Client($projectApiKey, $httpClient);
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function addCollector(CollectorInterface $collector): void
@@ -60,6 +70,11 @@ class Jmonitor
             return $result->setConclusion('Nothing to collect. Please add some collectors.');
         }
 
+        if (!$this->booted) {
+            $this->boot();
+            $this->booted = true;
+        }
+
         $metrics = [];
 
         foreach ($this->collectors as $collector) {
@@ -69,13 +84,16 @@ class Jmonitor
                 'version' => $collector->getVersion(),
                 'name' => $collector->getName(),
                 'metrics' => null,
-                'time' => 0.0,
+                'time' => null,
             ];
 
             try {
-                $collector->beforeCollect();
                 $entry['metrics'] = array_filter($collector->collect(), fn($value) => $value !== null);
-                $collector->afterCollect();
+
+                if ($collector instanceof ResettableCollectorInterface) {
+                    $collector->reset();
+                }
+
                 $entry['time'] = microtime(true) - $started;
 
                 $metrics[] = $entry;
@@ -129,5 +147,18 @@ class Jmonitor
         }
 
         return $result->setConclusion(count($metrics) . ' metric(s) collected with ' . count($result->getErrors()) . ' error(s).');
+    }
+
+    private function boot(): void
+    {
+        foreach ($this->collectors as $collector) {
+            if ($collector instanceof LoggerAwareInterface) {
+                $collector->setLogger($this->logger);
+            }
+
+            if ($collector instanceof BootableCollectorInterface) {
+                $collector->boot();
+            }
+        }
     }
 }

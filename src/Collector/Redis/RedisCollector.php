@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Redis;
 
-use Jmonitor\Collector\AbstractCollector;
+use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Exceptions\CollectorException;
 use Relay\Relay;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
 
-class RedisCollector extends AbstractCollector
+class RedisCollector implements CollectorInterface
 {
     /**
      * @var \Redis|\RedisArray|\RedisCluster|\Predis\ClientInterface|Relay

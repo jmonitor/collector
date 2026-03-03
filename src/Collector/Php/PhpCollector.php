@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Php;
 
-use Jmonitor\Collector\AbstractCollector;
+use Jmonitor\Collector\CollectorInterface;
 
 /**
  * I guess INI-related values could be cached in a property cache, but is the performance impact real?
  */
-class PhpCollector extends AbstractCollector
+class PhpCollector implements CollectorInterface
 {
     private ?string $endpointUrl;
 

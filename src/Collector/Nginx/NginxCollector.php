@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Nginx;
 
-use Jmonitor\Collector\AbstractCollector;
+use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Exceptions\CollectorException;
 use Jmonitor\Utils\ShellExecutor;
 
 /**
  * Collects metrics using the Nginx stub_status module.
  */
-class NginxCollector extends AbstractCollector
+class NginxCollector implements CollectorInterface
 {
     private string $endpoint;
     private ShellExecutor $shellExecutor;

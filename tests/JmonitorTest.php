@@ -38,9 +38,7 @@ class JmonitorTest extends TestCase
         $collector = $this->createMock(CollectorInterface::class);
         $collector->method('getVersion')->willReturn(1);
         $collector->method('getName')->willReturn('dummy');
-        $collector->expects($this->once())->method('beforeCollect');
         $collector->expects($this->once())->method('collect')->willReturn(['foo' => 'bar']);
-        $collector->expects($this->once())->method('afterCollect');
 
         $jmonitor->addCollector($collector);
 
@@ -61,15 +59,11 @@ class JmonitorTest extends TestCase
         $okCollector->method('getVersion')->willReturn(1);
         $okCollector->method('getName')->willReturn('ok');
         $okCollector->method('collect')->willReturn(['a' => 1]);
-        $okCollector->expects($this->once())->method('beforeCollect');
-        $okCollector->expects($this->once())->method('afterCollect');
 
         $failingCollector = $this->createMock(CollectorInterface::class);
         $failingCollector->method('getVersion')->willReturn(1);
         $failingCollector->method('getName')->willReturn('ko');
         $failingCollector->method('collect')->willThrowException(new \RuntimeException('boom'));
-        $failingCollector->expects($this->once())->method('beforeCollect');
-        $failingCollector->expects($this->never())->method('afterCollect');
 
         $jmonitor->addCollector($okCollector);
         $jmonitor->addCollector($failingCollector);
