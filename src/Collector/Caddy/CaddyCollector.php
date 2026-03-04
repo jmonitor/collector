@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Caddy;
 
+use Jmonitor\Collection;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Prometheus\PrometheusMetricsProvider;
 use Jmonitor\Utils\ShellExecutor;
@@ -24,14 +25,11 @@ class CaddyCollector implements CollectorInterface
         $this->shellExecutor = $shellExecutor ?? new ShellExecutor();
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function collect(): array
+    public function collect(Collection $collection): void
     {
         $metrics = $this->prometheusMetricsProvider->getMetrics('caddy');
 
-        return [
+        $collection->setMetrics([
             'version' => $this->getCaddyVersion(),
 
             'requests_total' => [
@@ -90,7 +88,7 @@ class CaddyCollector implements CollectorInterface
 
             // uptime
             'process_start_time_seconds' => $metrics->getFirstValue('process_start_time_seconds', [], 'int'),
-        ];
+        ]);
     }
 
     public function getVersion(): int

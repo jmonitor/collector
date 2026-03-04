@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Mysql;
 
+use Jmonitor\Collection;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 
@@ -25,7 +26,7 @@ class MysqlQueriesCountCollector implements CollectorInterface
         $this->dbName = $dbName;
     }
 
-    public function collect(): array
+    public function collect(Collection $collection): void
     {
         $sql = "SELECT
             schema_name,
@@ -38,7 +39,7 @@ class MysqlQueriesCountCollector implements CollectorInterface
         WHERE
             schema_name = :dbName";
 
-        return $this->db->fetchAllAssociative($sql, ['dbName' => $this->dbName])[0] ?? [];
+        $collection->setMetrics($this->db->fetchAllAssociative($sql, ['dbName' => $this->dbName])[0] ?? []);
     }
 
     public function getVersion(): int

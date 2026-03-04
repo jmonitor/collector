@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Redis;
 
+use Jmonitor\Collection;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Exceptions\CollectorException;
 use Relay\Relay;
@@ -33,7 +34,7 @@ class RedisCollector implements CollectorInterface
         $this->redis = $redis;
     }
 
-    public function collect(): array
+    public function collect(Collection $collection): void
     {
         try {
             $infos = $this->redis->info();
@@ -42,12 +43,12 @@ class RedisCollector implements CollectorInterface
         }
 
         if (!$infos) {
-            return [];
+            return;
         }
 
         $infos = $this->flatten($infos);
 
-        return [
+        $collection->setMetrics([
             'server' => [
                 'version' => $infos['redis_version'] ?? null,
                 'mode' => $infos['redis_mode'] ?? null,
@@ -104,7 +105,7 @@ class RedisCollector implements CollectorInterface
             ],
             'databases' => iterator_to_array($this->getDatabases($infos)),
             'config' => $this->getConfig(),
-        ];
+        ]);
     }
 
     public function getVersion(): int

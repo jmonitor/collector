@@ -57,17 +57,18 @@ $jmonitor = new Jmonitor('apiKey', $client);
 
 Running the collector
 -------------------
-**Do not call `$jmonitor->collect()` on every web request**. Create a specific script and run it in a separate process.
+The collector is designed to be run as a worker in a separate process.
 
-You are **strongly** encouraged to run it in a long-running worker process. The response headers include the delay before the next request, which you can use to schedule subsequent runs.   
-One example is provided in the `examples` folder.
-
-You also can take a look at the CollectorCommand from the Symfony bundle for a more advanced example:  
-https://github.com/jmonitor/jmonitor-bundle/blob/master/src/Command/CollectorCommand.php
+This means you **must not** integrate it into your application and call `$jmonitor->collect()` on every web request.
+  
+One basic worker script is provided in the `examples` folder. Copy it into your project, update it to include the collectors you need, and run it from CLI.
 
 In production, it is recommended to run the worker under a process manager (e.g. Supervisor or systemd) to ensure it is kept running and restarted if necessary.
 For practical guidance, you can follow Symfony Messenger's recommendations:  
 https://symfony.com/doc/current/messenger.html#deploying-to-production
+
+You also can take a look at the CollectorCommand from the Symfony bundle for a more advanced example:  
+https://github.com/jmonitor/jmonitor-bundle/blob/master/src/Command/CollectorCommand.php
 
 Debugging and Error Handling
 -----------------------------
@@ -204,12 +205,16 @@ Collectors
     <?php
   
     use Jmonitor\Collector\Php\PhpCollector;
+    use Jmonitor\Collection;
   
     require __DIR__ . '/../vendor/autoload.php';
 
     header('Content-Type: application/json');
-  
-    echo json_encode((new PhpCollector())->collect(), JSON_THROW_ON_ERROR);
+    
+    $collection = new Collection();
+    (new PhpCollector())->collect($collection);
+    
+    echo json_encode($collection->getMetrics(), JSON_THROW_ON_ERROR);
     ```
 
     Then, in your CLI script, point the collector to that URL:    

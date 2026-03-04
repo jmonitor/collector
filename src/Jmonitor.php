@@ -6,7 +6,7 @@ namespace Jmonitor;
 
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
-use Jmonitor\Collector\ResettableCollectorInterface;
+use Jmonitor\Collector\ResetInterface;
 use Jmonitor\Exceptions\InvalidServerResponseException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Log\LoggerAwareInterface;
@@ -67,12 +67,7 @@ class Jmonitor
         $result = new CollectionResult();
 
         if (count($this->collectors) === 0) {
-            return $result->setConclusion('Nothing to collect. Please add some collectors.');
-        }
-
-        if (!$this->booted) {
-            $this->boot();
-            $this->booted = true;
+            throw new \RuntimeException('No collector added');
         }
 
         $metrics = [];
@@ -83,30 +78,41 @@ class Jmonitor
             $entry = [
                 'version' => $collector->getVersion(),
                 'name' => $collector->getName(),
-                'metrics' => null,
-                'time' => null,
+                'metrics' => [],
+                'notices' => [],
+                'throwed' => false,
+                'duration' => null,
             ];
 
             try {
-                $entry['metrics'] = array_filter($collector->collect(), fn($value) => $value !== null);
-
-                if ($collector instanceof ResettableCollectorInterface) {
-                    $collector->reset();
+                if (!$this->booted) {
+                    $this->boot($collector);
                 }
 
-                $entry['time'] = microtime(true) - $started;
+                $collection = new Collection();
+                $collector->collect($collection);
 
-                $metrics[] = $entry;
+                $entry['metrics'] = array_filter($collection->getMetrics());
+                $entry['notices'] = array_filter($collection->getNotices());
             } catch (\Throwable $e) {
                 $result->addError($e);
 
-                continue;
+                $entry['throwed'] = true;
             }
+
+            if ($collector instanceof ResetInterface) {
+                $collector->reset();
+            }
+
+            $entry['duration'] = microtime(true) - $started;
+            $metrics[] = $entry;
         }
+
+        $this->booted = true;
 
         $result->setMetrics($metrics);
 
-        if ($metrics && $send) {
+        if ($send) {
             try {
                 $result->setResponse($this->client->sendMetrics($metrics));
             } catch (\Throwable $e) {
@@ -149,16 +155,14 @@ class Jmonitor
         return $result->setConclusion(count($metrics) . ' metric(s) collected with ' . count($result->getErrors()) . ' error(s).');
     }
 
-    private function boot(): void
+    private function boot(CollectorInterface $collector): void
     {
-        foreach ($this->collectors as $collector) {
-            if ($collector instanceof LoggerAwareInterface) {
-                $collector->setLogger($this->logger);
-            }
+        if ($collector instanceof LoggerAwareInterface) {
+            $collector->setLogger($this->logger);
+        }
 
-            if ($collector instanceof BootableCollectorInterface) {
-                $collector->boot();
-            }
+        if ($collector instanceof BootableCollectorInterface) {
+            $collector->boot();
         }
     }
 }

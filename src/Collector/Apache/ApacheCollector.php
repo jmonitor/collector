@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Apache;
 
+use Jmonitor\Collection;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Exceptions\CollectorException;
 
@@ -28,10 +29,7 @@ class ApacheCollector implements CollectorInterface
         $this->modStatusUrl = $modStatusUrl;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function collect(): array
+    public function collect(Collection $collection): void
     {
         $this->loadDatas();
 
@@ -39,7 +37,7 @@ class ApacheCollector implements CollectorInterface
         $load5 = $this->getData('Load5', 'float');
         $load15 = $this->getData('Load15', 'float');
 
-        return [
+        $collection->setMetrics([
             'server_version' => $this->getData('ServerVersion'),
             'server_mpm' => $this->getData('ServerMPM'),
             'uptime' => $this->getData('Uptime', 'int'),
@@ -58,7 +56,7 @@ class ApacheCollector implements CollectorInterface
             ],
             'scoreboard' => $this->parseScoreboard($this->getData('Scoreboard')),
             'modules' => $this->getApacheModules(),
-        ];
+        ]);
     }
 
     public function getName(): string

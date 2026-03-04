@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Mysql;
 
+use Jmonitor\Collection;
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
@@ -63,22 +64,28 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
         } catch (\Throwable $throwable) {
             $this->performanceSchemaReadable = false;
 
-            $this->logger->warning('Performance schema is not readable, slow queries collector will be skipped: ' . $throwable->getMessage());
+            $this->logger->warning('Performance schema is not readable, slow queries collector will be skipped', [
+                'exception' => $throwable,
+            ]);
         }
     }
 
-    public function collect(): array
+    public function collect(Collection $collection): void
     {
+        $collection->setNotices([
+            'performance_schema_readable' => $this->performanceSchemaReadable,
+        ]);
+
         if (!$this->performanceSchemaReadable) {
-            return [];
+            return;
         }
 
-        return $this->db->fetchAllAssociative(self::SQL, [
+        $collection->setMetrics($this->db->fetchAllAssociative(self::SQL, [
             'dbName' => $this->dbName,
             'minExecCount' => $this->minExecCount,
             'minAvgTimeMs' => $this->minAvgTimeMs,
             'limit' => $this->limit,
-        ]);
+        ]));
     }
 
     public function getVersion(): int

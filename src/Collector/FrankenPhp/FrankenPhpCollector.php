@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\FrankenPhp;
 
+use Jmonitor\Collection;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Prometheus\PrometheusMetrics;
 use Jmonitor\Prometheus\PrometheusMetricsProvider;
@@ -21,21 +22,18 @@ class FrankenPhpCollector implements CollectorInterface
         $this->shellExecutor = $shellExecutor ?? new ShellExecutor();
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function collect(): array
+    public function collect(Collection $collection): void
     {
         $metrics = $this->prometheusMetricsProvider->getMetrics('frankenphp');
 
-        return [
+        $collection->setMetrics([
             'version' => $this->getFrankenPhpVersion(),
             'mode' => $this->getFrankenPhpMode($metrics),
             'busy_threads' => $metrics->getFirstValue('frankenphp_busy_threads', [], 'int'),
             'total_threads' => $metrics->getFirstValue('frankenphp_total_threads', [], 'int'),
             'queue_depth' => $metrics->getFirstValue('frankenphp_queue_depth', [], 'int'),
             'workers' => $this->getWorkersMetrics($metrics),
-        ];
+        ]);
     }
 
     public function getVersion(): int

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Mysql;
 
+use Jmonitor\Collection;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 
@@ -48,11 +49,11 @@ class MysqlStatusCollector implements CollectorInterface
         $this->db = $db;
     }
 
-    public function collect(): array
+    public function collect(Collection $collection): void
     {
         $result = $this->db->fetchAllAssociative("SHOW GLOBAL STATUS WHERE Variable_name IN ('" . implode("', '", self::GLOBAL_VARIABLES) . "')");
 
-        return array_column($result, 'Value', 'Variable_name');
+        $collection->setMetrics(array_column($result, 'Value', 'Variable_name'));
     }
 
     public function getVersion(): int
