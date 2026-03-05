@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Mysql;
 
-use Jmonitor\Collection;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 
@@ -52,11 +51,11 @@ class MysqlVariablesCollector implements CollectorInterface
         $this->db = $db;
     }
 
-    public function collect(Collection $collection): void
+    public function collect(): array
     {
         $result = $this->db->fetchAllAssociative("SHOW VARIABLES WHERE Variable_name IN ('" . implode("', '", self::VARIABLES) . "')");
 
-        $collection->setMetrics(array_column($result, 'Value', 'Variable_name'));
+        return array_column($result, 'Value', 'Variable_name');
     }
 
     public function getVersion(): int

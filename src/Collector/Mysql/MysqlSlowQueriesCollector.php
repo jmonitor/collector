@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Mysql;
 
-use Jmonitor\Collection;
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
@@ -70,22 +69,23 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
         }
     }
 
-    public function collect(Collection $collection): void
+    public function collect(): array
     {
-        $collection->setNotices([
-            'performance_schema_readable' => $this->performanceSchemaReadable,
-        ]);
-
         if (!$this->performanceSchemaReadable) {
-            return;
+            return [
+                'performance_schema_readable' => false,
+            ];
         }
 
-        $collection->setMetrics($this->db->fetchAllAssociative(self::SQL, [
-            'dbName' => $this->dbName,
-            'minExecCount' => $this->minExecCount,
-            'minAvgTimeMs' => $this->minAvgTimeMs,
-            'limit' => $this->limit,
-        ]));
+        return [
+            'performance_schema_readable' => true,
+            'slow_queries' => $this->db->fetchAllAssociative(self::SQL, [
+                'dbName' => $this->dbName,
+                'minExecCount' => $this->minExecCount,
+                'minAvgTimeMs' => $this->minAvgTimeMs,
+                'limit' => $this->limit,
+            ]),
+        ];
     }
 
     public function getVersion(): int

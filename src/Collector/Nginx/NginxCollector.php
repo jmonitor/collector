@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Nginx;
 
-use Jmonitor\Collection;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Exceptions\CollectorException;
 use Jmonitor\Utils\ShellExecutor;
@@ -28,17 +27,17 @@ class NginxCollector implements CollectorInterface
         $this->shellExecutor = $shellExecutor ?? new ShellExecutor();
     }
 
-    public function collect(Collection $collection): void
+    public function collect(): array
     {
         $nginxV = $this->getNginxV();
 
-        $collection->setMetrics([
+        return [
             'version' => $nginxV['version'],
             'modules' => $nginxV['modules'],
             'status' => $this->getStatus(),
             'config' => $this->getNginxT(),
             'cpu_count' => $this->getCpuCount(),
-        ]);
+        ];
     }
 
     public function getName(): string

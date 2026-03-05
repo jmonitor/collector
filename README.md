@@ -35,7 +35,7 @@ $jmonitor->addCollector(new ApacheCollector('https://example.com/server-status')
 $jmonitor->addCollector(new SystemCollector());
 // ... 
 
-// send metrics to Jmonitor (see "Scheduling" section)
+// send metrics to Jmonitor (see "Running the collector" section)
 $jmonitor->collect();
 ```
 
@@ -63,28 +63,34 @@ This means you **must not** integrate it into your application and call `$jmonit
   
 One basic worker script is provided in the `examples` folder. Copy it into your project, update it to include the collectors you need, and run it from CLI.
 
-In production, it is recommended to run the worker under a process manager (e.g. Supervisor or systemd) to ensure it is kept running and restarted if necessary.
+In production, it is recommended to run the worker under a process manager (e.g. Supervisor or systemd) to ensure it is kept running and restarted periodically.
 For practical guidance, you can follow Symfony Messenger's recommendations:  
 https://symfony.com/doc/current/messenger.html#deploying-to-production
 
 You also can take a look at the CollectorCommand from the Symfony bundle for a more advanced example:  
 https://github.com/jmonitor/jmonitor-bundle/blob/master/src/Command/CollectorCommand.php
 
+Some metrics are fairly static and remain cached for the lifetime of the collector, so among others reasons (memory, ...), it is **strongly recommended** to restart the collector regularly, at least once a day.
+
 Debugging and Error Handling
 -----------------------------
 Each collector is isolated and executed within a try/catch block.  
 Use the CollectionResult returned by `collect()` method to inspect outcomes.
 
-By default, collect() call send metrics to the server.  
+By default, collect() call send metrics to Jmonitor.  
 You can disable this by passing `send: false`
 
-By default, collect() throws InvalidServerResponseException when the server response status code is >= 400.  
+By default, collect() do not throws when the server response status code is >= 400.  
 You can disable this by passing `throwOnFailure: false`
+
+Finally, you can pass a PSR-3 logger to the constructor to get more detailed information about the collection process. You will receive messages ranging from debug to error level.
 
 ```php
 use Psr\Http\Message\ResponseInterface;
 use Jmonitor\CollectionResult;
+use Jmonitor\Jmonitor;
 
+$jmonitor = new Jmonitor('apiKey', logger: new SomeLogger());
 
 /**
  * Send metrics, you can :
@@ -205,16 +211,12 @@ Collectors
     <?php
   
     use Jmonitor\Collector\Php\PhpCollector;
-    use Jmonitor\Collection;
   
     require __DIR__ . '/../vendor/autoload.php';
 
     header('Content-Type: application/json');
     
-    $collection = new Collection();
-    (new PhpCollector())->collect($collection);
-    
-    echo json_encode($collection->getMetrics(), JSON_THROW_ON_ERROR);
+    echo json_encode((new PhpCollector())->collect(), JSON_THROW_ON_ERROR);
     ```
 
     Then, in your CLI script, point the collector to that URL:    

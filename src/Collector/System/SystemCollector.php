@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\System;
 
-use Jmonitor\Collection;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\ResetInterface;
 use Jmonitor\Collector\System\Adapter\AdapterInterface;
@@ -25,9 +24,9 @@ class SystemCollector implements CollectorInterface, ResetInterface
         $this->adapter = $adapter ?: $this->guessAdapter();
     }
 
-    public function collect(Collection $collection): void
+    public function collect(): array
     {
-        $collection->setMetrics([
+        return [
             'disk' => [
                 'total' => $this->adapter->getDiskTotalSpace('/'),
                 'free' => $this->adapter->getDiskFreeSpace('/'),
@@ -50,7 +49,7 @@ class SystemCollector implements CollectorInterface, ResetInterface
             'time' => time(),
             'timezone' => array_key_exists('timezone', $this->longTermPropertyCache) ? $this->longTermPropertyCache['timezone'] : $this->longTermPropertyCache['timezone'] = $this->adapter->getTimezone(),
             'hostname' => gethostname(),
-        ]);
+        ];
     }
 
     public function getVersion(): int

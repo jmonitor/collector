@@ -60,9 +60,9 @@ class Jmonitor
      * Collect metrics from all collectors and send them to the server.
      * If an error is thrown on a collector, it will not throw an exception but the error will be added to the CollectionResult.
      *
-     * @param bool $throwOnFailure Only for httpRequest, if true, will throw an exception if the response status code is >= 400, else will return the response
+     * @param bool $throwOnFailure Only for httpRequest, if true, will throw an exception if the response status code is >= 400 (not 429), else will return the response
      */
-    public function collect(bool $send = true, bool $throwOnFailure = true): CollectionResult
+    public function collect(bool $send = true, bool $throwOnFailure = false): CollectionResult
     {
         $result = new CollectionResult();
 
@@ -79,7 +79,6 @@ class Jmonitor
                 'version' => $collector->getVersion(),
                 'name' => $collector->getName(),
                 'metrics' => [],
-                'notices' => [],
                 'throwed' => false,
                 'duration' => null,
             ];
@@ -89,11 +88,7 @@ class Jmonitor
                     $this->boot($collector);
                 }
 
-                $collection = new Collection();
-                $collector->collect($collection);
-
-                $entry['metrics'] = array_filter($collection->getMetrics());
-                $entry['notices'] = array_filter($collection->getNotices());
+                $entry['metrics'] = array_filter($collector->collect(), fn($value) => $value !== null);
             } catch (\Throwable $e) {
                 $result->addError($e);
 
@@ -112,6 +107,8 @@ class Jmonitor
 
         $result->setMetrics($metrics);
 
+        $this->logger->debug('Metrics collected', ['metrics' => $metrics]);
+
         if ($send) {
             try {
                 $result->setResponse($this->client->sendMetrics($metrics));
@@ -122,13 +119,10 @@ class Jmonitor
 
                 $result->addError($e);
 
-                return $result->setConclusion('Error while sending metrics to the server');
-            }
+                $message = 'Exception throwed while sending metrics to Jmonitor';
+                $this->logger->error($message, ['exception' => $e]);
 
-            if ($result->getResponse()->getStatusCode() === 429) {
-                $waitSeconds = $result->getResponse()->getHeader('x-ratelimit-retry-after')[0] ?? 0;
-
-                return $result->setConclusion('Rate limit reached, please wait ' . $waitSeconds . ' seconds.');
+                return $result->setConclusion($message);
             }
 
             if ($result->getResponse()->getStatusCode() >= 500) {
@@ -136,7 +130,19 @@ class Jmonitor
                     throw new InvalidServerResponseException($result->getResponse()->getStatusCode());
                 }
 
-                return $result->setConclusion('Http error ' . $result->getResponse()->getStatusCode() . ' on Jmonitor side. Sorry about that. We were notified, please try again later or feel free to contact us on Github.');
+                $message = 'Http error ' . $result->getResponse()->getStatusCode() . ' on Jmonitor side. Sorry about that. We were notified, please try again later or feel free to contact us on Github.';
+                $this->logger->warning($message);
+
+                return $result->setConclusion($message);
+            }
+
+            if ($result->getResponse()->getStatusCode() === 429) {
+                $waitSeconds = $result->getResponse()->getHeader('x-ratelimit-retry-after')[0] ?? null;
+
+                $message = 'Rate limit reached, please wait ' . $waitSeconds . ' seconds.';
+                $this->logger->notice($message);
+
+                return $result->setConclusion($message);
             }
 
             if ($result->getResponse()->getStatusCode() >= 400) {
@@ -144,13 +150,22 @@ class Jmonitor
                     throw new InvalidServerResponseException($result->getResponse()->getStatusCode());
                 }
 
-                return $result->setConclusion('Http error ' . $result->getResponse()->getStatusCode() . ' while sending ' . count($metrics) . ' metrics to the server. Inspect the response for more informations.');
+                $message = 'Http error ' . $result->getResponse()->getStatusCode() . ' while sending ' . count($metrics) . ' metrics to the server. Inspect the response for more informations.';
+                $this->logger->error($message);
+
+                return $result->setConclusion($message);
             }
         }
 
         if (count($result->getErrors()) === 0) {
-            return $result->setConclusion(count($metrics) . ' metric(s) collected.');
+            $this->logger->info(count($metrics) . ' metric(s) collected successfully.');
+
+            return $result->setConclusion(count($metrics) . ' metric(s) collected successfully.');
         }
+
+        $message = count($metrics) . ' metric(s) collected with ' . count($result->getErrors()) . ' error(s).';
+
+        $this->logger->info($message);
 
         return $result->setConclusion(count($metrics) . ' metric(s) collected with ' . count($result->getErrors()) . ' error(s).');
     }

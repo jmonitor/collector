@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Php;
 
-use Jmonitor\Collection;
 use Jmonitor\Collector\CollectorInterface;
 
 /**
@@ -19,15 +18,13 @@ class PhpCollector implements CollectorInterface
         $this->endpointUrl = $endpointUrl;
     }
 
-    public function collect(Collection $collection): void
+    public function collect(): array
     {
         if ($this->endpointUrl) {
-            $collection->setMetrics($this->collectFromUrl());
-
-            return;
+            return $this->collectFromUrl();
         }
 
-        $collection->setMetrics([
+        return [
             'version' => phpversion(),
             'sapi_name' => php_sapi_name(),
             'ini_file' => php_ini_loaded_file(),
@@ -52,7 +49,7 @@ class PhpCollector implements CollectorInterface
             'opcache' => $this->getOpcacheInfos(),
             'apcu' => $this->getApcuInfos(),
             'fpm' => $this->getFpm(),
-        ]);
+        ];
     }
 
     public function getName(): string

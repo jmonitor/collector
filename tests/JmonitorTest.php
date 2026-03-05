@@ -17,17 +17,6 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 
 class JmonitorTest extends TestCase
 {
-    public function testCollectWithNoCollectors(): void
-    {
-        $jmonitor = new Jmonitor('api');
-        $result = $jmonitor->collect();
-
-        self::assertInstanceOf(CollectionResult::class, $result);
-        self::assertSame('Nothing to collect. Please add some collectors.', $result->getConclusion());
-        self::assertSame([], $result->getMetrics());
-        self::assertSame([], $result->getErrors());
-    }
-
     public function testCollectWithOneCollectorAndSuccessfulSend(): void
     {
         $mockResponse = new MockResponse('', [ 'http_code' => 201 ]);
@@ -70,9 +59,10 @@ class JmonitorTest extends TestCase
 
         $result = $jmonitor->collect();
 
-        self::assertSame(1, count($result->getMetrics()));
+        self::assertSame(2, count($result->getMetrics()));
+        self::assertTrue($result->getMetrics()[1]['throwed']);
         self::assertCount(1, $result->getErrors());
-        self::assertSame('1 metric(s) collected with 1 error(s).', $result->getConclusion());
+        self::assertSame('2 metric(s) collected with 1 error(s).', $result->getConclusion());
     }
 
     public function testCollectHttpErrorReturnsResultWhenNotThrowing(): void
