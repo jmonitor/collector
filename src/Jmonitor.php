@@ -151,7 +151,11 @@ class Jmonitor
                 }
 
                 $message = 'Http error ' . $result->getResponse()->getStatusCode() . ' while sending ' . count($metrics) . ' metrics to the server. Inspect the response for more informations.';
-                $this->logger->error($message);
+                $this->logger->error($message, [
+                    'body' => $result->getResponse()->getBody()->getContents(),
+                    'code' => $result->getResponse()->getStatusCode(),
+                    'headers' => $result->getResponse()->getHeaders(),
+                ]);
 
                 return $result->setConclusion($message);
             }
