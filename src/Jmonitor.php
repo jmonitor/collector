@@ -92,6 +92,8 @@ class Jmonitor
             } catch (\Throwable $e) {
                 $result->addError($e);
 
+                $this->logger->error('Exception thrown while collecting metrics', ['exception' => $e]);
+
                 $entry['threw'] = true;
             }
 

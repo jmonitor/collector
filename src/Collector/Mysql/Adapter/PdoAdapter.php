@@ -15,7 +15,7 @@ class PdoAdapter implements MysqlAdapterInterface
         $this->pdo = $pdo;
     }
 
-    public function fetchAllAssociative(string $query, array $params = [], array $types = []): array
+    public function fetchAllAssociative(string $query, array $params = []): array
     {
         $stmt = $this->pdo->prepare($query);
 

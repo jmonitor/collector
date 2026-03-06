@@ -16,13 +16,13 @@ class DoctrineAdapter implements MysqlAdapterInterface
         $this->connection = $connection;
     }
 
-    public function fetchAllAssociative(string $query, array $params = [], array $types = []): array
+    public function fetchAllAssociative(string $query, array $params = []): array
     {
         try {
-            return $this->connection->fetchAllAssociative($query, $params, $types);
+            return $this->connection->fetchAllAssociative($query, $params);
         } catch (ConnectionLost $e) {
             // retry once after an error like "mysql server has gone away"
-            return $this->connection->fetchAllAssociative($query, $params, $types);
+            return $this->connection->fetchAllAssociative($query, $params);
         }
     }
 }

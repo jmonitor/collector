@@ -6,5 +6,5 @@ namespace Jmonitor\Collector\Mysql\Adapter;
 
 interface MysqlAdapterInterface
 {
-    public function fetchAllAssociative(string $query, array $params = [], array $types = []): array;
+    public function fetchAllAssociative(string $query, array $params = []): array;
 }

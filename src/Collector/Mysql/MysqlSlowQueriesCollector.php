@@ -15,7 +15,7 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
     use LoggerAwareTrait;
 
     private const SQL = <<<SQL
-        SELECT SCHEMA_NAME, DIGEST, LEFT(DIGEST_TEXT, 300) AS query_sample,
+        SELECT LEFT(DIGEST_TEXT, 300) AS query_sample,
             COUNT_STAR AS exec_count,
             ROUND(SUM_TIMER_WAIT / 1000000000) AS total_time_ms,
             ROUND(AVG_TIMER_WAIT / 1000000000) AS avg_time_ms,
@@ -24,8 +24,8 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
             performance_schema.events_statements_summary_by_digest
         WHERE
             SCHEMA_NAME  = :dbName
-          AND COUNT_STAR >= :minExecCount
-          AND AVG_TIMER_WAIT >= :minAvgTimeMs
+          AND COUNT_STAR >= %d
+          AND AVG_TIMER_WAIT >= %d
           AND (
             DIGEST_TEXT LIKE 'SELECT%'
             OR DIGEST_TEXT LIKE 'INSERT%'
@@ -34,7 +34,7 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
           )
         ORDER BY
             SUM_TIMER_WAIT DESC
-        LIMIT :limit
+        LIMIT %d
         SQL;
 
     private MysqlAdapterInterface $db;
@@ -71,21 +71,28 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
 
     public function collect(): array
     {
+        $data = [
+            'schema_name' => $this->dbName,
+            'performance_schema_readable' => $this->performanceSchemaReadable,
+            'min_exec_count' => $this->minExecCount,
+            'min_avg_time_ms' => $this->minAvgTimeMs,
+            'limit' => $this->limit,
+        ];
+
         if (!$this->performanceSchemaReadable) {
-            return [
-                'performance_schema_readable' => false,
-            ];
+            return $data;
         }
 
-        return [
-            'performance_schema_readable' => true,
-            'slow_queries' => $this->db->fetchAllAssociative(self::SQL, [
-                'dbName' => $this->dbName,
-                'minExecCount' => $this->minExecCount,
-                'minAvgTimeMs' => $this->minAvgTimeMs,
-                'limit' => $this->limit,
-            ]),
-        ];
+        $sql = sprintf(self::SQL, $this->minExecCount, $this->minAvgTimeMs, $this->limit);
+
+        $data['slow_queries'] = $this->db->fetchAllAssociative($sql, [
+            'dbName' => $this->dbName,
+            'minExecCount' => $this->minExecCount,
+            'minAvgTimeMs' => $this->minAvgTimeMs,
+            'limit' => $this->limit,
+        ]);
+
+        return $data;
     }
 
     public function getVersion(): int
