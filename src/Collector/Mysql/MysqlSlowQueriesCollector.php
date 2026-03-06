@@ -27,10 +27,10 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
           AND COUNT_STAR >= %d
           AND AVG_TIMER_WAIT >= %d
           AND (
-            DIGEST_TEXT LIKE 'SELECT%'
-            OR DIGEST_TEXT LIKE 'INSERT%'
-            OR DIGEST_TEXT LIKE 'UPDATE%'
-            OR DIGEST_TEXT LIKE 'DELETE%'
+            DIGEST_TEXT LIKE 'SELECT%%'
+            OR DIGEST_TEXT LIKE 'INSERT%%'
+            OR DIGEST_TEXT LIKE 'UPDATE%%'
+            OR DIGEST_TEXT LIKE 'DELETE%%'
           )
         ORDER BY
             SUM_TIMER_WAIT DESC
@@ -42,8 +42,8 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
     private int $limit;
     private int $minExecCount;
     private bool $performanceSchemaReadable;
-
     private int $minAvgTimeMs;
+    private string $sql;
 
     public function __construct(MysqlAdapterInterface $db, string $dbName, int $limit = 5, int $minExecCount = 1, int $minAvgTimeMs = 0)
     {
@@ -52,6 +52,7 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
         $this->limit = $limit;
         $this->minExecCount = $minExecCount;
         $this->minAvgTimeMs = $minAvgTimeMs;
+        $this->sql = sprintf(self::SQL, $this->minExecCount, $this->minAvgTimeMs, $this->limit);
     }
 
     public function boot(): void
@@ -83,9 +84,7 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
             return $data;
         }
 
-        $sql = sprintf(self::SQL, $this->minExecCount, $this->minAvgTimeMs, $this->limit);
-
-        $data['slow_queries'] = $this->db->fetchAllAssociative($sql, [
+        $data['slow_queries'] = $this->db->fetchAllAssociative($this->sql, [
             'dbName' => $this->dbName,
             'minExecCount' => $this->minExecCount,
             'minAvgTimeMs' => $this->minAvgTimeMs,
