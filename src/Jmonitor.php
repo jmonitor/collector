@@ -79,7 +79,7 @@ class Jmonitor
                 'version' => $collector->getVersion(),
                 'name' => $collector->getName(),
                 'metrics' => [],
-                'throwed' => false,
+                // 'threw' => false, // no sent mean false
                 'duration' => null,
             ];
 
@@ -92,7 +92,7 @@ class Jmonitor
             } catch (\Throwable $e) {
                 $result->addError($e);
 
-                $entry['throwed'] = true;
+                $entry['threw'] = true;
             }
 
             if ($collector instanceof ResetInterface) {
@@ -119,7 +119,7 @@ class Jmonitor
 
                 $result->addError($e);
 
-                $message = 'Exception throwed while sending metrics to Jmonitor';
+                $message = 'Exception threw while sending metrics to Jmonitor';
                 $this->logger->error($message, ['exception' => $e]);
 
                 return $result->setConclusion($message);
