@@ -53,7 +53,7 @@ class MysqlVariablesCollector implements CollectorInterface
 
     public function collect(): array
     {
-        $result = $this->db->fetchAllAssociative("SHOW VARIABLES WHERE Variable_name IN ('" . implode("', '", self::VARIABLES) . "')");
+        $result = $this->db->fetchAllAssociative("SHOW GLOBAL VARIABLES WHERE Variable_name IN ('" . implode("', '", self::VARIABLES) . "')");
 
         return array_column($result, 'Value', 'Variable_name');
     }
