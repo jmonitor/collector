@@ -22,7 +22,7 @@ class MysqlVariablesCollectorTest extends TestCase
 
         $dbMock->expects($this->once())
             ->method('fetchAllAssociative')
-            ->with($this->stringContains("SHOW VARIABLES WHERE Variable_name IN"))
+            ->with($this->stringContains("SHOW GLOBAL VARIABLES WHERE Variable_name IN"))
             ->willReturn($dbResult);
 
         $expectedResult = [
