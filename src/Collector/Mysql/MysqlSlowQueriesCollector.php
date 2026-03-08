@@ -41,7 +41,7 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
     private string $dbName;
     private int $limit;
     private int $minExecCount;
-    private bool $performanceSchemaReadable;
+    private bool $performanceSchemaReadable = true;
     private int $minAvgTimeMs;
     private string $sql;
 
@@ -57,14 +57,12 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
 
     public function boot(): void
     {
-        $this->performanceSchemaReadable = true;
-
         try {
             $this->db->fetchAllAssociative('SELECT 1 FROM performance_schema.events_statements_summary_by_digest LIMIT 1');
         } catch (\Throwable $throwable) {
             $this->performanceSchemaReadable = false;
 
-            $this->logger->warning('Performance schema is not readable, slow queries collector will be skipped', [
+            $this->logger->warning('performance_schema table is not readable, SlowQueriesCollector will be skipped', [
                 'exception' => $throwable,
             ]);
         }
