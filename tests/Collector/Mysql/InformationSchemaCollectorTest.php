@@ -35,12 +35,12 @@ class InformationSchemaCollectorTest extends TestCase
         $collector->boot();
         $result = $collector->collect();
 
-        $this->assertEquals([
+        $this->assertSame([
             'schema_name' => $dbName,
             'information_schema_readable' => true,
             'data_weight' => [
-                'data_length' => '1024',
-                'index_length' => '512',
+                'data_length' => 1024,
+                'index_length' => 512,
             ],
         ], $result);
     }

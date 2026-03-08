@@ -15,7 +15,7 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
     use LoggerAwareTrait;
 
     private const SQL = <<<SQL
-        SELECT LEFT(DIGEST_TEXT, 300) AS query_sample,
+        SELECT LEFT(DIGEST_TEXT, 500) AS query_sample,
             COUNT_STAR AS exec_count,
             ROUND(SUM_TIMER_WAIT / 1000000000) AS total_time_ms,
             ROUND(AVG_TIMER_WAIT / 1000000000) AS avg_time_ms,

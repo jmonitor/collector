@@ -67,6 +67,9 @@ class MysqlInformationSchemaCollector implements CollectorInterface, BootableCol
             'index_length' => $result[0]['index_length'] ?? null,
         ];
 
+        $data['data_weight']['data_length'] = $data['data_weight']['data_length'] !== null ? (int) $data['data_weight']['data_length'] : null;
+        $data['data_weight']['index_length'] = $data['data_weight']['index_length'] !== null ? (int) $data['data_weight']['index_length'] : null;
+
         return $data;
     }
 
