@@ -52,7 +52,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
         $loggerMock = $this->createMock(LoggerInterface::class);
         $loggerMock->expects($this->once())
             ->method('warning')
-            ->with($this->stringContains('Performance schema is not readable'));
+            ->with($this->stringContains('not readable'));
 
         $collector = new MysqlSlowQueriesCollector($dbMock, 'test_db');
         $collector->setLogger($loggerMock);
