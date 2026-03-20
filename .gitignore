@@ -1,0 +1,7 @@
+/vendor/
+composer.lock
+/.claude/settings.local.json
+.idea
+.vscode
+.php-cs-fixer.cache
+.phpunit.result.cache
