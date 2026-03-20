@@ -74,6 +74,6 @@ class SystemCollector implements CollectorInterface, ResetInterface
         }
 
         // Add more OS-specific adapters as needed
-        throw new \RuntimeException(sprintf('No suitable system information adapter found for your OS family (%s). Feel free to open an issue on Github!', PHP_OS_FAMILY));
+        throw new \RuntimeException(sprintf('No suitable system information adapter found for your OS family (%s). Feel free to open an issue on Github! You can use RandomAdapter for testing purpose.', PHP_OS_FAMILY));
     }
 }

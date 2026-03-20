@@ -8,6 +8,7 @@ use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\ResetInterface;
 use Jmonitor\Exceptions\InvalidServerResponseException;
+use Jmonitor\Exceptions\NoCollectorException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
@@ -22,15 +23,15 @@ class Jmonitor
      */
     private array $collectors = [];
 
-    private Client $client;
+    private ?Client $client;
 
     private LoggerInterface $logger;
 
     private bool $booted = false;
 
-    public function __construct(string $projectApiKey, ?ClientInterface $httpClient = null, ?LoggerInterface $logger = null)
+    public function __construct(?string $projectApiKey, ?ClientInterface $httpClient = null, ?LoggerInterface $logger = null)
     {
-        $this->client = new Client($projectApiKey, $httpClient);
+        $this->client = $projectApiKey ? new Client($projectApiKey, $httpClient) : null;
         $this->logger = $logger ?? new NullLogger();
     }
 
@@ -67,7 +68,12 @@ class Jmonitor
         $result = new CollectionResult();
 
         if (count($this->collectors) === 0) {
-            throw new \RuntimeException('No collector added');
+            throw new NoCollectorException();
+        }
+
+        if ($send && !$this->client) {
+            $this->logger->notice('No API key provided, metrics will not be sent to Jmonitor.');
+            $send = false;
         }
 
         $metrics = [];
@@ -173,7 +179,7 @@ class Jmonitor
 
         $this->logger->info($message);
 
-        return $result->setConclusion(count($metrics) . ' metric(s) collected with ' . count($result->getErrors()) . ' error(s).');
+        return $result->setConclusion($message);
     }
 
     private function boot(CollectorInterface $collector): void

@@ -2,17 +2,13 @@
 
 namespace Jmonitor\Tests;
 
-use Jmonitor\Jmonitor;
-use Jmonitor\CollectionResult;
-use Jmonitor\Client;
-use Jmonitor\Exceptions\InvalidServerResponseException;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
-use Psr\Http\Client\ClientInterface as Psr18ClientInterface;
-use Psr\Http\Message\ResponseInterface;
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\ResetInterface;
+use Jmonitor\Exceptions\InvalidServerResponseException;
+use Jmonitor\Exceptions\NoCollectorException;
+use Jmonitor\Jmonitor;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Psr18Client;
 use Symfony\Component\HttpClient\Response\MockResponse;
@@ -122,7 +118,7 @@ class JmonitorTest extends TestCase
 
     public function testCollectThrowsWhenNoCollectors(): void
     {
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(NoCollectorException::class);
 
         $jmonitor = new Jmonitor('api', new Psr18Client(new MockHttpClient()));
         $jmonitor->collect();
@@ -215,6 +211,26 @@ class JmonitorTest extends TestCase
 
         self::assertStringContainsString('Http error', $result->getConclusion());
         self::assertSame(400, $result->getResponse()->getStatusCode());
+    }
+
+    public function testCollectWithNullApiKeyDoesNotSend(): void
+    {
+        $httpClient = $this->createMock(\Psr\Http\Client\ClientInterface::class);
+        $httpClient->expects($this->never())->method('sendRequest');
+
+        $jmonitor = new Jmonitor(null, $httpClient);
+
+        $collector = $this->createMock(CollectorInterface::class);
+        $collector->method('getVersion')->willReturn(1);
+        $collector->method('getName')->willReturn('test');
+        $collector->method('collect')->willReturn(['a' => 1]);
+
+        $jmonitor->addCollector($collector);
+        $result = $jmonitor->collect();
+
+        self::assertNull($result->getResponse());
+        self::assertCount(1, $result->getMetrics());
+        self::assertStringContainsString('metric(s) collected', $result->getConclusion());
     }
 
     public function testBootCalledOnlyOnce(): void
