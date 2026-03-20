@@ -1,10 +1,10 @@
 {
     "name": "jmonitor/collector",
-    "description": "Simple php web server monitoring library",
+    "description": "PHP library for collecting server metrics (PHP, MySQL, Nginx, Apache, Redis, System…) and sending them to Jmonitor.io",
     "keywords": ["monitoring", "metrics", "collector", "mysql", "apache", "php", "redis", "nginx", "system"],
     "homepage": "https://jmonitor.io/",
     "type": "library",
-    "license": "AGPL-3.0-or-later",
+    "license": "MIT",
     "authors": [
         {
             "name": "Johndodev",
