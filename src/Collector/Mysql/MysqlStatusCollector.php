@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Jmonitor\Collector\Mysql;
 
 use Jmonitor\Collector\CollectorInterface;
-use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
+use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 
 class MysqlStatusCollector implements CollectorInterface
 {
     /**
-     * @var MysqlAdapterInterface
+     * @var DatabaseAdapterInterface
      */
     private $db;
 
@@ -46,7 +46,7 @@ class MysqlStatusCollector implements CollectorInterface
         'Table_locks_immediate',
     ];
 
-    public function __construct(MysqlAdapterInterface $db)
+    public function __construct(DatabaseAdapterInterface $db)
     {
         $this->db = $db;
     }

@@ -2,7 +2,7 @@
 
 namespace Jmonitor\Tests\Collector\Mysql;
 
-use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
+use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlVariablesCollector;
 use PHPUnit\Framework\TestCase;
 
@@ -10,7 +10,7 @@ class MysqlVariablesCollectorTest extends TestCase
 {
     public function testCollect()
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
 
         $dbResult = [
             ['Variable_name' => 'innodb_buffer_pool_size', 'Value' => '134217728'],
@@ -41,7 +41,7 @@ class MysqlVariablesCollectorTest extends TestCase
 
     public function testGetVersion(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $collector = new MysqlVariablesCollector($dbMock);
 
         self::assertSame(1, $collector->getVersion());

@@ -2,7 +2,7 @@
 
 namespace Jmonitor\Tests\Collector\Mysql;
 
-use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
+use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlStatusCollector;
 use PHPUnit\Framework\TestCase;
 
@@ -10,7 +10,7 @@ class MysqlStatusCollectorTest extends TestCase
 {
     public function testCollect(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
 
         $dbResult = [
             ['Variable_name' => 'Uptime', 'Value' => '3600'],
@@ -41,7 +41,7 @@ class MysqlStatusCollectorTest extends TestCase
 
     public function testGetVersion(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $collector = new MysqlStatusCollector($dbMock);
 
         self::assertSame(1, $collector->getVersion());

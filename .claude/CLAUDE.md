@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Context
+JMonitor is a web monitoring application designed to simplify the visualization of server and stack metrics (PHP, MySQL, Redis, Nginx, etc.). It provides clear dashboards with gauges and charts, making metrics easy to understand for both developers and non-experts. Its goal is to make performance analysis and issue detection fast and accessible.  
+
+This project is the PHP library installed on your server via composer that gathers metrics from your environment (PHP, database, system, etc.). It periodically sends this data to JMonitor, enabling continuous monitoring and up-to-date dashboards.
+
 ## Commands
 
 ```bash
