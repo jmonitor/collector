@@ -69,7 +69,7 @@ class RedisCollector implements CollectorInterface
                 'rdb_last_save_time' => $infos['rdb_last_save_time'] ?? null,
                 'rdb_changes_since_last_save' => $infos['rdb_changes_since_last_save'] ?? null,
                 'rdb_last_bgsave_status' => $infos['rdb_last_bgsave_status'] ?? null,
-                'rdb_last_bgsave_time' => $infos['rdb_last_bgsave_time'] ?? null,
+                'rdb_last_bgsave_time' => $infos['rdb_last_bgsave_time_sec'] ?? $infos['rdb_last_bgsave_time'] ?? null,
                 'aof_enabled' => $infos['aof_enabled'] ?? null,
                 'aof_rewrite_in_progress' => $infos['aof_rewrite_in_progress'] ?? null,
                 'aof_last_rewrite_time_sec' => $infos['aof_last_rewrite_time_sec'] ?? null,
