@@ -11,7 +11,7 @@ use function Castor\run;
 #[AsTask(name: 'fixtures:capture-redis', description: 'Capture Redis INFO fixtures for different versions via Docker')]
 function fixturesCaptureRedis(): void
 {
-    $versions = ['7', '8'];
+    $versions = ['6', '7', '8'];
     $port = 6399;
     $fixturesDir = __DIR__ . '/tests/Collector/Redis/fixtures';
 
@@ -20,7 +20,7 @@ function fixturesCaptureRedis(): void
     }
 
     $quietContext = new Context(quiet: true);
-    $quietAllowFailureContext = new Context(quiet: true, allowFailure: true);
+    $quietAllowFailureContext = new Context(allowFailure: true);
 
     foreach ($versions as $version) {
         $containerName = "jmonitor-redis-{$version}";
