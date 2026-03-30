@@ -185,14 +185,17 @@ class RedisCollectorTest extends TestCase
         self::assertNotNull($result['stats']['rejected_connections']);
         self::assertNotNull($result['stats']['expired_keys']);
         self::assertNotNull($result['stats']['evicted_keys']);
-        self::assertNotNull($result['stats']['evicted_clients']);
         self::assertNotNull($result['stats']['keyspace_hits']);
         self::assertNotNull($result['stats']['keyspace_misses']);
         self::assertNotNull($result['stats']['tracking_total_keys']);
         self::assertNotNull($result['stats']['total_error_replies']);
         self::assertNotNull($result['stats']['total_reads_processed']);
         self::assertNotNull($result['stats']['total_writes_processed']);
-        self::assertNotNull($result['stats']['acl_access_denied_auth']);
+
+        if (version_compare($result['server']['version'], '7.0', '>=')) {
+            self::assertNotNull($result['stats']['evicted_clients']);
+            self::assertNotNull($result['stats']['acl_access_denied_auth']);
+        }
 
         self::assertNotNull($result['replication']['role']);
         self::assertNotNull($result['replication']['connected_slaves']);
