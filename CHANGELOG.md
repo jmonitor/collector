@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - RedisCollector now collects `rdb_last_bgsave_time_sec` and falls back to `rdb_last_save_time`.
+- RedisCollector logs an error and does not retry after failing to retrieve the config.
 
 
 ## [1.1.0] - 2026-03-20

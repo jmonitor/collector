@@ -6,11 +6,15 @@ namespace Jmonitor\Collector\Redis;
 
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Exceptions\CollectorException;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use Relay\Relay;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
 
-class RedisCollector implements CollectorInterface
+class RedisCollector implements CollectorInterface, LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     /**
      * @var \Redis|\RedisArray|\RedisCluster|\Predis\ClientInterface|Relay
      */
@@ -180,7 +184,11 @@ class RedisCollector implements CollectorInterface
         try {
             $save = $this->redis->config('GET', 'save');
         } catch (\Throwable $e) {
-            return [];
+            $this->logger->error('Failed to retrieve Redis configuration', [
+                'exception' => $e,
+            ]);
+
+            return $this->config = [];
         }
 
         $this->config['save'] = $save['save'] ?? null;
