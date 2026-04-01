@@ -1,0 +1,10 @@
+/.claude export-ignore
+/.editorconfig export-ignore
+/.gitattributes export-ignore
+/.github export-ignore
+/.gitignore export-ignore
+/.junie export-ignore
+/.php-cs-fixer.dist.php export-ignore
+/phpstan.neon export-ignore
+/symfony.lock export-ignore
+/tests export-ignore
