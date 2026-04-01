@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jmonitor\Tests\Collector\Apache;
 
 use Jmonitor\Collector\Apache\ApacheCollector;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ApacheCollectorTest extends TestCase
@@ -47,5 +50,77 @@ class ApacheCollectorTest extends TestCase
     public function testGetVersion(): void
     {
         self::assertSame(1, $this->collector->getVersion());
+    }
+
+    public static function apacheVersionsProvider(): array
+    {
+        $fixturesDir = __DIR__ . '/fixtures';
+        $files = glob($fixturesDir . '/apache-*.json') ?: [];
+
+        if ($files === []) {
+            return ['no fixtures' => [[]]];
+        }
+
+        $data = [];
+        foreach ($files as $file) {
+            $name = basename($file, '.json');
+            $data[$name] = [json_decode((string) file_get_contents($file), true)];
+        }
+
+        return $data;
+    }
+
+    #[DataProvider('apacheVersionsProvider')]
+    public function testCollectWithRealVersionFixture(array $fixture): void
+    {
+        if ($fixture === []) {
+            self::markTestSkipped('No Apache version fixtures found. Run: ./vendor/bin/castor fixtures:capture-apache');
+        }
+
+        // Write mod_status content to a temp file so ApacheCollector can read it via file_get_contents
+        $tmpFile = tempnam(sys_get_temp_dir(), 'jmonitor_apache_fixture_');
+        self::assertNotFalse($tmpFile);
+
+        try {
+            file_put_contents($tmpFile, $fixture['mod_status']);
+
+            $result = (new ApacheCollector($tmpFile))->collect();
+
+            self::assertIsArray($result);
+
+            self::assertArrayHasKey('server_version', $result);
+            self::assertNotNull($result['server_version']);
+            self::assertNotEmpty($result['server_version']);
+
+            self::assertArrayHasKey('server_mpm', $result);
+            self::assertNotNull($result['server_mpm']);
+
+            self::assertArrayHasKey('uptime', $result);
+            self::assertNotNull($result['uptime']);
+            self::assertIsInt($result['uptime']);
+
+            self::assertArrayHasKey('total_accesses', $result);
+            self::assertArrayHasKey('total_bytes', $result);
+            self::assertArrayHasKey('requests_per_second', $result);
+            self::assertArrayHasKey('bytes_per_second', $result);
+            self::assertArrayHasKey('bytes_per_request', $result);
+            self::assertArrayHasKey('duration_per_request', $result);
+
+            self::assertArrayHasKey('workers', $result);
+            self::assertIsArray($result['workers']);
+            self::assertArrayHasKey('busy', $result['workers']);
+            self::assertArrayHasKey('idle', $result['workers']);
+            self::assertIsInt($result['workers']['busy']);
+            self::assertIsInt($result['workers']['idle']);
+
+            self::assertArrayHasKey('scoreboard', $result);
+            self::assertIsArray($result['scoreboard']);
+            self::assertNotEmpty($result['scoreboard']);
+
+            self::assertArrayHasKey('modules', $result);
+            self::assertIsArray($result['modules']);
+        } finally {
+            unlink($tmpFile);
+        }
     }
 }

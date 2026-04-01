@@ -249,3 +249,92 @@ function fixturesCaptureMySQL(): void
         }
     }
 }
+
+#[AsTask(name: 'fixtures:capture-apache', description: 'Capture Apache mod_status fixtures for different versions via Docker')]
+function fixturesCaptureApache(): void
+{
+    $port = 8099;
+    $fixturesDir = __DIR__ . '/tests/Collector/Apache/fixtures';
+
+    if (!is_dir($fixturesDir)) {
+        mkdir($fixturesDir, 0755, true);
+    }
+
+    $quietContext = new Context(quiet: true);
+    $quietAllowFailureContext = new Context(quiet: true, allowFailure: true);
+
+    // Apache Docker image tag → fixture file label mapping
+    // httpd:2.4 is the canonical stable tag; add more entries here for minor-version fixtures
+    $images = [
+        '2.4' => 'httpd:2.4',
+    ];
+
+    foreach ($images as $label => $image) {
+        $containerName = "jmonitor-apache-{$label}";
+
+        io()->section("Capturing Apache {$label}");
+
+        run("docker rm -f {$containerName}", context: $quietAllowFailureContext);
+
+        // Enable mod_status with ExtendedStatus On via a minimal httpd.conf snippet
+        // We mount nothing — instead we exec into the container after start and patch the config
+        run(
+            "docker run -d --name {$containerName} -p {$port}:80 {$image}",
+            context: $quietContext,
+        );
+
+        // Enable mod_status and ExtendedStatus via exec (avoids needing a custom image)
+        run(
+            "docker exec {$containerName} bash -c " .
+            "'echo \"LoadModule status_module modules/mod_status.so\" >> /usr/local/apache2/conf/httpd.conf && " .
+            "echo \"ExtendedStatus On\" >> /usr/local/apache2/conf/httpd.conf && " .
+            "echo \"<Location /server-status>\" >> /usr/local/apache2/conf/httpd.conf && " .
+            "echo \"    SetHandler server-status\" >> /usr/local/apache2/conf/httpd.conf && " .
+            "echo \"    Require all granted\" >> /usr/local/apache2/conf/httpd.conf && " .
+            "echo \"</Location>\" >> /usr/local/apache2/conf/httpd.conf'",
+            context: $quietContext,
+        );
+
+        // Graceful restart to apply config changes
+        run("docker exec {$containerName} apachectl graceful", context: $quietContext);
+
+        // Wait for Apache to be ready (max 20 attempts × 500 ms = 10 s)
+        $ready = false;
+        for ($i = 0; $i < 20; $i++) {
+            $result = run(
+                "docker exec {$containerName} curl -sf http://127.0.0.1/server-status?auto",
+                context: $quietAllowFailureContext,
+            );
+            if ($result->getExitCode() === 0 && str_contains($result->getOutput(), 'ServerVersion')) {
+                $ready = true;
+                break;
+            }
+            usleep(500_000);
+        }
+
+        if (!$ready) {
+            run("docker rm -f {$containerName}", context: $quietAllowFailureContext);
+            io()->error("Apache {$label} mod_status did not become ready in time. Is Docker running?");
+            continue;
+        }
+
+        // Capture mod_status?auto output
+        $statusResult = run(
+            "docker exec {$containerName} curl -sf http://127.0.0.1/server-status?auto",
+            context: $quietContext,
+        );
+
+        $modStatusContent = $statusResult->getOutput();
+
+        $data = [
+            'mod_status' => $modStatusContent,
+        ];
+
+        $outputPath = "{$fixturesDir}/apache-{$label}.json";
+        file_put_contents($outputPath, json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+
+        run("docker rm -f {$containerName}", context: $quietContext);
+
+        io()->success("Apache {$label} fixture saved to {$outputPath}");
+    }
+}
