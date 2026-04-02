@@ -74,7 +74,7 @@ class ApacheCollectorTest extends TestCase
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {
-            self::markTestSkipped('No Apache version fixtures found. Run: ./vendor/bin/castor fixtures:capture-apache');
+            self::fail('No Apache version fixtures found. Run: ./vendor/bin/castor fixtures:capture-apache');
         }
 
         // Write mod_status content to a temp file so ApacheCollector can read it via file_get_contents

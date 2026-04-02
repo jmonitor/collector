@@ -278,25 +278,27 @@ function fixturesCaptureApache(): void
             "docker run -d --name {$containerName} -p {$port}:80 {$image}",
         );
 
-        // Enable mod_status and ExtendedStatus via exec (avoids needing a custom image)
+        // mod_status is already loaded in the httpd:2.4 image; we only need to add
+        // ExtendedStatus and the Location block (curl is not available in the image,
+        // so we check readiness from the host via the mapped port)
         run(
             "docker exec {$containerName} bash -c " .
-            "'echo \"LoadModule status_module modules/mod_status.so\" >> /usr/local/apache2/conf/httpd.conf && " .
-            "echo \"ExtendedStatus On\" >> /usr/local/apache2/conf/httpd.conf && " .
-            "echo \"<Location /server-status>\" >> /usr/local/apache2/conf/httpd.conf && " .
-            "echo \"    SetHandler server-status\" >> /usr/local/apache2/conf/httpd.conf && " .
-            "echo \"    Require all granted\" >> /usr/local/apache2/conf/httpd.conf && " .
-            "echo \"</Location>\" >> /usr/local/apache2/conf/httpd.conf'",
+            "\"echo 'ExtendedStatus On' >> /usr/local/apache2/conf/httpd.conf && " .
+            "echo '<Location /server-status>' >> /usr/local/apache2/conf/httpd.conf && " .
+            "echo '    SetHandler server-status' >> /usr/local/apache2/conf/httpd.conf && " .
+            "echo '    Require all granted' >> /usr/local/apache2/conf/httpd.conf && " .
+            "echo '</Location>' >> /usr/local/apache2/conf/httpd.conf\"",
         );
 
         // Graceful restart to apply config changes
         run("docker exec {$containerName} apachectl graceful");
 
         // Wait for Apache to be ready (max 20 attempts × 500 ms = 10 s)
+        // curl is run on the host against the mapped port — it is not available inside the container
         $ready = false;
         for ($i = 0; $i < 20; $i++) {
             $result = run(
-                "docker exec {$containerName} curl -sf http://127.0.0.1/server-status?auto",
+                "curl -sf \"http://localhost:{$port}/server-status?auto\"",
                 context: $allowFailureContext,
             );
             if ($result->getExitCode() === 0 && str_contains($result->getOutput(), 'ServerVersion')) {
@@ -312,9 +314,9 @@ function fixturesCaptureApache(): void
             continue;
         }
 
-        // Capture mod_status?auto output
+        // Capture mod_status?auto output from the host
         $statusResult = run(
-            "docker exec {$containerName} curl -sf http://127.0.0.1/server-status?auto",
+            "curl -sf \"http://localhost:{$port}/server-status?auto\"",
         );
 
         $modStatusContent = $statusResult->getOutput();
