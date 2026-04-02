@@ -19,8 +19,7 @@ function fixturesCaptureRedis(): void
         mkdir($fixturesDir, 0755, true);
     }
 
-    $quietContext = new Context(quiet: true);
-    $quietAllowFailureContext = new Context(allowFailure: true);
+    $allowFailureContext = new Context(allowFailure: true);
 
     foreach ($versions as $version) {
         $containerName = "jmonitor-redis-{$version}";
@@ -28,17 +27,17 @@ function fixturesCaptureRedis(): void
         io()->section("Capturing Redis {$version}");
 
         // Cleanup any existing container with this name
-        run("docker rm -f {$containerName}", context: $quietAllowFailureContext);
+        run("docker rm -f {$containerName}", context: $allowFailureContext);
 
         // Start container
-        run("docker run -d --name {$containerName} -p {$port}:6379 redis:{$version}-alpine", context: $quietContext);
+        run("docker run -d --name {$containerName} -p {$port}:6379 redis:{$version}-alpine");
 
         // Wait for Redis to be ready (max 10 attempts, 500ms apart)
         $ready = false;
         for ($i = 0; $i < 10; $i++) {
             $result = run(
                 "docker exec {$containerName} redis-cli PING",
-                context: $quietAllowFailureContext,
+                context: $allowFailureContext,
             );
             if (str_contains($result->getOutput(), 'PONG')) {
                 $ready = true;
@@ -48,7 +47,7 @@ function fixturesCaptureRedis(): void
         }
 
         if (!$ready) {
-            run("docker rm -f {$containerName}", context: $quietAllowFailureContext);
+            run("docker rm -f {$containerName}", context: $allowFailureContext);
             io()->error("Redis {$version} did not become ready in time. Is Docker running?");
             continue;
         }
@@ -70,7 +69,7 @@ function fixturesCaptureRedis(): void
         file_put_contents($outputPath, json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
 
         // Stop and remove container
-        run("docker rm -f {$containerName}", context: $quietContext);
+        run("docker rm -f {$containerName}", context: $allowFailureContext);
 
         io()->success("Redis {$version} fixture saved to {$outputPath}");
     }
@@ -90,8 +89,7 @@ function fixturesCaptureMySQL(): void
         mkdir($fixturesDir, 0755, true);
     }
 
-    $quietContext = new Context(quiet: true);
-    $quietAllowFailureContext = new Context(quiet: true, allowFailure: true);
+    $allowFailureContext = new Context(allowFailure: true);
 
     $statusVars = [
         'Uptime', 'Threads_connected', 'Threads_running', 'Threads_created',
@@ -123,11 +121,10 @@ function fixturesCaptureMySQL(): void
 
             io()->section("Capturing {$engine} {$version}");
 
-            run("docker rm -f {$containerName}", context: $quietAllowFailureContext);
+            run("docker rm -f {$containerName}", context: $allowFailureContext);
 
             run(
                 "docker run -d --name {$containerName} -p {$port}:3306 -e MYSQL_ROOT_PASSWORD=root {$image}",
-                context: $quietContext,
             );
 
             // Wait for readiness (max 30 attempts × 500 ms = 15 s)
@@ -139,7 +136,7 @@ function fixturesCaptureMySQL(): void
             for ($i = 0; $i < 30; $i++) {
                 $result = run(
                     "docker exec {$containerName} {$pingCmd} ping -h 127.0.0.1 -u root --password=root --silent",
-                    context: $quietAllowFailureContext,
+                    context: $allowFailureContext,
                 );
                 if ($result->getExitCode() === 0) {
                     $ready = true;
@@ -149,7 +146,7 @@ function fixturesCaptureMySQL(): void
             }
 
             if (!$ready) {
-                run("docker rm -f {$containerName}", context: $quietAllowFailureContext);
+                run("docker rm -f {$containerName}", context: $allowFailureContext);
                 io()->error("{$engine} {$version} did not become ready in time. Is Docker running?");
                 continue;
             }
@@ -240,10 +237,10 @@ function fixturesCaptureMySQL(): void
                     ),
                 );
 
-                run("docker rm -f {$containerName}", context: $quietContext);
+                run("docker rm -f {$containerName}", context: $allowFailureContext);
                 io()->success("{$engine} {$version} fixture saved to {$outputPath}");
             } catch (\Throwable $e) {
-                run("docker rm -f {$containerName}", context: $quietAllowFailureContext);
+                run("docker rm -f {$containerName}", context: $allowFailureContext);
                 io()->error("Failed for {$engine} {$version}: " . $e->getMessage());
             }
         }
@@ -260,8 +257,7 @@ function fixturesCaptureApache(): void
         mkdir($fixturesDir, 0755, true);
     }
 
-    $quietContext = new Context(quiet: true);
-    $quietAllowFailureContext = new Context(quiet: true, allowFailure: true);
+    $allowFailureContext = new Context(allowFailure: true);
 
     // Apache Docker image tag → fixture file label mapping
     // httpd:2.4 is the canonical stable tag; add more entries here for minor-version fixtures
@@ -274,13 +270,12 @@ function fixturesCaptureApache(): void
 
         io()->section("Capturing Apache {$label}");
 
-        run("docker rm -f {$containerName}", context: $quietAllowFailureContext);
+        run("docker rm -f {$containerName}", context: $allowFailureContext);
 
         // Enable mod_status with ExtendedStatus On via a minimal httpd.conf snippet
         // We mount nothing — instead we exec into the container after start and patch the config
         run(
             "docker run -d --name {$containerName} -p {$port}:80 {$image}",
-            context: $quietContext,
         );
 
         // Enable mod_status and ExtendedStatus via exec (avoids needing a custom image)
@@ -292,18 +287,17 @@ function fixturesCaptureApache(): void
             "echo \"    SetHandler server-status\" >> /usr/local/apache2/conf/httpd.conf && " .
             "echo \"    Require all granted\" >> /usr/local/apache2/conf/httpd.conf && " .
             "echo \"</Location>\" >> /usr/local/apache2/conf/httpd.conf'",
-            context: $quietContext,
         );
 
         // Graceful restart to apply config changes
-        run("docker exec {$containerName} apachectl graceful", context: $quietContext);
+        run("docker exec {$containerName} apachectl graceful");
 
         // Wait for Apache to be ready (max 20 attempts × 500 ms = 10 s)
         $ready = false;
         for ($i = 0; $i < 20; $i++) {
             $result = run(
                 "docker exec {$containerName} curl -sf http://127.0.0.1/server-status?auto",
-                context: $quietAllowFailureContext,
+                context: $allowFailureContext,
             );
             if ($result->getExitCode() === 0 && str_contains($result->getOutput(), 'ServerVersion')) {
                 $ready = true;
@@ -313,7 +307,7 @@ function fixturesCaptureApache(): void
         }
 
         if (!$ready) {
-            run("docker rm -f {$containerName}", context: $quietAllowFailureContext);
+            run("docker rm -f {$containerName}", context: $allowFailureContext);
             io()->error("Apache {$label} mod_status did not become ready in time. Is Docker running?");
             continue;
         }
@@ -321,7 +315,6 @@ function fixturesCaptureApache(): void
         // Capture mod_status?auto output
         $statusResult = run(
             "docker exec {$containerName} curl -sf http://127.0.0.1/server-status?auto",
-            context: $quietContext,
         );
 
         $modStatusContent = $statusResult->getOutput();
@@ -333,7 +326,7 @@ function fixturesCaptureApache(): void
         $outputPath = "{$fixturesDir}/apache-{$label}.json";
         file_put_contents($outputPath, json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
 
-        run("docker rm -f {$containerName}", context: $quietContext);
+        run("docker rm -f {$containerName}", context: $allowFailureContext);
 
         io()->success("Apache {$label} fixture saved to {$outputPath}");
     }

@@ -74,7 +74,7 @@ class MysqlVariablesCollectorTest extends TestCase
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {
-            self::markTestSkipped('No MySQL fixtures found. Run: ./vendor/bin/castor fixtures:capture-mysql');
+            self::fail('No MySQL fixtures found. Run: ./vendor/bin/castor fixtures:capture-mysql');
         }
 
         $dbMock = $this->createMock(MysqlAdapterInterface::class);

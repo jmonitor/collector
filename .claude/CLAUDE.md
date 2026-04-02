@@ -7,6 +7,10 @@ JMonitor is a web monitoring application designed to simplify the visualization 
 
 This project is the PHP library installed on your server via composer that gathers metrics from your environment (PHP, database, system, etc.). It periodically sends this data to JMonitor, enabling continuous monitoring and up-to-date dashboards.
 
+## Instructions
+
+Ensure this document is edited and kept up to date following any task that modifies the information or context described herein.
+
 ## Commands
 
 ```bash
@@ -50,6 +54,31 @@ MySQL and System collectors use an Adapter sub-pattern (e.g., PDO vs. Doctrine D
 ### HTTP Client
 
 `Client` uses PSR-18/PSR-17 and auto-discovers compatible implementations. A PSR-18 client (e.g., `symfony/http-client`) and a PSR-17 factory (e.g., `nyholm/psr7`) must be installed as separate dependencies.
+
+### Test Fixtures
+
+Some collectors have version-specific fixtures captured from real Docker containers. These fixtures are JSON files stored under `tests/Collector/<Name>/fixtures/` and are used as `@dataProvider` inputs to verify that the collector parses real output correctly across multiple versions.
+
+Tests that rely on fixtures skip gracefully when the fixture files are absent (e.g. in CI without Docker).
+
+Fixtures are generated via [Castor](https://castor.jolicode.com/) tasks defined in `castor.php`. Each task:
+1. Spins up one Docker container per version on a dedicated local port
+2. Seeds data so all sections of the output are populated (e.g. keyspace keys, database tables/rows)
+3. Queries the service and captures the raw response
+4. Writes a JSON fixture file to `tests/Collector/<Name>/fixtures/`
+5. Stops and removes the container
+
+```bash
+# Install Castor (once)
+composer require --dev jolicode/castor
+
+# Capture fixtures — requires Docker to be running
+./vendor/bin/castor fixtures:capture-redis   # Redis 6, 7, 8  → tests/Collector/Redis/fixtures/
+./vendor/bin/castor fixtures:capture-mysql   # MySQL 5.7/8.0/8.4 + MariaDB 10.6/10.11/11.4 → tests/Collector/Mysql/fixtures/
+./vendor/bin/castor fixtures:capture-apache  # Apache 2.4 → tests/Collector/Apache/fixtures/
+```
+
+When adding a new collector that needs version-specific testing, add a corresponding `fixtures:capture-<name>` task to `castor.php` following the same pattern.
 
 ### Code Style Requirements
 
