@@ -7,6 +7,7 @@ namespace Jmonitor\Tests\Collector\Caddy;
 use Jmonitor\Collector\Caddy\CaddyCollector;
 use Jmonitor\Prometheus\PrometheusMetricsProvider;
 use Jmonitor\Utils\ShellExecutor;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class CaddyCollectorTest extends TestCase
@@ -101,5 +102,66 @@ class CaddyCollectorTest extends TestCase
     public function testGetName(): void
     {
         self::assertSame('caddy', $this->collector->getName());
+    }
+
+    public static function caddyVersionsProvider(): array
+    {
+        $fixturesDir = __DIR__ . '/fixtures';
+        $files = glob($fixturesDir . '/caddy-*.json') ?: [];
+
+        if ($files === []) {
+            return ['no fixtures' => [[]]];
+        }
+
+        $data = [];
+        foreach ($files as $file) {
+            $name = basename($file, '.json');
+            $data[$name] = [json_decode((string) file_get_contents($file), true)];
+        }
+
+        return $data;
+    }
+
+    #[DataProvider('caddyVersionsProvider')]
+    public function testCollectWithRealVersionFixture(array $fixture): void
+    {
+        if ($fixture === []) {
+            self::fail('No Caddy version fixtures found. Run: ./vendor/bin/castor fixtures:capture-caddy');
+        }
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'jmonitor_caddy_fixture_');
+        self::assertNotFalse($tmpFile);
+
+        try {
+            file_put_contents($tmpFile, $fixture['metrics']);
+
+            $prometheusProvider = new PrometheusMetricsProvider($tmpFile);
+            $shellExecutor = $this->createMock(ShellExecutor::class);
+            $shellExecutor->method('execute')
+                ->with('caddy version')
+                ->willReturn($fixture['version']);
+
+            $result = (new CaddyCollector($prometheusProvider, $shellExecutor))->collect();
+
+            self::assertIsArray($result);
+
+            // La version doit être renseignée (caddy version s'exécute dans le container)
+            self::assertNotEmpty($result['version']);
+
+            // Les métriques process sont toujours présentes dans un Caddy qui tourne
+            self::assertNotNull($result['process_cpu_seconds_total']);
+            self::assertGreaterThan(0, $result['process_cpu_seconds_total']);
+            self::assertNotNull($result['process_resident_memory_bytes']);
+            self::assertGreaterThan(0, $result['process_resident_memory_bytes']);
+            self::assertNotNull($result['process_start_time_seconds']);
+            self::assertGreaterThan(0, $result['process_start_time_seconds']);
+
+            // La fixture est capturée avec le handler `respond` (= static_response) et 10 requêtes générées
+            self::assertGreaterThan(0, $result['requests_total']['static_response']);
+            self::assertGreaterThan(0, $result['response_size_bytes_sum']['static_response']);
+            self::assertGreaterThan(0, $result['request_duration_seconds_sum']['static_response']);
+        } finally {
+            unlink($tmpFile);
+        }
     }
 }

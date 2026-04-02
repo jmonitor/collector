@@ -76,6 +76,7 @@ composer require --dev jolicode/castor
 ./vendor/bin/castor fixtures:capture-redis   # Redis 6, 7, 8  → tests/Collector/Redis/fixtures/
 ./vendor/bin/castor fixtures:capture-mysql   # MySQL 5.7/8.0/8.4 + MariaDB 10.6/10.11/11.4 → tests/Collector/Mysql/fixtures/
 ./vendor/bin/castor fixtures:capture-apache  # Apache 2.4 → tests/Collector/Apache/fixtures/
+./vendor/bin/castor fixtures:capture-caddy   # Caddy 2 → tests/Collector/Caddy/fixtures/
 ```
 
 When adding a new collector that needs version-specific testing, add a corresponding `fixtures:capture-<name>` task to `castor.php` following the same pattern.

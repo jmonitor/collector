@@ -247,6 +247,109 @@ function fixturesCaptureMySQL(): void
     }
 }
 
+#[AsTask(name: 'fixtures:capture-caddy', description: 'Capture Caddy Prometheus metrics fixtures for different versions via Docker')]
+function fixturesCaptureCaddy(): void
+{
+    $versions = ['2'];
+    $httpPort = 8097;
+    $adminPort = 2099;
+    $fixturesDir = __DIR__ . '/tests/Collector/Caddy/fixtures';
+
+    if (!is_dir($fixturesDir)) {
+        mkdir($fixturesDir, 0755, true);
+    }
+
+    $allowFailureContext = new Context(allowFailure: true);
+
+    foreach ($versions as $version) {
+        $containerName = "jmonitor-caddy-{$version}";
+
+        io()->section("Capturing Caddy {$version}");
+
+        run("docker rm -f {$containerName}", context: $allowFailureContext);
+
+        run(
+            "docker run -d --name {$containerName} -p {$httpPort}:80 -p {$adminPort}:2019 caddy:{$version}",
+        );
+
+        // Write a Caddyfile that exposes the admin API on 0.0.0.0:2019 (not just localhost)
+        // so that the /metrics endpoint is reachable from the host
+        $caddyfile = "{\n    admin 0.0.0.0:2019\n    metrics\n}\n\n:80 {\n    respond \"Hello from JMonitor test\" 200\n}\n";
+        $tmpCaddyfile = tempnam(sys_get_temp_dir(), 'jmonitor_caddy_');
+        file_put_contents($tmpCaddyfile, $caddyfile);
+        run("docker cp {$tmpCaddyfile} {$containerName}:/etc/caddy/Caddyfile");
+        unlink($tmpCaddyfile);
+
+        // Reload Caddy with the new config (retry until the admin API is up)
+        $reloaded = false;
+        for ($i = 0; $i < 20; $i++) {
+            $result = run(
+                "docker exec {$containerName} caddy reload --config /etc/caddy/Caddyfile --address localhost:2019",
+                context: $allowFailureContext,
+            );
+            if ($result->getExitCode() === 0) {
+                $reloaded = true;
+                break;
+            }
+            usleep(500_000);
+        }
+
+        if (!$reloaded) {
+            run("docker rm -f {$containerName}", context: $allowFailureContext);
+            io()->error("Caddy {$version} did not accept config reload in time. Is Docker running?");
+            continue;
+        }
+
+        // Wait for metrics endpoint to be reachable from the host
+        $ready = false;
+        for ($i = 0; $i < 20; $i++) {
+            $result = run(
+                "curl -sf \"http://localhost:{$adminPort}/metrics\"",
+                context: $allowFailureContext,
+            );
+            if ($result->getExitCode() === 0 && str_contains($result->getOutput(), 'caddy_')) {
+                $ready = true;
+                break;
+            }
+            usleep(500_000);
+        }
+
+        if (!$ready) {
+            run("docker rm -f {$containerName}", context: $allowFailureContext);
+            io()->error("Caddy {$version} metrics endpoint did not become ready in time. Is Docker running?");
+            continue;
+        }
+
+        // Generate HTTP traffic to populate caddy_http_* metrics
+        for ($i = 0; $i < 10; $i++) {
+            run(
+                "curl -sf \"http://localhost:{$httpPort}/\"",
+                context: $allowFailureContext,
+            );
+        }
+
+        // Capture Prometheus metrics from admin API
+        $metricsResult = run("curl -sf \"http://localhost:{$adminPort}/metrics\"");
+        $metricsContent = $metricsResult->getOutput();
+
+        // Capture Caddy version string
+        $versionResult = run("docker exec {$containerName} caddy version");
+        $caddyVersion = trim($versionResult->getOutput());
+
+        $data = [
+            'metrics' => $metricsContent,
+            'version' => $caddyVersion,
+        ];
+
+        $outputPath = "{$fixturesDir}/caddy-{$version}.json";
+        file_put_contents($outputPath, json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+
+        run("docker rm -f {$containerName}", context: $allowFailureContext);
+
+        io()->success("Caddy {$version} fixture saved to {$outputPath}");
+    }
+}
+
 #[AsTask(name: 'fixtures:capture-apache', description: 'Capture Apache mod_status fixtures for different versions via Docker')]
 function fixturesCaptureApache(): void
 {
