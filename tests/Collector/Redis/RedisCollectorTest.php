@@ -136,7 +136,7 @@ class RedisCollectorTest extends TestCase
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {
-            self::markTestSkipped('No Redis version fixtures found. Run: ./vendor/bin/castor fixtures:capture-redis');
+            self::fail('No Redis version fixtures found. Run: ./vendor/bin/castor fixtures:capture-redis');
         }
 
         $redisMock = $this->createMock(\Predis\Client::class);

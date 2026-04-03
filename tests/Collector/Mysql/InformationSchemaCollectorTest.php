@@ -6,6 +6,7 @@ namespace Jmonitor\Tests\Collector\Mysql;
 
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlInformationSchemaCollector;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -107,5 +108,67 @@ class InformationSchemaCollectorTest extends TestCase
             'schema_name' => $dbName,
             'information_schema_readable' => false,
         ], $result);
+    }
+
+    public static function mysqlVersionsProvider(): array
+    {
+        $files = array_merge(
+            glob(__DIR__ . '/fixtures/mysql-*.json') ?: [],
+            glob(__DIR__ . '/fixtures/mariadb-*.json') ?: [],
+        );
+
+        if ($files === []) {
+            return ['no fixtures' => [[]]];
+        }
+
+        $data = [];
+        foreach ($files as $file) {
+            $name = basename($file, '.json');
+            $data[$name] = [json_decode((string) file_get_contents($file), true)];
+        }
+
+        return $data;
+    }
+
+    #[DataProvider('mysqlVersionsProvider')]
+    public function testCollectWithRealVersionFixture(array $fixture): void
+    {
+        if ($fixture === []) {
+            self::fail('No MySQL fixtures found. Run: ./vendor/bin/castor fixtures:capture-mysql');
+        }
+
+        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock->method('fetchAllAssociative')
+            ->willReturnCallback(static function (string $sql) use ($fixture): array {
+                if (str_contains($sql, 'information_schema')) {
+                    if (str_contains($sql, 'SELECT 1')) {
+                        if (!$fixture['informationSchema']['readable']) {
+                            throw new \Exception('information_schema not readable');
+                        }
+
+                        return [['1' => '1']];
+                    }
+
+                    return $fixture['informationSchema']['data'];
+                }
+
+                return [];
+            });
+
+        $collector = new MysqlInformationSchemaCollector($dbMock, 'jmonitor_test');
+        $collector->boot();
+        $result = $collector->collect();
+
+        self::assertArrayHasKey('schema_name', $result);
+        self::assertSame('jmonitor_test', $result['schema_name']);
+        self::assertArrayHasKey('information_schema_readable', $result);
+
+        if ($result['information_schema_readable']) {
+            self::assertArrayHasKey('data_weight', $result);
+            self::assertNotNull($result['data_weight']['data_length'], 'data_length should not be null when information_schema is readable');
+            self::assertNotNull($result['data_weight']['index_length'], 'index_length should not be null when information_schema is readable');
+        } else {
+            self::assertArrayNotHasKey('data_weight', $result);
+        }
     }
 }
