@@ -141,7 +141,7 @@ class RedisCollector implements CollectorInterface, LoggerAwareInterface
     private function getDatabases(array $infos): iterable
     {
         foreach ($infos as $k => $v) {
-            if (substr($k, 0, 2) === 'db') {
+            if (preg_match('/^db\d+$/', $k)) {
                 yield $k => $this->parseDb($v);
             }
         }

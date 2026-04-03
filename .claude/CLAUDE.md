@@ -59,8 +59,6 @@ MySQL and System collectors use an Adapter sub-pattern (e.g., PDO vs. Doctrine D
 
 Some collectors have version-specific fixtures captured from real Docker containers. These fixtures are JSON files stored under `tests/Collector/<Name>/fixtures/` and are used as `@dataProvider` inputs to verify that the collector parses real output correctly across multiple versions.
 
-Tests that rely on fixtures skip gracefully when the fixture files are absent (e.g. in CI without Docker).
-
 Fixtures are generated via [Castor](https://castor.jolicode.com/) tasks defined in `castor.php`. Each task:
 1. Spins up one Docker container per version on a dedicated local port
 2. Seeds data so all sections of the output are populated (e.g. keyspace keys, database tables/rows)
