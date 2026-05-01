@@ -60,7 +60,7 @@ class JmonitorTest extends TestCase
         self::assertSame(2, count($result->getMetrics()));
         self::assertTrue($result->getMetrics()[1]['threw']);
         self::assertCount(1, $result->getErrors());
-        self::assertSame('2 metric(s) collected with 1 error(s).', $result->getConclusion());
+        self::assertSame('Metric(s) collected with some errors. Inspect the logs and result for more informations.', $result->getConclusion());
     }
 
     public function testCollectHttpErrorReturnsResultWhenNotThrowing(): void
