@@ -7,13 +7,10 @@ namespace Jmonitor\Collector\Mysql;
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
-use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerAwareTrait;
+use Jmonitor\Exceptions\BootFailedException;
 
-class MysqlInformationSchemaCollector implements CollectorInterface, BootableCollectorInterface, LoggerAwareInterface
+class MysqlInformationSchemaCollector implements CollectorInterface, BootableCollectorInterface
 {
-    use LoggerAwareTrait;
-
     private const SQL = <<<SQL
         SELECT
             SUM(DATA_LENGTH) as data_length,
@@ -26,7 +23,6 @@ class MysqlInformationSchemaCollector implements CollectorInterface, BootableCol
 
     private MysqlAdapterInterface $db;
     private string $dbName;
-    private bool $informationSchemaReadable = true;
 
     public function __construct(MysqlAdapterInterface $db, string $dbName)
     {
@@ -39,11 +35,7 @@ class MysqlInformationSchemaCollector implements CollectorInterface, BootableCol
         try {
             $this->db->fetchAllAssociative('SELECT 1 FROM information_schema.TABLES LIMIT 1');
         } catch (\Throwable $throwable) {
-            $this->informationSchemaReadable = false;
-
-            $this->logger && $this->logger->warning('information_schema table is not readable, InformationSchemaCollector will be skipped', [
-                'exception' => $throwable,
-            ]);
+            throw new BootFailedException('information_schema table is not readable', $throwable);
         }
     }
 
@@ -51,12 +43,7 @@ class MysqlInformationSchemaCollector implements CollectorInterface, BootableCol
     {
         $data = [
             'schema_name' => $this->dbName,
-            'information_schema_readable' => $this->informationSchemaReadable,
         ];
-
-        if (!$this->informationSchemaReadable) {
-            return $data;
-        }
 
         $result = $this->db->fetchAllAssociative(self::SQL, [
             'dbName' => $this->dbName,

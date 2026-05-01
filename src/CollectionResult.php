@@ -24,6 +24,11 @@ class CollectionResult
      */
     private array $metrics = [];
 
+    /**
+     * @var array<string, \Throwable>
+     */
+    private array $bootErrors = [];
+
     private ?string $conclusion = null;
 
     public function setResponse(ResponseInterface $response)
@@ -47,6 +52,19 @@ class CollectionResult
     public function getErrors(): array
     {
         return $this->errors;
+    }
+
+    public function addBootError(string $collectorName, \Throwable $error): void
+    {
+        $this->bootErrors[$collectorName] = $error;
+    }
+
+    /**
+     * @return array<string, \Throwable>
+     */
+    public function getBootErrors(): array
+    {
+        return $this->bootErrors;
     }
 
     /**

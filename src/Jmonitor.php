@@ -7,6 +7,7 @@ namespace Jmonitor;
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\ResetInterface;
+use Jmonitor\Exceptions\BootFailedException;
 use Jmonitor\Exceptions\InvalidServerResponseException;
 use Jmonitor\Exceptions\NoCollectorException;
 use Psr\Http\Client\ClientInterface;
@@ -28,6 +29,11 @@ class Jmonitor
     private LoggerInterface $logger;
 
     private bool $booted = false;
+
+    /**
+     * @var array<string, BootFailedException>
+     */
+    private array $bootErrors = [];
 
     public function __construct(?string $projectApiKey, ?ClientInterface $httpClient = null, ?LoggerInterface $logger = null)
     {
@@ -78,6 +84,12 @@ class Jmonitor
 
         $metrics = [];
 
+        if (!$this->booted) {
+            $this->boot();
+
+            $this->booted = true;
+        }
+
         foreach ($this->collectors as $collector) {
             $started = microtime(true);
 
@@ -85,33 +97,33 @@ class Jmonitor
                 'version' => $collector->getVersion(),
                 'name' => $collector->getName(),
                 'metrics' => [],
+                'skipped' => isset($this->bootErrors[$collector->getName()]) ? true : null, // null will be removed, and mean false
                 // 'threw' => false, // no sent mean false
                 'duration' => null,
             ];
 
-            try {
-                if (!$this->booted) {
-                    $this->boot($collector);
+            // collector not bootable
+            if ($entry['skipped']) {
+                $result->addBootError($collector->getName(), $this->bootErrors[$collector->getName()]);
+            } else {
+                try {
+                    $entry['metrics'] = array_filter($collector->collect(), fn($value) => $value !== null);
+                } catch (\Throwable $e) {
+                    $result->addError($e);
+
+                    $this->logger->error('Exception thrown while collecting metrics', ['exception' => $e]);
+
+                    $entry['threw'] = true;
                 }
 
-                $entry['metrics'] = array_filter($collector->collect(), fn($value) => $value !== null);
-            } catch (\Throwable $e) {
-                $result->addError($e);
-
-                $this->logger->error('Exception thrown while collecting metrics', ['exception' => $e]);
-
-                $entry['threw'] = true;
-            }
-
-            if ($collector instanceof ResetInterface) {
-                $collector->reset();
+                if ($collector instanceof ResetInterface) {
+                    $collector->reset();
+                }
             }
 
             $entry['duration'] = microtime(true) - $started;
             $metrics[] = $entry;
         }
-
-        $this->booted = true;
 
         $result->setMetrics($metrics);
 
@@ -179,17 +191,40 @@ class Jmonitor
 
         $this->logger->info($message);
 
+        if ($this->bootErrors) {
+            $this->logger->warning(count($this->bootErrors) . ' collector(s) skipped due to boot failure(s)', [
+                'skipped_collectors' => array_keys($this->bootErrors),
+            ]);
+        }
+
         return $result->setConclusion($message);
     }
 
-    private function boot(CollectorInterface $collector): void
+    private function boot(): void
     {
-        if ($collector instanceof LoggerAwareInterface) {
-            $collector->setLogger($this->logger);
-        }
+        foreach ($this->collectors as $collector) {
+            if ($collector instanceof LoggerAwareInterface) {
+                $collector->setLogger($this->logger);
+            }
 
-        if ($collector instanceof BootableCollectorInterface) {
-            $collector->boot();
+            if ($collector instanceof BootableCollectorInterface) {
+                try {
+                    $collector->boot();
+                } catch (\Throwable $e) {
+                    if (!$e instanceof BootFailedException) {
+                        $e = new BootFailedException($e->getMessage(), 0, $e);
+                    }
+
+                    $this->bootErrors[$collector->getName()] = $e;
+
+                    $this->logger->error('Failed to boot collector ' . $collector->getName() . ', it will be skipped.', [
+                        // It does not seem relevant to include the BootFailedException object itself,
+                        // since no public information is available beyond the message (and the previous, if any)
+                        'reason' => $e->getMessage(),
+                        'exception' => $e->getPrevious(),
+                    ]);
+                }
+            }
         }
     }
 }

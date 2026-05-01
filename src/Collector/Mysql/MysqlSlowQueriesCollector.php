@@ -7,13 +7,10 @@ namespace Jmonitor\Collector\Mysql;
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
-use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerAwareTrait;
+use Jmonitor\Exceptions\BootFailedException;
 
-class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollectorInterface, LoggerAwareInterface
+class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollectorInterface
 {
-    use LoggerAwareTrait;
-
     public const ORDER_BY_TOTAL_TIME = 'sum';
     public const ORDER_BY_AVG_TIME = 'avg';
     public const ORDER_BY_MAX_TIME = 'max';
@@ -57,7 +54,6 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
     private string $dbName;
     private int $limit;
     private int $minExecCount;
-    private bool $performanceSchemaReadable = true;
     private int $minAvgTimeMs;
     private string $orderBy;
     private string $sql;
@@ -82,34 +78,22 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
         try {
             $this->db->fetchAllAssociative('SELECT 1 FROM performance_schema.events_statements_summary_by_digest LIMIT 1');
         } catch (\Throwable $throwable) {
-            $this->performanceSchemaReadable = false;
-
-            $this->logger && $this->logger->warning('performance_schema table is not readable, SlowQueriesCollector will be skipped', [
-                'exception' => $throwable,
-            ]);
+            throw new BootFailedException('performance_schema table is not readable', $throwable);
         }
     }
 
     public function collect(): array
     {
-        $data = [
+        return [
             'schema_name' => $this->dbName,
-            'performance_schema_readable' => $this->performanceSchemaReadable,
             'min_exec_count' => $this->minExecCount,
             'min_avg_time_ms' => $this->minAvgTimeMs,
             'limit' => $this->limit,
             'order_by' => $this->orderBy,
+            'slow_queries' => $this->db->fetchAllAssociative($this->sql, [
+                'dbName' => $this->dbName,
+            ]),
         ];
-
-        if (!$this->performanceSchemaReadable) {
-            return $data;
-        }
-
-        $data['slow_queries'] = $this->db->fetchAllAssociative($this->sql, [
-            'dbName' => $this->dbName,
-        ]);
-
-        return $data;
     }
 
     public function getVersion(): int

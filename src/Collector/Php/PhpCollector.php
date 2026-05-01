@@ -4,18 +4,29 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Php;
 
+use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
+use Jmonitor\Exceptions\BootFailedException;
+use Jmonitor\Exceptions\CollectorException;
+use Jmonitor\Utils\UrlFetcher;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 
 /**
  * I guess INI-related values could be cached in a property cache, but is the performance impact real?
  */
-class PhpCollector implements CollectorInterface
+class PhpCollector implements CollectorInterface, BootableCollectorInterface, LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     private ?string $endpointUrl;
 
-    public function __construct(?string $endpointUrl = null)
+    private UrlFetcher $urlFetcher;
+
+    public function __construct(?string $endpointUrl = null, ?UrlFetcher $urlFetcher = null)
     {
         $this->endpointUrl = $endpointUrl;
+        $this->urlFetcher = $urlFetcher ?? new UrlFetcher();
     }
 
     public function collect(): array
@@ -52,6 +63,23 @@ class PhpCollector implements CollectorInterface
         ];
     }
 
+    public function boot(): void
+    {
+        if (!$this->endpointUrl) {
+            $this->logger->notice('No endpoint URL provided, PHP Collector will collect data from current PHP process, which may not be relevant if your application runs in a different execution mode (e.g., CLI vs. Web).', [
+                'current mode (SAPI)' => php_sapi_name(),
+            ]);
+
+            return;
+        }
+
+        try {
+            $this->collectFromUrl();
+        } catch (CollectorException $e) {
+            throw new BootFailedException($e->getMessage(), $e->getPrevious() ?: $e);
+        }
+    }
+
     public function getName(): string
     {
         return 'php';
@@ -64,9 +92,11 @@ class PhpCollector implements CollectorInterface
 
     private function collectFromUrl(): array
     {
-        $metrics = @file_get_contents($this->endpointUrl);
-
-        return json_decode($metrics, true);
+        try {
+            return $this->urlFetcher->fetchJson($this->endpointUrl);
+        } catch (\RuntimeException $e) {
+            throw new CollectorException('Fail to fetch PHP collector endpoint', __CLASS__, $e);
+        }
     }
 
     /**
