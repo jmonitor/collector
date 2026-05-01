@@ -15,6 +15,7 @@ class CollectionResult
     private ?ResponseInterface $response = null;
 
     /**
+     * This is collect() errors. Boot errors can still exist.
      * @var \Throwable[]
      */
     private array $errors = [];

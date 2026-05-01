@@ -76,7 +76,10 @@ class PhpCollector implements CollectorInterface, BootableCollectorInterface, Lo
         try {
             $this->collectFromUrl();
         } catch (CollectorException $e) {
-            throw new BootFailedException($e->getMessage(), $e->getPrevious() ?: $e);
+            throw new BootFailedException(
+                $e->getPrevious() ? $e->getPrevious()->getMessage() : $e->getMessage(),
+                $e->getPrevious() ?: $e
+            );
         }
     }
 

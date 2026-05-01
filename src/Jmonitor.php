@@ -181,21 +181,23 @@ class Jmonitor
             }
         }
 
-        if (count($result->getErrors()) === 0) {
-            $this->logger->info(count($metrics) . ' metric(s) collected successfully.');
-
-            return $result->setConclusion(count($metrics) . ' metric(s) collected successfully.');
-        }
-
-        $message = count($metrics) . ' metric(s) collected with ' . count($result->getErrors()) . ' error(s).';
-
-        $this->logger->info($message);
-
-        if ($this->bootErrors) {
-            $this->logger->warning(count($this->bootErrors) . ' collector(s) skipped due to boot failure(s)', [
+        if ($result->getErrors() || $result->getBootErrors()) {
+            $context = array_filter([
+                'boot_errors' => count($this->bootErrors),
+                'collect_errors' => count($result->getErrors()),
+                'successfully' => count($metrics) - count($result->getErrors()) - count($this->bootErrors),
                 'skipped_collectors' => array_keys($this->bootErrors),
-            ]);
+            ], fn($value) => $value !== []);
+
+            $this->logger->warning('metric(s) collected with errors.', $context);
+
+            return $result->setConclusion(
+                'Metric(s) collected with some errors. Inspect the logs and result for more informations.'
+            );
         }
+
+        $message = 'All metric(s) collected successfully.';
+        $this->logger->info($message, ['total' => count($metrics)]);
 
         return $result->setConclusion($message);
     }
@@ -212,7 +214,7 @@ class Jmonitor
                     $collector->boot();
                 } catch (\Throwable $e) {
                     if (!$e instanceof BootFailedException) {
-                        $e = new BootFailedException($e->getMessage(), 0, $e);
+                        $e = new BootFailedException($e->getMessage(), $e);
                     }
 
                     $this->bootErrors[$collector->getName()] = $e;
