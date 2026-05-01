@@ -5,10 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0]
 
 ### Added
-- Better worker example
+- Improved worker example
+- Improved boot error handling and logging
+- Added UrlFetcher (wrapper for file_get_contents) for better error handling
+- [PHP Collector] Added boot process and integrated UrlFetcher
+- [Apache Collector] Added boot process and integrated UrlFetcher
+- [Nginx Collector] Added boot process and integrated UrlFetcher
+- [PrometheusMetricsProvider] Now uses integrated UrlFetcher
+- Added `bootErrors` to `CollectionResult`
 
 ## [1.1.2] - 2026-04-03
 

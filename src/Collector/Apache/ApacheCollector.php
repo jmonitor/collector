@@ -4,28 +4,45 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Apache;
 
+use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
+use Jmonitor\Exceptions\BootFailedException;
 use Jmonitor\Exceptions\CollectorException;
+use Jmonitor\Utils\UrlFetcher;
 
 /**
  * Collects metrics using the Apache mod_status module.
  */
-class ApacheCollector implements CollectorInterface
+class ApacheCollector implements CollectorInterface, BootableCollectorInterface
 {
     private string $modStatusUrl;
+    private UrlFetcher $urlFetcher;
 
     /**
      * @var array<string, mixed>
      */
     private array $datas = [];
 
-    public function __construct(string $modStatusUrl)
+    public function __construct(string $modStatusUrl, ?UrlFetcher $urlFetcher = null)
     {
         if (substr($modStatusUrl, 0, 4) === 'http' && substr($modStatusUrl, -5) !== '?auto') {
             $modStatusUrl .= '?auto';
         }
 
         $this->modStatusUrl = $modStatusUrl;
+        $this->urlFetcher = $urlFetcher ?? new UrlFetcher();
+    }
+
+    public function boot(): void
+    {
+        try {
+            $this->loadDatas();
+        } catch (CollectorException $e) {
+            throw new BootFailedException(
+                $e->getPrevious() ? $e->getPrevious()->getMessage() : $e->getMessage(),
+                $e->getPrevious() ?: $e
+            );
+        }
     }
 
     public function collect(): array
@@ -72,10 +89,10 @@ class ApacheCollector implements CollectorInterface
     {
         $this->datas = [];
 
-        $content = @file_get_contents($this->modStatusUrl);
-
-        if (!$content) {
-            throw new CollectorException('Could not fetch data from ' . $this->modStatusUrl, __CLASS__);
+        try {
+            $content = $this->urlFetcher->fetch($this->modStatusUrl);
+        } catch (\RuntimeException $e) {
+            throw new CollectorException($e->getMessage(), __CLASS__, $e);
         }
 
         $lines = explode("\n", $content);

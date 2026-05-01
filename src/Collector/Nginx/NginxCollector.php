@@ -4,27 +4,41 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Nginx;
 
+use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
+use Jmonitor\Exceptions\BootFailedException;
 use Jmonitor\Exceptions\CollectorException;
 use Jmonitor\Utils\ShellExecutor;
+use Jmonitor\Utils\UrlFetcher;
 
 /**
  * Collects metrics using the Nginx stub_status module.
  */
-class NginxCollector implements CollectorInterface
+class NginxCollector implements CollectorInterface, BootableCollectorInterface
 {
     private string $endpoint;
     private ShellExecutor $shellExecutor;
+    private UrlFetcher $urlFetcher;
 
     /**
      * @var mixed[]
      */
     private array $propertyCache = [];
 
-    public function __construct(string $endpoint, ?ShellExecutor $shellExecutor = null)
+    public function __construct(string $endpoint, ?ShellExecutor $shellExecutor = null, ?UrlFetcher $urlFetcher = null)
     {
         $this->endpoint = $endpoint;
         $this->shellExecutor = $shellExecutor ?? new ShellExecutor();
+        $this->urlFetcher = $urlFetcher ?? new UrlFetcher();
+    }
+
+    public function boot(): void
+    {
+        try {
+            $this->urlFetcher->fetch($this->endpoint);
+        } catch (\RuntimeException $e) {
+            throw new BootFailedException($e->getMessage(), $e);
+        }
     }
 
     public function collect(): array
@@ -52,10 +66,10 @@ class NginxCollector implements CollectorInterface
 
     private function getStatus(): array
     {
-        $content = @file_get_contents($this->endpoint);
-
-        if (!$content) {
-            throw new CollectorException('Could not fetch data from ' . $this->endpoint, __CLASS__);
+        try {
+            $content = $this->urlFetcher->fetch($this->endpoint);
+        } catch (\RuntimeException $e) {
+            throw new CollectorException($e->getMessage(), __CLASS__, $e);
         }
 
         preg_match('/Active connections:\s+(\d+)/', $content, $active);

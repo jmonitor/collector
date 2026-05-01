@@ -66,7 +66,7 @@ class PhpCollector implements CollectorInterface, BootableCollectorInterface, Lo
     public function boot(): void
     {
         if (!$this->endpointUrl) {
-            $this->logger->notice('No endpoint URL provided, PHP Collector will collect data from current PHP process, which may not be relevant if your application runs in a different execution mode (e.g., CLI vs. Web).', [
+            $this->logger && $this->logger->notice('No endpoint URL provided, PHP Collector will collect data from current PHP process, which may not be relevant if your application runs in a different execution mode (e.g., CLI vs. Web).', [
                 'current mode (SAPI)' => php_sapi_name(),
             ]);
 
@@ -98,7 +98,7 @@ class PhpCollector implements CollectorInterface, BootableCollectorInterface, Lo
         try {
             return $this->urlFetcher->fetchJson($this->endpointUrl);
         } catch (\RuntimeException $e) {
-            throw new CollectorException('Fail to fetch PHP collector endpoint', __CLASS__, $e);
+            throw new CollectorException($e->getMessage(), __CLASS__, $e);
         }
     }
 

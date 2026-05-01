@@ -8,7 +8,7 @@ class UrlFetcher
 {
     private int $timeout;
 
-    public function __construct(int $timeout = 5)
+    public function __construct(int $timeout = 3)
     {
         $this->timeout = $timeout;
     }

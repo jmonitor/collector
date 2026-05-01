@@ -59,6 +59,8 @@ class Jmonitor
         $clone = clone $this;
 
         $clone->collectors = [$this->collectors[$name]];
+        $clone->booted = false;
+        $clone->bootErrors = [];
 
         return $clone;
     }
@@ -97,13 +99,14 @@ class Jmonitor
                 'version' => $collector->getVersion(),
                 'name' => $collector->getName(),
                 'metrics' => [],
-                'skipped' => isset($this->bootErrors[$collector->getName()]) ? true : null, // null will be removed, and mean false
+                // 'skipped' => false, // no sent mean false
                 // 'threw' => false, // no sent mean false
                 'duration' => null,
             ];
 
             // collector not bootable
-            if ($entry['skipped']) {
+            if (isset($this->bootErrors[$collector->getName()])) {
+                $entry['skipped'] = true;
                 $result->addBootError($collector->getName(), $this->bootErrors[$collector->getName()]);
             } else {
                 try {
