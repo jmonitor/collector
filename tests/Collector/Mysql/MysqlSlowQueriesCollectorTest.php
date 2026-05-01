@@ -6,9 +6,9 @@ namespace Jmonitor\Tests\Collector\Mysql;
 
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlSlowQueriesCollector;
+use Jmonitor\Exceptions\BootFailedException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 class MysqlSlowQueriesCollectorTest extends TestCase
 {
@@ -38,29 +38,22 @@ class MysqlSlowQueriesCollectorTest extends TestCase
         $collector = new MysqlSlowQueriesCollector($dbMock, 'test_db');
         $collector->boot();
 
-        // On peut vérifier l'état via collect()
         $result = $collector->collect();
-        $this->assertTrue($result['performance_schema_readable']);
+        $this->assertSame('test_db', $result['schema_name']);
+        $this->assertArrayHasKey('slow_queries', $result);
     }
 
     public function testBootFailure(): void
     {
         $dbMock = $this->createMock(MysqlAdapterInterface::class);
-        $dbMock->expects($this->atLeastOnce())
+        $dbMock->expects($this->once())
             ->method('fetchAllAssociative')
             ->willThrowException(new \Exception('Table not found'));
 
-        $loggerMock = $this->createMock(LoggerInterface::class);
-        $loggerMock->expects($this->once())
-            ->method('warning')
-            ->with($this->stringContains('not readable'));
-
         $collector = new MysqlSlowQueriesCollector($dbMock, 'test_db');
-        $collector->setLogger($loggerMock);
-        $collector->boot();
 
-        $result = $collector->collect();
-        $this->assertFalse($result['performance_schema_readable']);
+        $this->expectException(BootFailedException::class);
+        $collector->boot();
     }
 
     public function testCollectReadable(): void
@@ -84,7 +77,6 @@ class MysqlSlowQueriesCollectorTest extends TestCase
         $result = $collector->collect();
 
         $this->assertSame($dbName, $result['schema_name']);
-        $this->assertTrue($result['performance_schema_readable']);
         $this->assertSame($minExecCount, $result['min_exec_count']);
         $this->assertSame($minAvgTimeMs, $result['min_avg_time_ms']);
         $this->assertSame($limit, $result['limit']);
@@ -97,15 +89,11 @@ class MysqlSlowQueriesCollectorTest extends TestCase
         $dbMock = $this->createMock(MysqlAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')->willThrowException(new \Exception('Error'));
 
-        $loggerMock = $this->createMock(LoggerInterface::class);
         $collector = new MysqlSlowQueriesCollector($dbMock, 'test_db');
-        $collector->setLogger($loggerMock);
+
+        $this->expectException(BootFailedException::class);
+        $this->expectExceptionMessage('performance_schema table is not readable');
         $collector->boot();
-
-        $result = $collector->collect();
-
-        $this->assertFalse($result['performance_schema_readable']);
-        $this->assertArrayNotHasKey('slow_queries', $result);
     }
 
     public function testMinAvgTimeMsIsConvertedToPicosecondsInSql(): void
@@ -220,28 +208,30 @@ class MysqlSlowQueriesCollectorTest extends TestCase
             });
 
         $collector = new MysqlSlowQueriesCollector($dbMock, 'jmonitor_test');
-        $collector->boot();
+
+        try {
+            $collector->boot();
+        } catch (BootFailedException $e) {
+            $this->assertFalse($fixture['slowQueries']['readable']);
+
+            return;
+        }
+
         $result = $collector->collect();
 
         self::assertArrayHasKey('schema_name', $result);
         self::assertSame('jmonitor_test', $result['schema_name']);
-        self::assertArrayHasKey('performance_schema_readable', $result);
         self::assertArrayHasKey('limit', $result);
         self::assertArrayHasKey('order_by', $result);
+        self::assertArrayHasKey('slow_queries', $result);
+        self::assertIsArray($result['slow_queries']);
 
-        if ($result['performance_schema_readable']) {
-            self::assertArrayHasKey('slow_queries', $result);
-            self::assertIsArray($result['slow_queries']);
-
-            foreach ($result['slow_queries'] as $query) {
-                self::assertNotNull($query['query_sample'], 'query_sample should not be null');
-                self::assertNotNull($query['exec_count'], 'exec_count should not be null');
-                self::assertNotNull($query['avg_time_ms'], 'avg_time_ms should not be null');
-                self::assertNotNull($query['max_time_ms'], 'max_time_ms should not be null');
-                self::assertNotNull($query['total_time_ms'], 'total_time_ms should not be null');
-            }
-        } else {
-            self::assertArrayNotHasKey('slow_queries', $result);
+        foreach ($result['slow_queries'] as $query) {
+            self::assertNotNull($query['query_sample'], 'query_sample should not be null');
+            self::assertNotNull($query['exec_count'], 'exec_count should not be null');
+            self::assertNotNull($query['avg_time_ms'], 'avg_time_ms should not be null');
+            self::assertNotNull($query['max_time_ms'], 'max_time_ms should not be null');
+            self::assertNotNull($query['total_time_ms'], 'total_time_ms should not be null');
         }
     }
 }

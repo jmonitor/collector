@@ -6,9 +6,9 @@ namespace Jmonitor\Tests\Collector\Mysql;
 
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlInformationSchemaCollector;
+use Jmonitor\Exceptions\BootFailedException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 class InformationSchemaCollectorTest extends TestCase
 {
@@ -38,7 +38,6 @@ class InformationSchemaCollectorTest extends TestCase
 
         $this->assertSame([
             'schema_name' => $dbName,
-            'information_schema_readable' => true,
             'data_weight' => [
                 'data_length' => 1024,
                 'index_length' => 512,
@@ -65,7 +64,6 @@ class InformationSchemaCollectorTest extends TestCase
 
         $this->assertEquals([
             'schema_name' => $dbName,
-            'information_schema_readable' => true,
             'data_weight' => [
                 'data_length' => null,
                 'index_length' => null,
@@ -93,21 +91,16 @@ class InformationSchemaCollectorTest extends TestCase
     {
         $dbMock = $this->createMock(MysqlAdapterInterface::class);
         $dbName = 'test_db';
-        $loggerMock = $this->createMock(LoggerInterface::class);
 
         $dbMock->expects($this->once())
             ->method('fetchAllAssociative')
             ->willThrowException(new \Exception('Table is not readable'));
 
         $collector = new MysqlInformationSchemaCollector($dbMock, $dbName);
-        $collector->setLogger($loggerMock);
-        $collector->boot();
-        $result = $collector->collect();
 
-        $this->assertEquals([
-            'schema_name' => $dbName,
-            'information_schema_readable' => false,
-        ], $result);
+        $this->expectException(BootFailedException::class);
+        $this->expectExceptionMessage('information_schema table is not readable');
+        $collector->boot();
     }
 
     public static function mysqlVersionsProvider(): array
@@ -156,19 +149,21 @@ class InformationSchemaCollectorTest extends TestCase
             });
 
         $collector = new MysqlInformationSchemaCollector($dbMock, 'jmonitor_test');
-        $collector->boot();
+
+        try {
+            $collector->boot();
+        } catch (BootFailedException $e) {
+            $this->assertFalse($fixture['informationSchema']['readable']);
+
+            return;
+        }
+
         $result = $collector->collect();
 
         self::assertArrayHasKey('schema_name', $result);
         self::assertSame('jmonitor_test', $result['schema_name']);
-        self::assertArrayHasKey('information_schema_readable', $result);
-
-        if ($result['information_schema_readable']) {
-            self::assertArrayHasKey('data_weight', $result);
-            self::assertNotNull($result['data_weight']['data_length'], 'data_length should not be null when information_schema is readable');
-            self::assertNotNull($result['data_weight']['index_length'], 'index_length should not be null when information_schema is readable');
-        } else {
-            self::assertArrayNotHasKey('data_weight', $result);
-        }
+        self::assertArrayHasKey('data_weight', $result);
+        self::assertNotNull($result['data_weight']['data_length'], 'data_length should not be null when information_schema is readable');
+        self::assertNotNull($result['data_weight']['index_length'], 'index_length should not be null when information_schema is readable');
     }
 }

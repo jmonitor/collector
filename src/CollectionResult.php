@@ -15,6 +15,7 @@ class CollectionResult
     private ?ResponseInterface $response = null;
 
     /**
+     * This is collect() errors. Boot errors can still exist.
      * @var \Throwable[]
      */
     private array $errors = [];
@@ -23,6 +24,11 @@ class CollectionResult
      * @var mixed[]
      */
     private array $metrics = [];
+
+    /**
+     * @var array<string, \Throwable>
+     */
+    private array $bootErrors = [];
 
     private ?string $conclusion = null;
 
@@ -47,6 +53,19 @@ class CollectionResult
     public function getErrors(): array
     {
         return $this->errors;
+    }
+
+    public function addBootError(string $collectorName, \Throwable $error): void
+    {
+        $this->bootErrors[$collectorName] = $error;
+    }
+
+    /**
+     * @return array<string, \Throwable>
+     */
+    public function getBootErrors(): array
+    {
+        return $this->bootErrors;
     }
 
     /**
