@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Mysql;
 
+use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
+use Jmonitor\Exceptions\BootFailedException;
 
-class MysqlVariablesCollector implements CollectorInterface
+class MysqlVariablesCollector implements CollectorInterface, BootableCollectorInterface
 {
     private const VARIABLES = [
         'innodb_buffer_pool_size',
@@ -49,6 +51,15 @@ class MysqlVariablesCollector implements CollectorInterface
     public function __construct(MysqlAdapterInterface $db)
     {
         $this->db = $db;
+    }
+
+    public function boot(): void
+    {
+        try {
+            $this->db->fetchAllAssociative('SHOW GLOBAL VARIABLES LIMIT 1');
+        } catch (\Throwable $throwable) {
+            throw new BootFailedException('SHOW GLOBAL VARIABLES is not accessible', $throwable);
+        }
     }
 
     public function collect(): array

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Jmonitor\Collector\Mysql;
 
+use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
+use Jmonitor\Exceptions\BootFailedException;
 
-class MysqlStatusCollector implements CollectorInterface
+class MysqlStatusCollector implements CollectorInterface, BootableCollectorInterface
 {
     /**
      * @var MysqlAdapterInterface
@@ -49,6 +51,15 @@ class MysqlStatusCollector implements CollectorInterface
     public function __construct(MysqlAdapterInterface $db)
     {
         $this->db = $db;
+    }
+
+    public function boot(): void
+    {
+        try {
+            $this->db->fetchAllAssociative('SHOW GLOBAL STATUS LIMIT 1');
+        } catch (\Throwable $throwable) {
+            throw new BootFailedException('SHOW GLOBAL STATUS is not accessible', $throwable);
+        }
     }
 
     public function collect(): array
