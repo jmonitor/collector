@@ -6,6 +6,7 @@ namespace Jmonitor\Tests\Collector\Mysql;
 
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlStatusCollector;
+use Jmonitor\Exceptions\BootFailedException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -48,6 +49,34 @@ class MysqlStatusCollectorTest extends TestCase
         $collector = new MysqlStatusCollector($dbMock);
 
         self::assertSame(1, $collector->getVersion());
+    }
+
+    public function testBootSuccess(): void
+    {
+        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock->expects($this->once())
+            ->method('fetchAllAssociative')
+            ->with($this->stringContains("SHOW GLOBAL STATUS LIKE"))
+            ->willReturn([['Variable_name' => 'Uptime', 'Value' => '3600']]);
+
+        $collector = new MysqlStatusCollector($dbMock);
+        $collector->boot();
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testBootFailure(): void
+    {
+        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock->expects($this->once())
+            ->method('fetchAllAssociative')
+            ->willThrowException(new \Exception('Access denied'));
+
+        $collector = new MysqlStatusCollector($dbMock);
+
+        $this->expectException(BootFailedException::class);
+        $this->expectExceptionMessage('SHOW GLOBAL STATUS is not accessible');
+        $collector->boot();
     }
 
     public static function mysqlVersionsProvider(): array

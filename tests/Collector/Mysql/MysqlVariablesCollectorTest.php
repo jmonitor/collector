@@ -6,6 +6,7 @@ namespace Jmonitor\Tests\Collector\Mysql;
 
 use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlVariablesCollector;
+use Jmonitor\Exceptions\BootFailedException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -48,6 +49,34 @@ class MysqlVariablesCollectorTest extends TestCase
         $collector = new MysqlVariablesCollector($dbMock);
 
         self::assertSame(1, $collector->getVersion());
+    }
+
+    public function testBootSuccess(): void
+    {
+        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock->expects($this->once())
+            ->method('fetchAllAssociative')
+            ->with($this->stringContains("SHOW GLOBAL VARIABLES LIKE"))
+            ->willReturn([['Variable_name' => 'version', 'Value' => '8.0.23']]);
+
+        $collector = new MysqlVariablesCollector($dbMock);
+        $collector->boot();
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testBootFailure(): void
+    {
+        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock->expects($this->once())
+            ->method('fetchAllAssociative')
+            ->willThrowException(new \Exception('Access denied'));
+
+        $collector = new MysqlVariablesCollector($dbMock);
+
+        $this->expectException(BootFailedException::class);
+        $this->expectExceptionMessage('SHOW GLOBAL VARIABLES is not accessible');
+        $collector->boot();
     }
 
     public static function mysqlVersionsProvider(): array

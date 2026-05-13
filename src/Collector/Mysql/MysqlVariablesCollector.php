@@ -56,7 +56,7 @@ class MysqlVariablesCollector implements CollectorInterface, BootableCollectorIn
     public function boot(): void
     {
         try {
-            $this->db->fetchAllAssociative('SHOW GLOBAL VARIABLES LIMIT 1');
+            $this->db->fetchAllAssociative("SHOW GLOBAL VARIABLES LIKE 'version'");
         } catch (\Throwable $throwable) {
             throw new BootFailedException('SHOW GLOBAL VARIABLES is not accessible', $throwable);
         }

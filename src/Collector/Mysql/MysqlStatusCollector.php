@@ -56,7 +56,7 @@ class MysqlStatusCollector implements CollectorInterface, BootableCollectorInter
     public function boot(): void
     {
         try {
-            $this->db->fetchAllAssociative('SHOW GLOBAL STATUS LIMIT 1');
+            $this->db->fetchAllAssociative("SHOW GLOBAL STATUS LIKE 'Uptime'");
         } catch (\Throwable $throwable) {
             throw new BootFailedException('SHOW GLOBAL STATUS is not accessible', $throwable);
         }
