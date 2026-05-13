@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- [MySQL Collector] `MysqlStatusCollector` and `MysqlVariablesCollector` now implement `BootableCollectorInterface`: a lightweight boot probe (`SHOW GLOBAL STATUS/VARIABLES LIKE ...`) detects permission errors at startup and marks the collector as skipped, consistent with other MySQL collectors.
+- [MySQL Collector] `MysqlStatusCollector` and `MysqlVariablesCollector` now implement `BootableCollectorInterface` to detect permission errors at startup.
+
+### Fixed
+- [PHP Collector] Sanitize `NAN`/`INF` float values from OPcache statistics to prevent `json_encode` failures (PHP 8.5+).
 
 ## [1.2.1] - 2026-05-07
 

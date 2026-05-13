@@ -27,6 +27,15 @@ class PhpCollectorTest extends TestCase
         self::assertArrayHasKey('fpm', $result);
     }
 
+    public function testCollectIsJsonEncodable(): void
+    {
+        $collector = new PhpCollector();
+        $result = $collector->collect();
+
+        $encoded = json_encode($result, JSON_THROW_ON_ERROR);
+        self::assertIsString($encoded);
+    }
+
     public function testCollectFromUrl(): void
     {
         $expected = [

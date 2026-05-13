@@ -156,10 +156,24 @@ class PhpCollector implements CollectorInterface, BootableCollectorInterface, Lo
 
         unset($status['preload_statistics']);
 
-        return [
+        return $this->sanitizeFloats([
             'config' => $config,
             'status' => $status,
-        ];
+        ]);
+    }
+
+    /**
+     * NAN et INF/-INF not supported => replaced by null
+     */
+    private function sanitizeFloats(array $data): array
+    {
+        array_walk_recursive($data, static function (&$value): void {
+            if (is_float($value) && !is_finite($value)) {
+                $value = null;
+            }
+        });
+
+        return $data;
     }
 
     private function getApcuInfos(): array
