@@ -350,6 +350,117 @@ function fixturesCaptureCaddy(): void
     }
 }
 
+function ensureComposerPhar(): string
+{
+    $phar = __DIR__ . DIRECTORY_SEPARATOR . 'composer.phar';
+
+    if (!file_exists($phar)) {
+        io()->writeln('Downloading composer.phar (one-time setup)...');
+        $projectDir = str_replace('\\', '/', __DIR__);
+        $setup = "{$projectDir}/composer-setup.php";
+        run("php -r \"copy('https://getcomposer.org/installer', '{$setup}');\"");
+        run("php {$setup} --quiet --install-dir={$projectDir} --filename=composer.phar");
+        @unlink(__DIR__ . DIRECTORY_SEPARATOR . 'composer-setup.php');
+    }
+
+    return str_replace('\\', '/', $phar);
+}
+
+function ensurePhpWebImage(string $version): string
+{
+    $image = "jmonitor-php-web:{$version}";
+
+    $exists = run(
+        "docker image inspect {$image}",
+        context: new Context(allowFailure: true, quiet: true),
+    )->getExitCode() === 0;
+
+    if (!$exists) {
+        io()->writeln("  Building {$image} (one-time)...");
+
+        $contextDir = str_replace('\\', '/', __DIR__ . '/tests/Collector/Php/docker-web');
+
+        run("docker build -t {$image} --build-arg PHP_VERSION={$version} {$contextDir}");
+    }
+
+    return $image;
+}
+
+#[AsTask(name: 'fixtures:capture-php-web', description: 'Capture PhpCollector output fixtures in web context (PHP-FPM + Nginx) for different PHP versions')]
+function fixturesCapturePhpWeb(): void
+{
+    $versions = ['7.4', '8.1', '8.2', '8.3', '8.4', '8.5'];
+    $port = 8098;
+    $fixturesDir = __DIR__ . '/tests/Collector/Php/fixtures';
+    $projectDir = str_replace('\\', '/', __DIR__);
+    $composerPhar = ensureComposerPhar();
+
+    if (!is_dir($fixturesDir)) {
+        mkdir($fixturesDir, 0755, true);
+    }
+
+    $allowFailureContext = new Context(allowFailure: true, quiet: true);
+
+    foreach ($versions as $version) {
+        $containerName = "jmonitor-php-web-{$version}";
+        $vendorVolume = "jmonitor-php-vendor-{$version}";
+
+        io()->section("Capturing PHP {$version} (web/FPM)");
+
+        run("docker rm -f {$containerName}", context: $allowFailureContext);
+
+        $image = ensurePhpWebImage($version);
+
+        run(
+            "docker run -d --name {$containerName}"
+            . " -p {$port}:80"
+            . " -v \"{$vendorVolume}:/app/vendor\""
+            . " -v \"{$composerPhar}:/tmp/composer.phar:ro\""
+            . " -v \"{$projectDir}/src:/app/src:ro\""
+            . " -v \"{$projectDir}/tests/Collector/Php/composer.json:/app/composer.json:ro\""
+            . " -v \"{$projectDir}/tests/Collector/Php/fixture-runner.php:/app/tests/Collector/Php/fixture-runner.php:ro\""
+            . " {$image}",
+        );
+
+        // Wait for readiness: entrypoint may run composer install on first use
+        $ready = false;
+        $lastValidResult = null;
+        for ($i = 0; $i < 30; $i++) {
+            $result = run(
+                "curl -sf \"http://localhost:{$port}/fixture-runner.php\"",
+                context: $allowFailureContext,
+            );
+            if ($result->getExitCode() === 0) {
+                try {
+                    json_decode($result->getOutput(), true, 512, JSON_THROW_ON_ERROR);
+                    $lastValidResult = $result;
+                    $ready = true;
+                    break;
+                } catch (\JsonException) {
+                    // not ready yet
+                }
+            }
+            usleep(500_000);
+        }
+
+        if (!$ready) {
+            run("docker rm -f {$containerName}", context: $allowFailureContext);
+            io()->error("PHP {$version} web container did not become ready in time. Is Docker running?");
+            continue;
+        }
+
+        /** @var \Symfony\Component\Process\Process $lastValidResult */
+        $data = json_decode(trim($lastValidResult->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+        $outputPath = "{$fixturesDir}/php-{$version}-web.json";
+        file_put_contents($outputPath, json_encode($data, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+
+        run("docker rm -f {$containerName}", context: $allowFailureContext);
+
+        io()->success("PHP {$version} web fixture saved to {$outputPath}");
+    }
+}
+
 #[AsTask(name: 'fixtures:capture-apache', description: 'Capture Apache mod_status fixtures for different versions via Docker')]
 function fixturesCaptureApache(): void
 {
@@ -385,12 +496,12 @@ function fixturesCaptureApache(): void
         // ExtendedStatus and the Location block (curl is not available in the image,
         // so we check readiness from the host via the mapped port)
         run(
-            "docker exec {$containerName} bash -c " .
-            "\"echo 'ExtendedStatus On' >> /usr/local/apache2/conf/httpd.conf && " .
-            "echo '<Location /server-status>' >> /usr/local/apache2/conf/httpd.conf && " .
-            "echo '    SetHandler server-status' >> /usr/local/apache2/conf/httpd.conf && " .
-            "echo '    Require all granted' >> /usr/local/apache2/conf/httpd.conf && " .
-            "echo '</Location>' >> /usr/local/apache2/conf/httpd.conf\"",
+            "docker exec {$containerName} bash -c "
+            . "\"echo 'ExtendedStatus On' >> /usr/local/apache2/conf/httpd.conf && "
+            . "echo '<Location /server-status>' >> /usr/local/apache2/conf/httpd.conf && "
+            . "echo '    SetHandler server-status' >> /usr/local/apache2/conf/httpd.conf && "
+            . "echo '    Require all granted' >> /usr/local/apache2/conf/httpd.conf && "
+            . "echo '</Location>' >> /usr/local/apache2/conf/httpd.conf\"",
         );
 
         // Graceful restart to apply config changes

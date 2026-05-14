@@ -33,15 +33,23 @@ Fixtures are generated via [Castor](https://castor.jolicode.com/) tasks defined 
 4. Writes a JSON fixture file to `tests/Collector/<Name>/fixtures/`
 5. Stops and removes the container
 
-```bash
-# Install Castor (once)
-composer require --dev jolicode/castor
+The `fixtures:capture-php-web` task builds `jmonitor-php-web:VERSION` images from `php:VERSION-fpm` with Nginx and OPcache+APCu enabled (see `tests/Collector/Php/docker-web/`). Each container runs a fresh `composer install` (no lock file mounted) so it resolves packages compatible with its own PHP version. A named Docker volume (`jmonitor-php-vendor-<version>`) caches the vendor directory between runs. A `composer.phar` is downloaded once to the project root on first use. Fixtures are named `php-VERSION-web.json` where `sapi_name` is `fpm-fcgi`.
 
-# Capture fixtures — requires Docker to be running
-./vendor/bin/castor fixtures:capture-redis   # Redis 6, 7, 8  → tests/Collector/Redis/fixtures/
-./vendor/bin/castor fixtures:capture-mysql   # MySQL 5.7/8.0/8.4 + MariaDB 10.6/10.11/11.4 → tests/Collector/Mysql/fixtures/
-./vendor/bin/castor fixtures:capture-apache  # Apache 2.4 → tests/Collector/Apache/fixtures/
-./vendor/bin/castor fixtures:capture-caddy   # Caddy 2 → tests/Collector/Caddy/fixtures/
+Castor is **not** in `require-dev` — install it separately (requires PHP 8.1+):
+
+```bash
+# Install castor once (global or local phar)
+curl -Ls https://castor.jolicode.com/install | bash   # global install
+# OR: download castor.phar to the project root (gitignored)
+```
+
+```bash
+# Requires Docker to be running
+castor fixtures:capture-php-web # PHP-FPM + Nginx web context → tests/Collector/Php/fixtures/php-VERSION-web.json
+castor fixtures:capture-redis   # Redis 6, 7, 8  → tests/Collector/Redis/fixtures/
+castor fixtures:capture-mysql   # MySQL 5.7/8.0/8.4 + MariaDB 10.6/10.11/11.4 → tests/Collector/Mysql/fixtures/
+castor fixtures:capture-apache  # Apache 2.4 → tests/Collector/Apache/fixtures/
+castor fixtures:capture-caddy   # Caddy 2 → tests/Collector/Caddy/fixtures/
 ```
 
 When adding a new collector that needs version-specific testing, add a corresponding `fixtures:capture-<name>` task to `castor.php` following the same pattern.
