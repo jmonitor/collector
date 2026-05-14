@@ -1,5 +1,7 @@
 /vendor/
 composer.lock
+/composer.phar
+/castor.phar
 /.claude/settings.local.json
 .idea
 .vscode
