@@ -2,6 +2,7 @@
 composer.lock
 /composer.phar
 /castor.phar
+/.castor.stub.php
 /.claude/settings.local.json
 .idea
 .vscode
