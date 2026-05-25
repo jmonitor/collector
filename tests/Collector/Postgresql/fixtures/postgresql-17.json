@@ -1,0 +1,245 @@
+{
+    "settings": [
+        {
+            "name": "autovacuum",
+            "setting": "on"
+        },
+        {
+            "name": "autovacuum_vacuum_scale_factor",
+            "setting": "0.2"
+        },
+        {
+            "name": "checkpoint_completion_target",
+            "setting": "0.9"
+        },
+        {
+            "name": "effective_cache_size",
+            "setting": "524288"
+        },
+        {
+            "name": "effective_io_concurrency",
+            "setting": "1"
+        },
+        {
+            "name": "log_min_duration_statement",
+            "setting": "-1"
+        },
+        {
+            "name": "maintenance_work_mem",
+            "setting": "65536"
+        },
+        {
+            "name": "max_connections",
+            "setting": "100"
+        },
+        {
+            "name": "max_wal_size",
+            "setting": "1024"
+        },
+        {
+            "name": "random_page_cost",
+            "setting": "4"
+        },
+        {
+            "name": "server_version",
+            "setting": "17.10"
+        },
+        {
+            "name": "shared_buffers",
+            "setting": "16384"
+        },
+        {
+            "name": "TimeZone",
+            "setting": "UTC"
+        },
+        {
+            "name": "track_counts",
+            "setting": "on"
+        },
+        {
+            "name": "wal_level",
+            "setting": "replica"
+        },
+        {
+            "name": "work_mem",
+            "setting": "4096"
+        }
+    ],
+    "activity": {
+        "database_stats": [
+            {
+                "numbackends": 1,
+                "xact_commit": 63,
+                "xact_rollback": 0,
+                "blks_read": 3,
+                "blks_hit": 7078,
+                "tup_returned": 4224,
+                "tup_fetched": 2904,
+                "tup_inserted": 410,
+                "tup_updated": 31,
+                "tup_deleted": 206,
+                "conflicts": 0,
+                "deadlocks": 0,
+                "temp_files": 0,
+                "temp_bytes": 0
+            }
+        ],
+        "bgwriter": [
+            {
+                "buffers_clean": 0,
+                "maxwritten_clean": 0,
+                "buffers_alloc": 1978
+            }
+        ],
+        "checkpointer": [
+            {
+                "checkpoints_timed": 0,
+                "checkpoints_req": 1,
+                "buffers_checkpoint": 0
+            }
+        ],
+        "connections": [
+            {
+                "state": "active",
+                "count": 1
+            }
+        ]
+    },
+    "slow_queries": {
+        "readable": true,
+        "queries": [
+            {
+                "query_sample": "CREATE DATABASE jmonitor_test",
+                "exec_count": 1,
+                "total_time_ms": 51.91,
+                "avg_time_ms": 51.91,
+                "max_time_ms": 51.91,
+                "stddev_time_ms": 0,
+                "rows": 0,
+                "shared_blks_hit": 86,
+                "shared_blks_read": 923
+            },
+            {
+                "query_sample": "CREATE EXTENSION IF NOT EXISTS pg_stat_statements",
+                "exec_count": 1,
+                "total_time_ms": 30.03,
+                "avg_time_ms": 30.03,
+                "max_time_ms": 30.03,
+                "stddev_time_ms": 0,
+                "rows": 0,
+                "shared_blks_hit": 3374,
+                "shared_blks_read": 134
+            },
+            {
+                "query_sample": "CREATE EXTENSION IF NOT EXISTS pg_stat_statements",
+                "exec_count": 1,
+                "total_time_ms": 24.77,
+                "avg_time_ms": 24.77,
+                "max_time_ms": 24.77,
+                "stddev_time_ms": 0,
+                "rows": 0,
+                "shared_blks_hit": 3498,
+                "shared_blks_read": 0
+            },
+            {
+                "query_sample": "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name VARCHAR(255), email VARCHAR(255))",
+                "exec_count": 1,
+                "total_time_ms": 6.77,
+                "avg_time_ms": 6.77,
+                "max_time_ms": 6.77,
+                "stddev_time_ms": 0,
+                "rows": 0,
+                "shared_blks_hit": 811,
+                "shared_blks_read": 2
+            },
+            {
+                "query_sample": "COPY (SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)::text FROM (SELECT COALESCE(state, 'unknown') AS state, COUNT(*) AS count\\n                 FROM pg_stat_activity WHERE datname = current_database()\\n                 GROUP BY state) t) TO STDOUT",
+                "exec_count": 1,
+                "total_time_ms": 5.83,
+                "avg_time_ms": 5.83,
+                "max_time_ms": 5.83,
+                "stddev_time_ms": 0,
+                "rows": 1,
+                "shared_blks_hit": 521,
+                "shared_blks_read": 0
+            },
+            {
+                "query_sample": "COPY (SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)::text FROM (SELECT name, setting FROM pg_settings WHERE name IN ('server_version', 'max_connections', 'shared_buffers', 'effective_cache_size', 'work_mem', 'maintenance_work_mem', 'wal_level', 'max_wal_size', 'checkpoint_completion_target', 'random_page_cost', 'effective_io_concurrency', 'log_min_duration_statement', 'TimeZone', 'autovacuum', 'autovacuum_vacuum_scale_factor', 'track_counts')) t) TO STDOUT",
+                "exec_count": 1,
+                "total_time_ms": 4.43,
+                "avg_time_ms": 4.43,
+                "max_time_ms": 4.43,
+                "stddev_time_ms": 0,
+                "rows": 1,
+                "shared_blks_hit": 170,
+                "shared_blks_read": 0
+            },
+            {
+                "query_sample": "COPY (SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)::text FROM (SELECT numbackends, xact_commit, xact_rollback, blks_read, blks_hit,\\n                        tup_returned, tup_fetched, tup_inserted, tup_updated, tup_deleted,\\n                        conflicts, deadlocks, temp_files, temp_bytes\\n                 FROM pg_stat_database WHERE datname = current_database()) t) TO STDOUT",
+                "exec_count": 1,
+                "total_time_ms": 3.46,
+                "avg_time_ms": 3.46,
+                "max_time_ms": 3.46,
+                "stddev_time_ms": 0,
+                "rows": 1,
+                "shared_blks_hit": 274,
+                "shared_blks_read": 0
+            },
+            {
+                "query_sample": "VACUUM ANALYZE users",
+                "exec_count": 1,
+                "total_time_ms": 2.93,
+                "avg_time_ms": 2.93,
+                "max_time_ms": 2.93,
+                "stddev_time_ms": 0,
+                "rows": 0,
+                "shared_blks_hit": 241,
+                "shared_blks_read": 1
+            },
+            {
+                "query_sample": "VACUUM ANALYZE orders",
+                "exec_count": 1,
+                "total_time_ms": 2.32,
+                "avg_time_ms": 2.32,
+                "max_time_ms": 2.32,
+                "stddev_time_ms": 0,
+                "rows": 0,
+                "shared_blks_hit": 140,
+                "shared_blks_read": 0
+            },
+            {
+                "query_sample": "CREATE TABLE IF NOT EXISTS orders (id SERIAL PRIMARY KEY, user_id INT, total DECIMAL(10,2))",
+                "exec_count": 1,
+                "total_time_ms": 1.81,
+                "avg_time_ms": 1.81,
+                "max_time_ms": 1.81,
+                "stddev_time_ms": 0,
+                "rows": 0,
+                "shared_blks_hit": 334,
+                "shared_blks_read": 0
+            }
+        ]
+    },
+    "database": {
+        "db_size": [
+            {
+                "db_size": 7952051
+            }
+        ],
+        "table_stats": [
+            {
+                "table_count": 2,
+                "live_tuples": 30,
+                "dead_tuples": 0,
+                "seq_scans": 32,
+                "idx_scans": 10
+            }
+        ],
+        "size_stats": [
+            {
+                "total_size": 122880,
+                "indexes_size": 32768
+            }
+        ]
+    }
+}

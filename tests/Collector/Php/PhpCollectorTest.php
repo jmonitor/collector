@@ -114,7 +114,7 @@ class PhpCollectorTest extends TestCase
     public function testWebFixtureStructure(array $fixture): void
     {
         if ($fixture === []) {
-            self::markTestSkipped('No PHP web fixtures found. Run: ./vendor/bin/castor fixtures:capture-php-web');
+            self::fail('No PHP web fixtures found. Run: ./vendor/bin/castor fixtures:capture-php-web');
         }
 
         self::assertSame('fpm-fcgi', $fixture['sapi_name']);
