@@ -9,6 +9,4 @@ use Jmonitor\Utils\DatabaseAdapter\PdoAdapter as BasePdoAdapter;
 /**
  * @deprecated Use \Jmonitor\Utils\DatabaseAdapter\PdoAdapter instead.
  */
-class PdoAdapter extends BasePdoAdapter
-{
-}
+class PdoAdapter extends BasePdoAdapter {}

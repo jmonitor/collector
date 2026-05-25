@@ -9,6 +9,4 @@ use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 /**
  * @deprecated Use \Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface instead.
  */
-interface MysqlAdapterInterface extends DatabaseAdapterInterface
-{
-}
+interface MysqlAdapterInterface extends DatabaseAdapterInterface {}
