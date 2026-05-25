@@ -6,8 +6,8 @@ namespace Jmonitor\Collector\Mysql;
 
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
-use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 use Jmonitor\Exceptions\BootFailedException;
+use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 
 class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollectorInterface
 {
@@ -50,7 +50,7 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
         LIMIT %d
         SQL;
 
-    private MysqlAdapterInterface $db;
+    private DatabaseAdapterInterface $db;
     private string $dbName;
     private int $limit;
     private int $minExecCount;
@@ -58,7 +58,7 @@ class MysqlSlowQueriesCollector implements CollectorInterface, BootableCollector
     private string $orderBy;
     private string $sql;
 
-    public function __construct(MysqlAdapterInterface $db, string $dbName, int $limit = 5, int $minExecCount = 1, int $minAvgTimeMs = 0, string $orderBy = self::ORDER_BY_AVG_TIME)
+    public function __construct(DatabaseAdapterInterface $db, string $dbName, int $limit = 5, int $minExecCount = 1, int $minAvgTimeMs = 0, string $orderBy = self::ORDER_BY_AVG_TIME)
     {
         if (!in_array($orderBy, self::ALLOWED_ORDER_BY, true)) {
             throw new \InvalidArgumentException(sprintf('Invalid orderBy value "%s". Allowed values: %s', $orderBy, implode(', ', self::ALLOWED_ORDER_BY)));

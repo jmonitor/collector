@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Jmonitor\Tests\Collector\Mysql;
 
-use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
+use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlInformationSchemaCollector;
 use Jmonitor\Exceptions\BootFailedException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -14,7 +14,7 @@ class InformationSchemaCollectorTest extends TestCase
 {
     public function testCollect(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbName = 'test_db';
 
         $dbResult = [
@@ -47,7 +47,7 @@ class InformationSchemaCollectorTest extends TestCase
 
     public function testCollectEmpty(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbName = 'empty_db';
 
         $dbMock->method('fetchAllAssociative')
@@ -73,7 +73,7 @@ class InformationSchemaCollectorTest extends TestCase
 
     public function testGetName(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $collector = new MysqlInformationSchemaCollector($dbMock, 'db');
 
         $this->assertSame('mysql.information_schema', $collector->getName());
@@ -81,7 +81,7 @@ class InformationSchemaCollectorTest extends TestCase
 
     public function testGetVersion(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $collector = new MysqlInformationSchemaCollector($dbMock, 'db');
 
         $this->assertSame(1, $collector->getVersion());
@@ -89,7 +89,7 @@ class InformationSchemaCollectorTest extends TestCase
 
     public function testBootFailure(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbName = 'test_db';
 
         $dbMock->expects($this->once())
@@ -130,7 +130,7 @@ class InformationSchemaCollectorTest extends TestCase
             self::fail('No MySQL fixtures found. Run: ./vendor/bin/castor fixtures:capture-mysql');
         }
 
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql) use ($fixture): array {
                 if (str_contains($sql, 'information_schema')) {
