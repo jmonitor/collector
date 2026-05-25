@@ -36,16 +36,16 @@ class PostgresqlDatabaseCollector implements CollectorInterface, BootableCollect
         );
 
         $tableStatsResult = $this->db->fetchAllAssociative(
-            'SELECT COUNT(*) AS table_count, SUM(n_live_tup) AS live_tuples,
-                    SUM(n_dead_tup) AS dead_tuples, SUM(seq_scan) AS seq_scans, SUM(idx_scan) AS idx_scans
+            'SELECT COUNT(*) AS table_count, COALESCE(SUM(n_live_tup), 0) AS live_tuples,
+                    COALESCE(SUM(n_dead_tup), 0) AS dead_tuples, COALESCE(SUM(seq_scan), 0) AS seq_scans, COALESCE(SUM(idx_scan), 0) AS idx_scans
              FROM pg_stat_user_tables
              WHERE schemaname = :schema',
             ['schema' => $this->schema]
         );
 
         $sizeStatsResult = $this->db->fetchAllAssociative(
-            'SELECT SUM(pg_total_relation_size(relid)) AS total_size,
-                    SUM(pg_indexes_size(relid))         AS indexes_size
+            'SELECT COALESCE(SUM(pg_total_relation_size(relid)), 0) AS total_size,
+                    COALESCE(SUM(pg_indexes_size(relid)), 0)         AS indexes_size
              FROM pg_stat_user_tables
              WHERE schemaname = :schema',
             ['schema' => $this->schema]
