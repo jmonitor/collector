@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [MySQL Collector] `MysqlStatusCollector` and `MysqlVariablesCollector` now implement `BootableCollectorInterface` to detect permission errors at startup.
 
+### Changed
+- Moved database adapters to `Jmonitor\Utils\DatabaseAdapter` (was `Jmonitor\Collector\Mysql\Adapter`) and renamed `MysqlAdapterInterface` to `DatabaseAdapterInterface`.
+
 ### Fixed
 - [PHP Collector] Sanitize `NAN`/`INF` float values from OPcache statistics to prevent `json_encode` failures (PHP 8.5+).
 
