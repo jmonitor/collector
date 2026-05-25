@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Jmonitor\Tests\Collector\Mysql;
 
-use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
+use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlVariablesCollector;
 use Jmonitor\Exceptions\BootFailedException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -14,7 +14,7 @@ class MysqlVariablesCollectorTest extends TestCase
 {
     public function testCollect(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
 
         $dbResult = [
             ['Variable_name' => 'innodb_buffer_pool_size', 'Value' => '134217728'],
@@ -45,7 +45,7 @@ class MysqlVariablesCollectorTest extends TestCase
 
     public function testGetVersion(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $collector = new MysqlVariablesCollector($dbMock);
 
         self::assertSame(1, $collector->getVersion());
@@ -53,7 +53,7 @@ class MysqlVariablesCollectorTest extends TestCase
 
     public function testBootSuccess(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->expects($this->once())
             ->method('fetchAllAssociative')
             ->with($this->stringContains("SHOW GLOBAL VARIABLES LIKE"))
@@ -67,7 +67,7 @@ class MysqlVariablesCollectorTest extends TestCase
 
     public function testBootFailure(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->expects($this->once())
             ->method('fetchAllAssociative')
             ->willThrowException(new \Exception('Access denied'));
@@ -106,7 +106,7 @@ class MysqlVariablesCollectorTest extends TestCase
             self::fail('No MySQL fixtures found. Run: ./vendor/bin/castor fixtures:capture-mysql');
         }
 
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql) use ($fixture): array {
                 if (str_contains($sql, 'SHOW GLOBAL VARIABLES')) {

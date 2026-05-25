@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Jmonitor\Collector\Mysql\Adapter;
+namespace Jmonitor\Utils\DatabaseAdapter;
 
 use Jmonitor\Exceptions\CollectorException;
 
-class PdoAdapter implements MysqlAdapterInterface
+class PdoAdapter implements DatabaseAdapterInterface
 {
     private \PDO $pdo;
 

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Jmonitor\Collector\Mysql\Adapter;
+namespace Jmonitor\Utils\DatabaseAdapter;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\ConnectionLost;
 
-class DoctrineAdapter implements MysqlAdapterInterface
+class DoctrineAdapter implements DatabaseAdapterInterface
 {
     private Connection $connection;
 

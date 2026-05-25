@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Jmonitor\Collector\Mysql\Adapter;
+namespace Jmonitor\Utils\DatabaseAdapter;
 
-interface MysqlAdapterInterface
+interface DatabaseAdapterInterface
 {
     public function fetchAllAssociative(string $query, array $params = []): array;
 }

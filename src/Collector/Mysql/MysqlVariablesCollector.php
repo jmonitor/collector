@@ -6,8 +6,8 @@ namespace Jmonitor\Collector\Mysql;
 
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
-use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 use Jmonitor\Exceptions\BootFailedException;
+use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 
 class MysqlVariablesCollector implements CollectorInterface, BootableCollectorInterface
 {
@@ -44,11 +44,11 @@ class MysqlVariablesCollector implements CollectorInterface, BootableCollectorIn
     ];
 
     /**
-     * @var MysqlAdapterInterface
+     * @var DatabaseAdapterInterface
      */
     private $db;
 
-    public function __construct(MysqlAdapterInterface $db)
+    public function __construct(DatabaseAdapterInterface $db)
     {
         $this->db = $db;
     }

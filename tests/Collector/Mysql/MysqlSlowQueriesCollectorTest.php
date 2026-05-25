@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Jmonitor\Tests\Collector\Mysql;
 
-use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
+use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlSlowQueriesCollector;
 use Jmonitor\Exceptions\BootFailedException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -14,7 +14,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
 {
     public function testGetName(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $collector = new MysqlSlowQueriesCollector($dbMock, 'test_db');
 
         $this->assertSame('mysql.slow_queries', $collector->getName());
@@ -22,7 +22,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
 
     public function testGetVersion(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $collector = new MysqlSlowQueriesCollector($dbMock, 'test_db');
 
         $this->assertSame(1, $collector->getVersion());
@@ -30,7 +30,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
 
     public function testBootSuccess(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->expects($this->atLeastOnce())
             ->method('fetchAllAssociative')
             ->willReturn([['1' => '1']]);
@@ -45,7 +45,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
 
     public function testBootFailure(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->expects($this->once())
             ->method('fetchAllAssociative')
             ->willThrowException(new \Exception('Table not found'));
@@ -58,7 +58,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
 
     public function testCollectReadable(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbName = 'test_db';
         $limit = 10;
         $minExecCount = 5;
@@ -86,7 +86,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
 
     public function testCollectNotReadable(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')->willThrowException(new \Exception('Error'));
 
         $collector = new MysqlSlowQueriesCollector($dbMock, 'test_db');
@@ -100,7 +100,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
     {
         $capturedSql = null;
 
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(function ($sql) use (&$capturedSql) {
                 if (strpos($sql, 'SELECT 1 FROM performance_schema') !== false) {
@@ -121,7 +121,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
 
     public function testInvalidOrderByThrows(): void
     {
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
 
         $this->expectException(\InvalidArgumentException::class);
         new MysqlSlowQueriesCollector($dbMock, 'test_db', orderBy: 'INVALID_FIELD');
@@ -132,7 +132,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
     {
         $capturedSql = null;
 
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(function ($sql) use (&$capturedSql) {
                 if (strpos($sql, 'SELECT 1 FROM performance_schema') !== false) {
@@ -189,7 +189,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
             self::fail('No MySQL fixtures found. Run: ./vendor/bin/castor fixtures:capture-mysql');
         }
 
-        $dbMock = $this->createMock(MysqlAdapterInterface::class);
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql) use ($fixture): array {
                 if (str_contains($sql, 'performance_schema')) {

@@ -6,8 +6,8 @@ namespace Jmonitor\Collector\Mysql;
 
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
-use Jmonitor\Collector\Mysql\Adapter\MysqlAdapterInterface;
 use Jmonitor\Exceptions\BootFailedException;
+use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 
 class MysqlInformationSchemaCollector implements CollectorInterface, BootableCollectorInterface
 {
@@ -21,10 +21,10 @@ class MysqlInformationSchemaCollector implements CollectorInterface, BootableCol
             TABLE_SCHEMA = :dbName
         SQL;
 
-    private MysqlAdapterInterface $db;
+    private DatabaseAdapterInterface $db;
     private string $dbName;
 
-    public function __construct(MysqlAdapterInterface $db, string $dbName)
+    public function __construct(DatabaseAdapterInterface $db, string $dbName)
     {
         $this->db = $db;
         $this->dbName = $dbName;
