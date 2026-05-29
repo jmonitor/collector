@@ -471,7 +471,7 @@ function fixturesCapturePostgresql(): void
                 'jmonitor_test'
             );
 
-            // bgwriter (PG 16+: slim columns only; PG 15: will be merged with legacy columns below)
+            // bgwriter (PG 17+: slim columns only; PG 15/16: will be merged with legacy columns below)
             $bgwriter = $pgFetch(
                 'SELECT buffers_clean, maxwritten_clean, buffers_alloc FROM pg_stat_bgwriter',
                 'jmonitor_test'
