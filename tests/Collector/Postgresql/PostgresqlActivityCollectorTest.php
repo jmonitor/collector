@@ -33,7 +33,7 @@ class PostgresqlActivityCollectorTest extends TestCase
                 if (str_contains($sql, 'pg_stat_bgwriter')) {
                     return [['buffers_clean' => '120', 'maxwritten_clean' => '0', 'buffers_alloc' => '9800']];
                 }
-                if (str_contains($sql, 'pg_stat_activity')) {
+                if (str_contains($sql, 'GROUP BY state')) {
                     return [['state' => 'active', 'count' => '3'], ['state' => 'idle', 'count' => '10']];
                 }
 
@@ -74,7 +74,7 @@ class PostgresqlActivityCollectorTest extends TestCase
                         'buffers_checkpoint' => '2500', 'buffers_clean' => '60',
                         'maxwritten_clean' => '0', 'buffers_alloc' => '4900', 'buffers_backend' => '170']];
                 }
-                if (str_contains($sql, 'pg_stat_activity')) {
+                if (str_contains($sql, 'GROUP BY state')) {
                     return [['state' => 'idle', 'count' => '5']];
                 }
 
@@ -167,8 +167,17 @@ class PostgresqlActivityCollectorTest extends TestCase
                 if (str_contains($sql, 'pg_stat_bgwriter')) {
                     return $fixture['activity']['bgwriter'];
                 }
-                if (str_contains($sql, 'pg_stat_activity')) {
+                if (str_contains($sql, 'GROUP BY state')) {
                     return $fixture['activity']['connections'];
+                }
+                if (str_contains($sql, 'xact_start')) {
+                    return $fixture['activity']['sessions']['oldest_transaction'] ?? [];
+                }
+                if (str_contains($sql, 'idle in transaction')) {
+                    return $fixture['activity']['sessions']['idle_in_transaction'] ?? [];
+                }
+                if (str_contains($sql, 'pg_blocking_pids')) {
+                    return $fixture['activity']['sessions']['blocked_queries'] ?? [];
                 }
 
                 return [];
@@ -189,5 +198,171 @@ class PostgresqlActivityCollectorTest extends TestCase
         }
 
         self::assertIsArray($result['connections']);
+        self::assertArrayHasKey('sessions', $result);
+        self::assertArrayHasKey('blocked_count', $result['sessions']);
+        self::assertArrayHasKey('blocked_queries', $result['sessions']);
+        self::assertIsInt($result['sessions']['blocked_count']);
+        self::assertIsInt($result['sessions']['idle_in_transaction_count']);
+        self::assertIsArray($result['sessions']['blocked_queries']);
+    }
+
+    public function testCollectSessionsDefaultsWhenNoActivity(): void
+    {
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
+        $dbMock->method('fetchAllAssociative')
+            ->willReturnCallback(static function (string $sql): array {
+                if (str_contains($sql, 'server_version_num')) {
+                    return [['server_version_num' => '160000']];
+                }
+
+                return [];
+            });
+
+        $collector = new PostgresqlActivityCollector($dbMock);
+        $collector->boot();
+        $result = $collector->collect();
+
+        self::assertArrayHasKey('sessions', $result);
+        self::assertNull($result['sessions']['oldest_transaction_seconds']);
+        self::assertSame(0, $result['sessions']['idle_in_transaction_count']);
+        self::assertNull($result['sessions']['oldest_idle_in_transaction_seconds']);
+        self::assertSame(0, $result['sessions']['blocked_count']);
+        self::assertNull($result['sessions']['max_wait_seconds']);
+        self::assertSame([], $result['sessions']['blocked_queries']);
+    }
+
+    public function testCollectSessionsOldestTransaction(): void
+    {
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
+        $dbMock->method('fetchAllAssociative')
+            ->willReturnCallback(static function (string $sql): array {
+                if (str_contains($sql, 'server_version_num')) {
+                    return [['server_version_num' => '160000']];
+                }
+                if (str_contains($sql, 'xact_start')) {
+                    return [['oldest_transaction_seconds' => '120']];
+                }
+
+                return [];
+            });
+
+        $collector = new PostgresqlActivityCollector($dbMock);
+        $collector->boot();
+        $result = $collector->collect();
+
+        self::assertSame(120, $result['sessions']['oldest_transaction_seconds']);
+    }
+
+    public function testCollectSessionsIdleInTransaction(): void
+    {
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
+        $dbMock->method('fetchAllAssociative')
+            ->willReturnCallback(static function (string $sql): array {
+                if (str_contains($sql, 'server_version_num')) {
+                    return [['server_version_num' => '160000']];
+                }
+                if (str_contains($sql, 'idle in transaction')) {
+                    return [['cnt' => '3', 'oldest_seconds' => '60']];
+                }
+
+                return [];
+            });
+
+        $collector = new PostgresqlActivityCollector($dbMock);
+        $collector->boot();
+        $result = $collector->collect();
+
+        self::assertSame(3, $result['sessions']['idle_in_transaction_count']);
+        self::assertSame(60, $result['sessions']['oldest_idle_in_transaction_seconds']);
+    }
+
+    public function testCollectSessionsWithBlockedQueries(): void
+    {
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
+        $dbMock->method('fetchAllAssociative')
+            ->willReturnCallback(static function (string $sql): array {
+                if (str_contains($sql, 'server_version_num')) {
+                    return [['server_version_num' => '160000']];
+                }
+                if (str_contains($sql, 'pg_blocking_pids')) {
+                    return [
+                        ['blocked_pid' => 101, 'blocked_wait_seconds' => 45, 'blocked_query_sample' => 'SELECT 1',
+                            'blocking_pid' => 99, 'blocking_query_sample' => 'UPDATE users', 'blocking_state' => 'idle in transaction'],
+                        ['blocked_pid' => 102, 'blocked_wait_seconds' => 12, 'blocked_query_sample' => 'SELECT 2',
+                            'blocking_pid' => 99, 'blocking_query_sample' => 'UPDATE users', 'blocking_state' => 'idle in transaction'],
+                    ];
+                }
+
+                return [];
+            });
+
+        $collector = new PostgresqlActivityCollector($dbMock);
+        $collector->boot();
+        $result = $collector->collect();
+
+        self::assertSame(2, $result['sessions']['blocked_count']);
+        self::assertSame(45, $result['sessions']['max_wait_seconds']);
+        self::assertCount(2, $result['sessions']['blocked_queries']);
+        self::assertSame(101, $result['sessions']['blocked_queries'][0]['blocked_pid']);
+    }
+
+    public function testCollectSessionsBlockedCountIsDistinctPids(): void
+    {
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
+        $dbMock->method('fetchAllAssociative')
+            ->willReturnCallback(static function (string $sql): array {
+                if (str_contains($sql, 'server_version_num')) {
+                    return [['server_version_num' => '160000']];
+                }
+                if (str_contains($sql, 'pg_blocking_pids')) {
+                    // PID 101 is blocked by two separate blockers — appears twice
+                    return [
+                        ['blocked_pid' => 101, 'blocked_wait_seconds' => 30, 'blocked_query_sample' => 'SELECT 1',
+                            'blocking_pid' => 99, 'blocking_query_sample' => 'UPDATE users', 'blocking_state' => 'active'],
+                        ['blocked_pid' => 101, 'blocked_wait_seconds' => 30, 'blocked_query_sample' => 'SELECT 1',
+                            'blocking_pid' => 88, 'blocking_query_sample' => 'UPDATE orders', 'blocking_state' => 'active'],
+                    ];
+                }
+
+                return [];
+            });
+
+        $collector = new PostgresqlActivityCollector($dbMock);
+        $collector->boot();
+        $result = $collector->collect();
+
+        self::assertSame(1, $result['sessions']['blocked_count']);
+        self::assertSame(30, $result['sessions']['max_wait_seconds']);
+    }
+
+    public function testCollectSessionsGracefulDegradationOnQueryFailure(): void
+    {
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
+        $dbMock->method('fetchAllAssociative')
+            ->willReturnCallback(static function (string $sql): array {
+                if (str_contains($sql, 'server_version_num')) {
+                    return [['server_version_num' => '160000']];
+                }
+                if (str_contains($sql, 'xact_start')
+                    || str_contains($sql, 'idle in transaction')
+                    || str_contains($sql, 'pg_blocking_pids')
+                ) {
+                    throw new \RuntimeException('Permission denied');
+                }
+
+                return [];
+            });
+
+        $collector = new PostgresqlActivityCollector($dbMock);
+        $collector->boot();
+        $result = $collector->collect();
+
+        self::assertArrayHasKey('sessions', $result);
+        self::assertNull($result['sessions']['oldest_transaction_seconds']);
+        self::assertSame(0, $result['sessions']['idle_in_transaction_count']);
+        self::assertNull($result['sessions']['oldest_idle_in_transaction_seconds']);
+        self::assertSame(0, $result['sessions']['blocked_count']);
+        self::assertNull($result['sessions']['max_wait_seconds']);
+        self::assertSame([], $result['sessions']['blocked_queries']);
     }
 }

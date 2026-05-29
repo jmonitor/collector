@@ -504,6 +504,38 @@ function fixturesCapturePostgresql(): void
                 'jmonitor_test'
             );
 
+            $sessionsOldestTx = $pgFetch(
+                "SELECT EXTRACT(EPOCH FROM max(now() - xact_start))::int AS oldest_transaction_seconds
+                 FROM pg_stat_activity
+                 WHERE datname = current_database() AND state <> 'idle' AND xact_start IS NOT NULL",
+                'jmonitor_test'
+            );
+
+            $sessionsIdleInTx = $pgFetch(
+                "SELECT COUNT(*) AS cnt,
+                        EXTRACT(EPOCH FROM max(now() - state_change))::int AS oldest_seconds
+                 FROM pg_stat_activity
+                 WHERE datname = current_database() AND state = 'idle in transaction'",
+                'jmonitor_test'
+            );
+
+            $sessionsBlockedQueries = $pgFetch(
+                "SELECT
+                     a.pid                                              AS blocked_pid,
+                     EXTRACT(EPOCH FROM (now() - a.state_change))::int AS blocked_wait_seconds,
+                     LEFT(a.query, 500)                                 AS blocked_query_sample,
+                     bl.pid                                             AS blocking_pid,
+                     LEFT(bl.query, 500)                                AS blocking_query_sample,
+                     bl.state                                           AS blocking_state
+                 FROM pg_stat_activity a
+                 JOIN LATERAL unnest(pg_blocking_pids(a.pid)) AS blocking(pid) ON true
+                 JOIN pg_stat_activity bl ON bl.pid = blocking.pid
+                 WHERE a.datname = current_database()
+                 ORDER BY blocked_wait_seconds DESC
+                 LIMIT 10",
+                'jmonitor_test'
+            );
+
             // Capture slow queries (pg_stat_statements is enabled via shared_preload_libraries)
             $slowQueries = ['readable' => false, 'queries' => []];
             try {
@@ -547,6 +579,11 @@ function fixturesCapturePostgresql(): void
                     'bgwriter'       => $bgwriter,
                     'checkpointer'   => $checkpointer,
                     'connections'    => $connections,
+                    'sessions'       => [
+                        'oldest_transaction'  => $sessionsOldestTx,
+                        'idle_in_transaction' => $sessionsIdleInTx,
+                        'blocked_queries'     => $sessionsBlockedQueries,
+                    ],
                 ],
                 'slow_queries' => $slowQueries,
                 'database'     => [

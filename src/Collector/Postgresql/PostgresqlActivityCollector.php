@@ -60,6 +60,7 @@ class PostgresqlActivityCollector implements CollectorInterface, BootableCollect
             'database_stats' => $databaseStats[0] ?? [],
             'bgwriter'       => $bgwriterData,
             'connections'    => $connections,
+            'sessions'       => $this->fetchSessionStats(),
         ];
     }
 
@@ -71,6 +72,72 @@ class PostgresqlActivityCollector implements CollectorInterface, BootableCollect
     public function getName(): string
     {
         return 'postgresql.activity';
+    }
+
+    private function fetchSessionStats(): array
+    {
+        $sessions = [
+            'oldest_transaction_seconds'         => null,
+            'idle_in_transaction_count'          => 0,
+            'oldest_idle_in_transaction_seconds' => null,
+            'blocked_count'                      => 0,
+            'max_wait_seconds'                   => null,
+            'blocked_queries'                    => [],
+        ];
+
+        try {
+            $rows = $this->db->fetchAllAssociative(
+                'SELECT EXTRACT(EPOCH FROM max(now() - xact_start))::int AS oldest_transaction_seconds
+                 FROM pg_stat_activity
+                 WHERE datname = current_database() AND state <> \'idle\' AND xact_start IS NOT NULL'
+            );
+            $sessions['oldest_transaction_seconds'] = isset($rows[0]['oldest_transaction_seconds'])
+                ? (int) $rows[0]['oldest_transaction_seconds']
+                : null;
+        } catch (\Throwable) {
+        }
+
+        try {
+            $rows = $this->db->fetchAllAssociative(
+                "SELECT COUNT(*) AS cnt,
+                        EXTRACT(EPOCH FROM max(now() - state_change))::int AS oldest_seconds
+                 FROM pg_stat_activity
+                 WHERE datname = current_database() AND state = 'idle in transaction'"
+            );
+            $sessions['idle_in_transaction_count'] = (int) ($rows[0]['cnt'] ?? 0);
+            $sessions['oldest_idle_in_transaction_seconds'] = isset($rows[0]['oldest_seconds'])
+                ? (int) $rows[0]['oldest_seconds']
+                : null;
+        } catch (\Throwable) {
+        }
+
+        try {
+            $rows = $this->db->fetchAllAssociative(
+                'SELECT
+                     a.pid                                              AS blocked_pid,
+                     EXTRACT(EPOCH FROM (now() - a.state_change))::int AS blocked_wait_seconds,
+                     LEFT(a.query, 500)                                 AS blocked_query_sample,
+                     bl.pid                                             AS blocking_pid,
+                     LEFT(bl.query, 500)                                AS blocking_query_sample,
+                     bl.state                                           AS blocking_state
+                 FROM pg_stat_activity a
+                 JOIN LATERAL unnest(pg_blocking_pids(a.pid)) AS blocking(pid) ON true
+                 JOIN pg_stat_activity bl ON bl.pid = blocking.pid
+                 WHERE a.datname = current_database()
+                 ORDER BY blocked_wait_seconds DESC
+                 LIMIT 10'
+            );
+            $sessions['blocked_queries'] = $rows;
+
+            if ($rows !== []) {
+                $blockedPids = array_unique(array_column($rows, 'blocked_pid'));
+                $sessions['blocked_count'] = count($blockedPids);
+                $sessions['max_wait_seconds'] = (int) max(array_column($rows, 'blocked_wait_seconds'));
+            }
+        } catch (\Throwable) {
+        }
+
+        return $sessions;
     }
 
     private function fetchBgwriterStats(): array
