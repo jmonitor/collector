@@ -128,6 +128,7 @@ Collectors
 - [Redis](#redis)
 - [Caddy](#caddy)
 - [FrankenPHP](#frankenphp)
+- [PostgreSQL](#postgresql)
 
 - ### System <a name="system"></a>
   Collects system metrics like CPU usage, memory usage, disk usage, etc.
@@ -274,13 +275,55 @@ Collectors
   $frankenPhpCollector = new FrankenPhpCollector($metricsProvider);
   ```
 
+- ### PostgreSQL <a name="postgresql"></a>
+  Collects PostgreSQL metrics from system catalog views (`pg_stat_database`, `pg_stat_activity`, `pg_stat_bgwriter`, etc.).  
+  Connect via PDO or Doctrine DBAL.
+
+  ```php
+  use Jmonitor\Collector\Postgresql\PostgresqlActivityCollector;
+  use Jmonitor\Collector\Postgresql\PostgresqlDatabaseCollector;
+  use Jmonitor\Collector\Postgresql\PostgresqlSettingsCollector;
+  use Jmonitor\Collector\Postgresql\PostgresqlSlowQueriesCollector;
+  use Jmonitor\Utils\DatabaseAdapter\PdoAdapter;
+  use Jmonitor\Utils\DatabaseAdapter\DoctrineAdapter;
+
+  // Using PDO
+  $adapter = new PdoAdapter($pdo); // your \PDO instance
+
+  // or using Doctrine DBAL
+  $adapter = new DoctrineAdapter($connection); // your Doctrine\DBAL\Connection instance
+
+  // PostgreSQL has multiple collectors; use the same adapter for all of them
+  $collector = new PostgresqlActivityCollector($adapter);
+  $collector = new PostgresqlSettingsCollector($adapter);
+  $collector = new PostgresqlDatabaseCollector($adapter);               // defaults to schema 'public'
+  $collector = new PostgresqlDatabaseCollector($adapter, 'my_schema');  // custom schema
+  $collector = new PostgresqlSlowQueriesCollector($adapter);
+  ```
+
+  **`PostgresqlSlowQueriesCollector`** requires the [`pg_stat_statements`](https://www.postgresql.org/docs/current/pgstatstatements.html) extension.  
+  Add it to `shared_preload_libraries` in `postgresql.conf` and restart PostgreSQL, then run:
+  ```sql
+  CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+  ```
+  Pass `autoCreateExtension: true` to let the collector create it automatically (requires superuser or CREATE privileges):
+
+  ```php
+  // The slow queries collector can be configured:
+  // - limit: maximum number of results (default: 10)
+  // - minCalls: minimum number of executions to include a query (default: 1)
+  // - minMeanTimeMs: minimum average execution time in ms (default: 0)
+  // - orderBy: "avg", "total", or "max" (see constants in PostgresqlSlowQueriesCollector, default: "avg")
+  // - autoCreateExtension: create pg_stat_statements if missing (default: false)
+  $collector = new PostgresqlSlowQueriesCollector($adapter, limit: 10, minCalls: 5, minMeanTimeMs: 100.0, orderBy: PostgresqlSlowQueriesCollector::ORDER_BY_AVG_TIME);
+  ```
+
 Integrations
 ------------
 - Symfony: https://github.com/jmonitor/jmonitor-bundle
 
 Roadmap
 -------
-- PostrgreSQL
 - Custom metrics collection
 
 ---
