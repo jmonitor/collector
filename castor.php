@@ -350,6 +350,261 @@ function fixturesCaptureCaddy(): void
     }
 }
 
+#[AsTask(name: 'fixtures:capture-postgresql', description: 'Capture PostgreSQL settings/activity/slow_queries/database fixtures for PG 15, 16, 17 via Docker')]
+function fixturesCapturePostgresql(): void
+{
+    $versions = ['15', '16', '17'];
+    $port = 5499;
+    $fixturesDir = __DIR__ . '/tests/Collector/Postgresql/fixtures';
+
+    if (!is_dir($fixturesDir)) {
+        mkdir($fixturesDir, 0755, true);
+    }
+
+    $allowFailureContext = new Context(allowFailure: true);
+
+    $settingNames = [
+        'server_version', 'max_connections', 'shared_buffers', 'effective_cache_size',
+        'work_mem', 'maintenance_work_mem', 'wal_level', 'max_wal_size',
+        'checkpoint_completion_target', 'random_page_cost', 'effective_io_concurrency',
+        'log_min_duration_statement', 'TimeZone', 'autovacuum',
+        'autovacuum_vacuum_scale_factor', 'track_counts',
+    ];
+
+    foreach ($versions as $version) {
+        $containerName = "jmonitor-postgresql-{$version}";
+
+        io()->section("Capturing PostgreSQL {$version}");
+
+        run("docker rm -f {$containerName}", context: $allowFailureContext);
+
+        run(
+            "docker run -d --name {$containerName} -p {$port}:5432"
+            . " -e POSTGRES_PASSWORD=postgres"
+            . " postgres:{$version}-alpine"
+            . " -c shared_preload_libraries=pg_stat_statements",
+        );
+
+        $ready = false;
+        for ($i = 0; $i < 30; $i++) {
+            $result = run(
+                "docker exec {$containerName} pg_isready -U postgres",
+                context: $allowFailureContext,
+            );
+            if ($result->getExitCode() === 0) {
+                $ready = true;
+                break;
+            }
+            usleep(500_000);
+        }
+
+        if (!$ready) {
+            run("docker rm -f {$containerName}", context: $allowFailureContext);
+            io()->error("PostgreSQL {$version} did not become ready in time. Is Docker running?");
+            continue;
+        }
+
+        // Run SQL statements in container via a temp file (avoids pdo_pgsql dependency on host).
+        $pgExec = static function (string $sql, string $db = 'postgres') use ($containerName, $allowFailureContext): void {
+            $tmpFile = str_replace('\\', '/', tempnam(sys_get_temp_dir(), 'pgx_'));
+            file_put_contents($tmpFile, $sql);
+            $destFile = '/tmp/' . basename($tmpFile) . '.sql';
+            run("docker cp \"{$tmpFile}\" {$containerName}:{$destFile}");
+            unlink($tmpFile);
+            run("docker exec {$containerName} psql -v ON_ERROR_STOP=1 -U postgres -d {$db} -q -f {$destFile}");
+            run("docker exec {$containerName} rm -f {$destFile}", context: $allowFailureContext);
+        };
+
+        // Run a SELECT query and return rows as associative arrays.
+        // Uses COPY (query) TO STDOUT with JSON aggregation — no pdo_pgsql needed.
+        $pgFetch = static function (string $sql, string $db = 'postgres') use ($containerName, $allowFailureContext): array {
+            $wrappedSql = "COPY (SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)::text FROM ({$sql}) t) TO STDOUT";
+            $tmpFile = str_replace('\\', '/', tempnam(sys_get_temp_dir(), 'pgf_'));
+            file_put_contents($tmpFile, $wrappedSql);
+            $destFile = '/tmp/' . basename($tmpFile) . '.sql';
+            run("docker cp \"{$tmpFile}\" {$containerName}:{$destFile}");
+            unlink($tmpFile);
+            $result = run("docker exec {$containerName} psql -v ON_ERROR_STOP=1 -U postgres -d {$db} -t -A -f {$destFile}");
+            run("docker exec {$containerName} rm -f {$destFile}", context: $allowFailureContext);
+
+            return json_decode(trim($result->getOutput()), true) ?? [];
+        };
+
+        try {
+            $pgExec('CREATE EXTENSION IF NOT EXISTS pg_stat_statements');
+            $pgExec('CREATE DATABASE jmonitor_test');
+            $pgExec('CREATE EXTENSION IF NOT EXISTS pg_stat_statements', 'jmonitor_test');
+
+            $seedSql = "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name VARCHAR(255), email VARCHAR(255));\n"
+                . "CREATE TABLE IF NOT EXISTS orders (id SERIAL PRIMARY KEY, user_id INT, total DECIMAL(10,2));\n";
+            for ($j = 1; $j <= 10; $j++) {
+                $seedSql .= "INSERT INTO users (name, email) VALUES ('User {$j}', 'user{$j}@jmonitor.test');\n";
+            }
+            for ($j = 1; $j <= 5; $j++) {
+                $seedSql .= "INSERT INTO orders (user_id, total) VALUES ({$j}, " . ($j * 100) . ");\n";
+            }
+            $seedSql .= "VACUUM ANALYZE users;\nVACUUM ANALYZE orders;\n";
+            $pgExec($seedSql, 'jmonitor_test');
+
+            // Run queries multiple times to populate pg_stat_statements
+            $warmupSql = str_repeat(
+                "SELECT id, name FROM users WHERE id > 0;\n"
+                . "SELECT id, total FROM orders WHERE user_id > 0;\n"
+                . "SELECT COUNT(*) FROM users;\n",
+                10
+            );
+            $pgExec($warmupSql, 'jmonitor_test');
+
+            // Capture settings
+            $settingsIn = "'" . implode("', '", $settingNames) . "'";
+            $settings = $pgFetch(
+                "SELECT name, setting FROM pg_settings WHERE name IN ({$settingsIn})",
+                'jmonitor_test'
+            );
+
+            // Capture activity — database stats
+            $activityDbStats = $pgFetch(
+                'SELECT numbackends, xact_commit, xact_rollback, blks_read, blks_hit,
+                        tup_returned, tup_fetched, tup_inserted, tup_updated, tup_deleted,
+                        conflicts, deadlocks, temp_files, temp_bytes
+                 FROM pg_stat_database WHERE datname = current_database()',
+                'jmonitor_test'
+            );
+
+            // bgwriter (PG 17+: slim columns only; PG 15/16: will be merged with legacy columns below)
+            $bgwriter = $pgFetch(
+                'SELECT buffers_clean, maxwritten_clean, buffers_alloc FROM pg_stat_bgwriter',
+                'jmonitor_test'
+            );
+
+            // checkpointer (PG 17+ only; on PG 15/16 the query throws — we fall back to legacy bgwriter columns)
+            $checkpointer = [];
+            try {
+                $checkpointer = $pgFetch(
+                    'SELECT num_timed AS checkpoints_timed, num_requested AS checkpoints_req,
+                            buffers_written AS buffers_checkpoint
+                     FROM pg_stat_checkpointer',
+                    'jmonitor_test'
+                );
+            } catch (\Throwable) {
+                $legacyBgwriter = $pgFetch(
+                    'SELECT checkpoints_timed, checkpoints_req, buffers_checkpoint, buffers_backend
+                     FROM pg_stat_bgwriter',
+                    'jmonitor_test'
+                );
+                if (!empty($legacyBgwriter) && !empty($bgwriter)) {
+                    $bgwriter[0] = array_merge($bgwriter[0], $legacyBgwriter[0]);
+                }
+            }
+
+            $connections = $pgFetch(
+                "SELECT COALESCE(state, 'unknown') AS state, COUNT(*) AS count
+                 FROM pg_stat_activity WHERE datname = current_database()
+                 GROUP BY state",
+                'jmonitor_test'
+            );
+
+            $sessionsOldestTx = $pgFetch(
+                "SELECT EXTRACT(EPOCH FROM max(now() - xact_start))::int AS oldest_transaction_seconds
+                 FROM pg_stat_activity
+                 WHERE datname = current_database() AND state <> 'idle' AND xact_start IS NOT NULL",
+                'jmonitor_test'
+            );
+
+            $sessionsIdleInTx = $pgFetch(
+                "SELECT COUNT(*) AS cnt,
+                        EXTRACT(EPOCH FROM max(now() - state_change))::int AS oldest_seconds
+                 FROM pg_stat_activity
+                 WHERE datname = current_database() AND state = 'idle in transaction'",
+                'jmonitor_test'
+            );
+
+            $sessionsBlockedQueries = $pgFetch(
+                "SELECT
+                     a.pid                                              AS blocked_pid,
+                     EXTRACT(EPOCH FROM (now() - a.state_change))::int AS blocked_wait_seconds,
+                     LEFT(a.query, 500)                                 AS blocked_query_sample,
+                     bl.pid                                             AS blocking_pid,
+                     LEFT(bl.query, 500)                                AS blocking_query_sample,
+                     bl.state                                           AS blocking_state
+                 FROM pg_stat_activity a
+                 JOIN LATERAL unnest(pg_blocking_pids(a.pid)) AS blocking(pid) ON true
+                 JOIN pg_stat_activity bl ON bl.pid = blocking.pid
+                 WHERE a.datname = current_database()
+                 ORDER BY blocked_wait_seconds DESC
+                 LIMIT 10",
+                'jmonitor_test'
+            );
+
+            // Capture slow queries (pg_stat_statements is enabled via shared_preload_libraries)
+            $slowQueries = ['readable' => false, 'queries' => []];
+            try {
+                $queries = $pgFetch(
+                    "SELECT LEFT(query, 500) AS query_sample, calls AS exec_count,
+                            ROUND(total_exec_time::numeric, 2) AS total_time_ms,
+                            ROUND(mean_exec_time::numeric, 2) AS avg_time_ms,
+                            ROUND(max_exec_time::numeric, 2) AS max_time_ms,
+                            ROUND(stddev_exec_time::numeric, 2) AS stddev_time_ms,
+                            rows, shared_blks_hit, shared_blks_read
+                     FROM pg_stat_statements WHERE calls >= 1
+                     ORDER BY mean_exec_time DESC LIMIT 10",
+                    'jmonitor_test'
+                );
+                $slowQueries = ['readable' => true, 'queries' => $queries];
+            } catch (\Throwable) {
+                // extension not accessible in this container
+            }
+
+            // Capture database stats
+            $dbSize = $pgFetch('SELECT pg_database_size(current_database()) AS db_size', 'jmonitor_test');
+
+            $tableStats = $pgFetch(
+                "SELECT COUNT(*) AS table_count, SUM(n_live_tup) AS live_tuples,
+                        SUM(n_dead_tup) AS dead_tuples, SUM(seq_scan) AS seq_scans, SUM(idx_scan) AS idx_scans
+                 FROM pg_stat_user_tables WHERE schemaname = 'public'",
+                'jmonitor_test'
+            );
+
+            $sizeStats = $pgFetch(
+                "SELECT SUM(pg_total_relation_size(relid)) AS total_size,
+                        SUM(pg_indexes_size(relid)) AS indexes_size
+                 FROM pg_stat_user_tables WHERE schemaname = 'public'",
+                'jmonitor_test'
+            );
+
+            $fixture = [
+                'settings' => $settings,
+                'activity' => [
+                    'database_stats' => $activityDbStats,
+                    'bgwriter'       => $bgwriter,
+                    'checkpointer'   => $checkpointer,
+                    'connections'    => $connections,
+                    'sessions'       => [
+                        'oldest_transaction'  => $sessionsOldestTx,
+                        'idle_in_transaction' => $sessionsIdleInTx,
+                        'blocked_queries'     => $sessionsBlockedQueries,
+                    ],
+                ],
+                'slow_queries' => $slowQueries,
+                'database'     => [
+                    'db_size'     => $dbSize,
+                    'table_stats' => $tableStats,
+                    'size_stats'  => $sizeStats,
+                ],
+            ];
+
+            $outputPath = "{$fixturesDir}/postgresql-{$version}.json";
+            file_put_contents($outputPath, json_encode($fixture, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+
+            run("docker rm -f {$containerName}", context: $allowFailureContext);
+            io()->success("PostgreSQL {$version} fixture saved to {$outputPath}");
+        } catch (\Throwable $e) {
+            run("docker rm -f {$containerName}", context: $allowFailureContext);
+            io()->error("Failed for PostgreSQL {$version}: " . $e->getMessage());
+        }
+    }
+}
+
 function ensureComposerPhar(): string
 {
     $phar = __DIR__ . DIRECTORY_SEPARATOR . 'composer.phar';
