@@ -39,7 +39,8 @@ class PostgresqlSlowQueriesCollector implements CollectorInterface, BootableColl
             shared_blks_hit,
             shared_blks_read
         FROM pg_stat_statements
-        WHERE calls >= %d
+        WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
+          AND calls >= %d
           AND mean_exec_time >= %s
         ORDER BY %s DESC
         LIMIT %d

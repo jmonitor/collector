@@ -36,6 +36,25 @@ class PostgresqlSlowQueriesCollectorTest extends TestCase
         self::assertSame('SELECT id FROM users', $result['slow_queries'][0]['query_sample']);
     }
 
+    public function testQueryIsFilteredByCurrentDatabase(): void
+    {
+        $capturedSql = null;
+
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
+        $dbMock->method('fetchAllAssociative')
+            ->willReturnCallback(static function (string $sql) use (&$capturedSql): array {
+                $capturedSql = $sql;
+
+                return [];
+            });
+
+        (new PostgresqlSlowQueriesCollector($dbMock))->collect();
+
+        self::assertNotNull($capturedSql);
+        self::assertStringContainsString('current_database()', $capturedSql);
+        self::assertStringContainsString('pg_database', $capturedSql);
+    }
+
     public function testInvalidOrderByThrows(): void
     {
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
