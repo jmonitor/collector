@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- [PostgreSQL Collector] `PostgresqlSettingsCollector` now returns memory settings (e.g. `shared_buffers`, `work_mem`, `max_wal_size`) converted to bytes (int) based on `pg_settings.unit`, instead of raw block counts. Non-byte settings keep their raw string value.
+
 ## [1.3.0] - 2026-06-01
 
 ### Added
