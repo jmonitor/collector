@@ -350,10 +350,10 @@ function fixturesCaptureCaddy(): void
     }
 }
 
-#[AsTask(name: 'fixtures:capture-postgresql', description: 'Capture PostgreSQL settings/activity/slow_queries/database fixtures for PG 15, 16, 17 via Docker')]
+#[AsTask(name: 'fixtures:capture-postgresql', description: 'Capture PostgreSQL settings/activity/slow_queries/database fixtures for PG 15, 16, 17, 18 via Docker')]
 function fixturesCapturePostgresql(): void
 {
-    $versions = ['15', '16', '17'];
+    $versions = ['15', '16', '17', '18'];
     $port = 5499;
     $fixturesDir = __DIR__ . '/tests/Collector/Postgresql/fixtures';
 
