@@ -49,10 +49,41 @@ class PostgresqlSettingsCollector implements CollectorInterface, BootableCollect
     public function collect(): array
     {
         $result = $this->db->fetchAllAssociative(
-            "SELECT name, setting FROM pg_settings WHERE name IN ('" . implode("', '", self::SETTINGS) . "')"
+            "SELECT name, setting, unit FROM pg_settings WHERE name IN ('" . implode("', '", self::SETTINGS) . "')"
         );
 
-        return array_column($result, 'setting', 'name');
+        $settings = [];
+        foreach ($result as $row) {
+            $bytes = $this->toBytes((string) $row['setting'], (string) ($row['unit'] ?? ''));
+            $settings[$row['name']] = $bytes ?? $row['setting'];
+        }
+
+        return $settings;
+    }
+
+    /**
+     * Convert a pg_settings value to bytes when its unit is a byte unit.
+     *
+     * pg_settings units look like `[multiplier]<unit>`, e.g. `B`, `kB`, `8kB`, `MB`, `16MB`, `GB`.
+     * PostgreSQL uses base 1024 for kB/MB/GB/TB. Time units (`ms`, `s`, `min`, `h`, `d`) and the
+     * empty unit (e.g. max_connections) are not byte units and yield null (no conversion).
+     */
+    private function toBytes(string $setting, string $unit): ?int
+    {
+        if (!preg_match('/^(\d*)\s*(B|kB|MB|GB|TB)$/', $unit, $matches)) {
+            return null;
+        }
+
+        $multiplier = $matches[1] === '' ? 1 : (int) $matches[1];
+        $base = [
+            'B' => 1,
+            'kB' => 1024,
+            'MB' => 1024 ** 2,
+            'GB' => 1024 ** 3,
+            'TB' => 1024 ** 4,
+        ][$matches[2]];
+
+        return (int) $setting * $multiplier * $base;
     }
 
     public function getVersion(): int

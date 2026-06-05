@@ -2,67 +2,83 @@
     "settings": [
         {
             "name": "autovacuum",
-            "setting": "on"
+            "setting": "on",
+            "unit": null
         },
         {
             "name": "autovacuum_vacuum_scale_factor",
-            "setting": "0.2"
+            "setting": "0.2",
+            "unit": null
         },
         {
             "name": "checkpoint_completion_target",
-            "setting": "0.9"
+            "setting": "0.9",
+            "unit": null
         },
         {
             "name": "effective_cache_size",
-            "setting": "524288"
+            "setting": "524288",
+            "unit": "8kB"
         },
         {
             "name": "effective_io_concurrency",
-            "setting": "1"
+            "setting": "1",
+            "unit": null
         },
         {
             "name": "log_min_duration_statement",
-            "setting": "-1"
+            "setting": "-1",
+            "unit": "ms"
         },
         {
             "name": "maintenance_work_mem",
-            "setting": "65536"
+            "setting": "65536",
+            "unit": "kB"
         },
         {
             "name": "max_connections",
-            "setting": "100"
+            "setting": "100",
+            "unit": null
         },
         {
             "name": "max_wal_size",
-            "setting": "1024"
+            "setting": "1024",
+            "unit": "MB"
         },
         {
             "name": "random_page_cost",
-            "setting": "4"
+            "setting": "4",
+            "unit": null
         },
         {
             "name": "server_version",
-            "setting": "16.14"
+            "setting": "16.14",
+            "unit": null
         },
         {
             "name": "shared_buffers",
-            "setting": "16384"
+            "setting": "16384",
+            "unit": "8kB"
         },
         {
             "name": "TimeZone",
-            "setting": "UTC"
+            "setting": "UTC",
+            "unit": null
         },
         {
             "name": "track_counts",
-            "setting": "on"
+            "setting": "on",
+            "unit": null
         },
         {
             "name": "wal_level",
-            "setting": "replica"
+            "setting": "replica",
+            "unit": null
         },
         {
             "name": "work_mem",
-            "setting": "4096"
+            "setting": "4096",
+            "unit": "kB"
         }
     ],
     "activity": {
@@ -123,9 +139,9 @@
             {
                 "query_sample": "CREATE DATABASE jmonitor_test",
                 "exec_count": 1,
-                "total_time_ms": 47.69,
-                "avg_time_ms": 47.69,
-                "max_time_ms": 47.69,
+                "total_time_ms": 65.88,
+                "avg_time_ms": 65.88,
+                "max_time_ms": 65.88,
                 "stddev_time_ms": 0,
                 "rows": 0,
                 "shared_blks_hit": 86,
@@ -134,9 +150,9 @@
             {
                 "query_sample": "CREATE EXTENSION IF NOT EXISTS pg_stat_statements",
                 "exec_count": 1,
-                "total_time_ms": 23.35,
-                "avg_time_ms": 23.35,
-                "max_time_ms": 23.35,
+                "total_time_ms": 31.69,
+                "avg_time_ms": 31.69,
+                "max_time_ms": 31.69,
                 "stddev_time_ms": 0,
                 "rows": 0,
                 "shared_blks_hit": 2669,
@@ -145,9 +161,9 @@
             {
                 "query_sample": "CREATE EXTENSION IF NOT EXISTS pg_stat_statements",
                 "exec_count": 1,
-                "total_time_ms": 20.59,
-                "avg_time_ms": 20.59,
-                "max_time_ms": 20.59,
+                "total_time_ms": 22.16,
+                "avg_time_ms": 22.16,
+                "max_time_ms": 22.16,
                 "stddev_time_ms": 0,
                 "rows": 0,
                 "shared_blks_hit": 2794,
@@ -156,9 +172,9 @@
             {
                 "query_sample": "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name VARCHAR(255), email VARCHAR(255))",
                 "exec_count": 1,
-                "total_time_ms": 8.84,
-                "avg_time_ms": 8.84,
-                "max_time_ms": 8.84,
+                "total_time_ms": 10.13,
+                "avg_time_ms": 10.13,
+                "max_time_ms": 10.13,
                 "stddev_time_ms": 0,
                 "rows": 0,
                 "shared_blks_hit": 814,
@@ -167,9 +183,9 @@
             {
                 "query_sample": "COPY (SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)::text FROM (SELECT\\n                     a.pid                                              AS blocked_pid,\\n                     EXTRACT(EPOCH FROM (now() - a.state_change))::int AS blocked_wait_seconds,\\n                     LEFT(a.query, 500)                                 AS blocked_query_sample,\\n                     bl.pid                                             AS blocking_pid,\\n                     LEFT(bl.query, 500)           ",
                 "exec_count": 1,
-                "total_time_ms": 7.19,
-                "avg_time_ms": 7.19,
-                "max_time_ms": 7.19,
+                "total_time_ms": 6.99,
+                "avg_time_ms": 6.99,
+                "max_time_ms": 6.99,
                 "stddev_time_ms": 0,
                 "rows": 1,
                 "shared_blks_hit": 586,
@@ -178,9 +194,9 @@
             {
                 "query_sample": "COPY (SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)::text FROM (SELECT COUNT(*) AS cnt,\\n                        EXTRACT(EPOCH FROM max(now() - state_change))::int AS oldest_seconds\\n                 FROM pg_stat_activity\\n                 WHERE datname = current_database() AND state = 'idle in transaction') t) TO STDOUT",
                 "exec_count": 1,
-                "total_time_ms": 5.54,
-                "avg_time_ms": 5.54,
-                "max_time_ms": 5.54,
+                "total_time_ms": 6.09,
+                "avg_time_ms": 6.09,
+                "max_time_ms": 6.09,
                 "stddev_time_ms": 0,
                 "rows": 1,
                 "shared_blks_hit": 501,
@@ -189,9 +205,9 @@
             {
                 "query_sample": "COPY (SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)::text FROM (SELECT COALESCE(state, 'unknown') AS state, COUNT(*) AS count\\n                 FROM pg_stat_activity WHERE datname = current_database()\\n                 GROUP BY state) t) TO STDOUT",
                 "exec_count": 1,
-                "total_time_ms": 5.49,
-                "avg_time_ms": 5.49,
-                "max_time_ms": 5.49,
+                "total_time_ms": 5.57,
+                "avg_time_ms": 5.57,
+                "max_time_ms": 5.57,
                 "stddev_time_ms": 0,
                 "rows": 1,
                 "shared_blks_hit": 517,
@@ -200,31 +216,31 @@
             {
                 "query_sample": "COPY (SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)::text FROM (SELECT EXTRACT(EPOCH FROM max(now() - xact_start))::int AS oldest_transaction_seconds\\n                 FROM pg_stat_activity\\n                 WHERE datname = current_database() AND state <> 'idle' AND xact_start IS NOT NULL) t) TO STDOUT",
                 "exec_count": 1,
-                "total_time_ms": 4.97,
-                "avg_time_ms": 4.97,
-                "max_time_ms": 4.97,
+                "total_time_ms": 5.28,
+                "avg_time_ms": 5.28,
+                "max_time_ms": 5.28,
                 "stddev_time_ms": 0,
                 "rows": 1,
                 "shared_blks_hit": 476,
                 "shared_blks_read": 0
             },
             {
-                "query_sample": "CREATE TABLE IF NOT EXISTS orders (id SERIAL PRIMARY KEY, user_id INT, total DECIMAL(10,2))",
+                "query_sample": "COPY (SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)::text FROM (SELECT numbackends, xact_commit, xact_rollback, blks_read, blks_hit,\\n                        tup_returned, tup_fetched, tup_inserted, tup_updated, tup_deleted,\\n                        conflicts, deadlocks, temp_files, temp_bytes\\n                 FROM pg_stat_database WHERE datname = current_database()) t) TO STDOUT",
                 "exec_count": 1,
-                "total_time_ms": 3.62,
-                "avg_time_ms": 3.62,
-                "max_time_ms": 3.62,
+                "total_time_ms": 3.81,
+                "avg_time_ms": 3.81,
+                "max_time_ms": 3.81,
                 "stddev_time_ms": 0,
-                "rows": 0,
-                "shared_blks_hit": 334,
+                "rows": 1,
+                "shared_blks_hit": 271,
                 "shared_blks_read": 0
             },
             {
                 "query_sample": "VACUUM ANALYZE users",
                 "exec_count": 1,
-                "total_time_ms": 3.47,
-                "avg_time_ms": 3.47,
-                "max_time_ms": 3.47,
+                "total_time_ms": 3.23,
+                "avg_time_ms": 3.23,
+                "max_time_ms": 3.23,
                 "stddev_time_ms": 0,
                 "rows": 0,
                 "shared_blks_hit": 242,
