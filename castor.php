@@ -458,7 +458,7 @@ function fixturesCapturePostgresql(): void
             // Capture settings
             $settingsIn = "'" . implode("', '", $settingNames) . "'";
             $settings = $pgFetch(
-                "SELECT name, setting FROM pg_settings WHERE name IN ({$settingsIn})",
+                "SELECT name, setting, unit FROM pg_settings WHERE name IN ({$settingsIn})",
                 'jmonitor_test'
             );
 
