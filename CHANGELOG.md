@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [MySQL Collector] `MysqlStatusCollector` and `MysqlVariablesCollector` now implement `BootableCollectorInterface` to detect permission errors at startup.
-- [PostgreSQL Collector] Added PostgreSQL collectors with support for PostgreSQL 15, 16, and 17.
+- [PostgreSQL Collector] Added PostgreSQL collectors with support for PostgreSQL 15, 16, 17 and 18.
 
 ### Changed
 - Moved database adapters to `Jmonitor\Utils\DatabaseAdapter` (was `Jmonitor\Collector\Mysql\Adapter`) and renamed `MysqlAdapterInterface` to `DatabaseAdapterInterface`.
