@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- [PostgreSQL Collector] `PostgresqlSettingsCollector` now returns memory settings (e.g. `shared_buffers`, `work_mem`, `max_wal_size`) converted to bytes (int) based on `pg_settings.unit`, instead of raw block counts. Non-byte settings keep their raw string value.
+- [PostgreSQL Collector] Memory settings are now reported in bytes.
 
 ## [1.3.0] - 2026-06-01
 
