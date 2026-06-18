@@ -71,7 +71,7 @@ composer require symfony/http-client nyholm/psr7
 use Symfony\Component\HttpClient\Psr18Client;
 
 $httpClient = ... // create or retrieve your Symfony HttpClient instance
-$client = new Psr18Client()->withOptions(...);
+$client = (new Psr18Client())->withOptions(...);
 
 $jmonitor = new Jmonitor('apiKey', $client);
 ```
