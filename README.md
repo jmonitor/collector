@@ -27,7 +27,7 @@ For Symfony projects, use the [Jmonitor bundle](https://github.com/jmonitor/jmon
 | System            | ![Linux](https://img.shields.io/badge/CPU%20·%20RAM%20·%20Disk-FCC624?style=flat-square&logo=linux&logoColor=black)                                                                                                                                                                                        |
 
 ## Requirements
-- [![PHP Version](https://img.shields.io/packagist/php-v/jmonitor/collector?style=flat-square&label=PHP)](https://packagist.org/packages/jmonitor/jmonitor-bundle)
+- [![PHP Version](https://img.shields.io/packagist/php-v/jmonitor/collector?style=flat-square&label=PHP)](https://packagist.org/packages/jmonitor/collector)
 - A project using [Composer](https://getcomposer.org/)
 
 ## Installation
@@ -47,8 +47,8 @@ Running the collector
 The collector is designed to be run as a worker in a separate process.
 
 This means you **must not** integrate it into your application and call `$jmonitor->collect()` on every web request.
-  
-One basic worker script is provided in the `examples` folder. Copy it into your project, update it to include the collectors you need, and run it from CLI.
+
+A ready-to-use worker script is provided at [`examples/worker.php`](examples/worker.php). Copy it into your project, register the collectors you need, and run it from the CLI. Copy it into your project, update it to include the collectors you need, and run it from CLI.
 
 In production, it is recommended to run the worker under a process manager (e.g. Supervisor or systemd) to ensure it is kept running and restarted periodically.
 For practical guidance, you can follow Symfony Messenger's recommendations:  
