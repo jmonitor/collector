@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /**
- * JMonitor Basic Worker
+ * Jmonitor Basic Worker
  *
- * This is a standalone PHP worker that collects metrics and sends them to JMonitor.
+ * This is a standalone PHP worker that collects metrics and sends them to Jmonitor.
  * Adapt it to your needs and use a process manager (Supervisor, systemd) in production.
  *
  * Usage:
@@ -30,13 +30,13 @@ use Jmonitor\Jmonitor;
 // =============================================================================
 
 /**
- * Your JMonitor API key.
+ * Your Jmonitor API key.
  * You can also set it via the JMONITOR_API_KEY environment variable.
  */
 $apiKey = getenv('JMONITOR_API_KEY') ?: 'YOUR_API_KEY';
 
 /**
- * Dry-run mode: collect metrics locally without sending them to JMonitor.
+ * Dry-run mode: collect metrics locally without sending them to Jmonitor.
  * Useful for testing your setup.
  */
 $dryRun = false;
@@ -55,8 +55,8 @@ $timeLimitSeconds = null;
 $memoryLimitBytes = null;
 
 /**
- * HTTP client used to send metrics to JMonitor.
- * Leave null to let JMonitor discover a PSR-18 client and PSR-17 factories
+ * HTTP client used to send metrics to Jmonitor.
+ * Leave null to let Jmonitor discover a PSR-18 client and PSR-17 factories
  * installed in your project (via php-http/discovery).
  *
  * You can also inject your own PSR-18 client (e.g. Symfony HttpClient via
@@ -71,9 +71,10 @@ $memoryLimitBytes = null;
 $client = null;
 
 /**
- * PSR-3 logger used to report the collection process (from debug to error level).
- * Leave null to disable logging, or pass any PSR-3 logger (e.g. Monolog) to get
- * more detailed information about what the worker is doing.
+ * PSR-3 logger passed to Jmonitor to report its collection process
+ * (from debug to error level). This does not capture this worker's own loop
+ * messages, which are printed to stdout via worker_log().
+ * Leave null to disable it, or pass any PSR-3 logger (e.g. Monolog).
  */
 $logger = null;
 
@@ -183,7 +184,7 @@ $startTime = time();
 $serverErrorDelays = [15, 30, 60, 120, 300];
 $serverErrorCount = 0;
 
-worker_log('JMonitor worker started.');
+worker_log('Jmonitor worker started.');
 
 do {
     if (worker_should_stop($stopSignal, $startTime, $timeLimitSeconds, $memoryLimitBytes)) {
@@ -193,6 +194,8 @@ do {
     // --- Collect metrics ---
 
     try {
+        // Args: collect(bool $send, bool $throwOnFailure). We handle status codes
+        // manually below, so disable throwing here.
         $result = $jmonitor->collect(!$dryRun, false);
     } catch (NoCollectorException $e) {
         worker_log('No collector configured. Add at least one collector and restart.');
@@ -205,13 +208,13 @@ do {
 
     if (!$response) {
         if ($dryRun) {
-            worker_log('Dry run: metrics collected locally, not sent to JMonitor.');
+            worker_log('Dry run: metrics collected locally, not sent to Jmonitor.');
         } else {
             foreach ($result->getErrors() as $error) {
                 worker_log('Error: ' . $error->getMessage());
             }
             if (count($result->getErrors()) === 0) {
-                worker_log('No response from JMonitor. Is your API key set?');
+                worker_log('No response from Jmonitor. Is your API key set?');
             }
         }
         break;
@@ -253,4 +256,4 @@ do {
 
 } while (true);
 
-worker_log('JMonitor worker stopped.');
+worker_log('Jmonitor worker stopped.');
