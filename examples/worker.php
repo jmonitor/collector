@@ -54,11 +54,38 @@ $timeLimitSeconds = null;
  */
 $memoryLimitBytes = null;
 
+/**
+ * HTTP client used to send metrics to JMonitor.
+ * Leave null to let JMonitor discover a PSR-18 client and PSR-17 factories
+ * installed in your project (via php-http/discovery).
+ *
+ * You can also inject your own PSR-18 client (e.g. Symfony HttpClient via
+ * Psr18Client, Guzzle via an adapter, etc.) to configure timeouts, proxies,
+ * retries, and so on:
+ *
+ *   composer require symfony/http-client nyholm/psr7
+ *
+ *   use Symfony\Component\HttpClient\Psr18Client;
+ *   $client = (new Psr18Client())->withOptions(['timeout' => 5]);
+ */
+$client = null;
+
+/**
+ * PSR-3 logger used to report the collection process (from debug to error level).
+ * Leave null to disable logging, or pass any PSR-3 logger (e.g. Monolog) to get
+ * more detailed information about what the worker is doing.
+ */
+$logger = null;
+
 // =============================================================================
-// SECTION 3 — Collectors
+// SECTION 3 — Jmonitor instance
 // =============================================================================
 
-$jmonitor = new Jmonitor($apiKey);
+$jmonitor = new Jmonitor($apiKey, $client, $logger);
+
+// =============================================================================
+// SECTION 4 — Collectors
+// =============================================================================
 
 // Add the collectors matching your server stack.
 // See https://github.com/jmonitor/collector to browse all available collectors.
@@ -68,7 +95,7 @@ $jmonitor->addCollector(new SystemCollector());
 // $jmonitor->addCollector(new RedisCollector(...));
 
 // =============================================================================
-// SECTION 4 — Helper functions
+// SECTION 5 — Helper functions
 // =============================================================================
 
 /**
@@ -118,7 +145,7 @@ function worker_sleep(int $seconds, bool &$stopSignal, ?int $startTime, ?int $ti
 }
 
 // =============================================================================
-// SECTION 5 — Signal handling (graceful shutdown)
+// SECTION 6 — Signal handling (graceful shutdown)
 // =============================================================================
 
 $stopSignal = false;
@@ -144,7 +171,7 @@ if (function_exists('pcntl_async_signals')) {
 }
 
 // =============================================================================
-// SECTION 6 — Worker loop
+// SECTION 7 — Worker loop
 // =============================================================================
 
 $startTime = time();

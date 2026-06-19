@@ -42,22 +42,6 @@ Create a project in [jmonitor.io](https://jmonitor.io) and get your API key.
 
 The package ships a ready-to-use worker at [`examples/worker.php`](examples/worker.php). Copy it into your project, set your API key, and edit the collector list to register the ones you need.
 
-### HTTP Client (PSR-18)
-You can inject any PSR-18 HTTP client (e.g., Symfony HttpClient via Psr18Client, Guzzle via an adapter, etc.). Example :
-
-```bash
-composer require symfony/http-client nyholm/psr7
-```
-
-```php
-use Symfony\Component\HttpClient\Psr18Client;
-
-$httpClient = ... // create or retrieve your Symfony HttpClient instance
-$client = (new Psr18Client())->withOptions(...);
-
-$jmonitor = new Jmonitor('apiKey', $client);
-```
-
 Running the collector
 -------------------
 The collector is designed to be run as a worker in a separate process.
