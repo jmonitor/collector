@@ -40,22 +40,7 @@ Quick Start
 ---------------
 Create a project in [jmonitor.io](https://jmonitor.io) and get your API key.
 
-Then, create a separate script and start collecting metrics:
-
-```php
-use Jmonitor\Jmonitor;
-use Jmonitor\Collector\Apache\ApacheCollector;
-
-$jmonitor = new Jmonitor('apiKey');
-
-// Add some collectors... see the documentation below for more collectors
-$jmonitor->addCollector(new ApacheCollector('https://example.com/server-status'));
-$jmonitor->addCollector(new SystemCollector());
-// ... 
-
-// send metrics to Jmonitor (see "Running the collector" section)
-$jmonitor->collect();
-```
+The package ships a ready-to-use worker at [`examples/worker.php`](examples/worker.php). Copy it into your project, set your API key, and edit the collector list to register the ones you need.
 
 ### HTTP Client (PSR-18)
 You can inject any PSR-18 HTTP client (e.g., Symfony HttpClient via Psr18Client, Guzzle via an adapter, etc.). Example :

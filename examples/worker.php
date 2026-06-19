@@ -16,7 +16,10 @@ declare(strict_types=1);
 // SECTION 1 — Bootstrap
 // =============================================================================
 
-require __DIR__ . '/../vendor/autoload.php';
+/**
+ * Fix the real path here is necessary
+ */
+require __DIR__ . '/vendor/autoload.php';
 
 use Jmonitor\Collector\System\SystemCollector;
 use Jmonitor\Exceptions\NoCollectorException;
