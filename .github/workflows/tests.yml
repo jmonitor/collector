@@ -10,28 +10,54 @@ permissions:
     contents: read
 
 jobs:
-    build:
+    tests:
+        name: PHPUnit (PHP ${{ matrix.php }}${{ matrix.deps == 'lowest' && ', lowest deps' || '' }})
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                php: [ '7.4', '8.0', '8.1', '8.2', '8.3', '8.4' ]
+                deps: [ 'highest' ]
+                include:
+                    # Validate the lowest allowed dependency bounds still resolve on the minimum PHP
+                    - php: '7.4'
+                      deps: 'lowest'
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php }}
+                  extensions: json, zlib, pdo
+                  coverage: none
+
+            - name: Install dependencies
+              uses: ramsey/composer-install@v3
+              with:
+                  dependency-versions: ${{ matrix.deps }}
+
+            - name: PHPUnit
+              run: composer run-script phpunit
+
+    quality:
+        name: Lint & PHPStan
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
 
-            - name: Cache Composer packages
-              id: composer-cache
-              uses: actions/cache@v3
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
               with:
-                  path: vendor
-                  key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-                  restore-keys: |
-                      ${{ runner.os }}-php-
+                  php-version: '8.3'
+                  extensions: json, zlib, pdo
+                  coverage: none
 
             - name: Install dependencies
-              run: composer install --prefer-dist --no-progress
+              uses: ramsey/composer-install@v3
 
-            - name: lint
+            - name: Lint
               run: composer run-script lint:check
 
-            - name: phpstan
+            - name: PHPStan
               run: composer run-script phpstan
-
-            - name: phpunit
-              run: composer run-script phpunit

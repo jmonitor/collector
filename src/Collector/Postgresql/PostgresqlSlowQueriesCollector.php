@@ -95,7 +95,7 @@ class PostgresqlSlowQueriesCollector implements CollectorInterface, BootableColl
 
         $preload = $result[0]['shared_preload_libraries'] ?? '';
 
-        if (!str_contains($preload, 'pg_stat_statements')) {
+        if (strpos($preload, 'pg_stat_statements') === false) {
             throw new BootFailedException(
                 'pg_stat_statements must be added to shared_preload_libraries in postgresql.conf and PostgreSQL restarted'
             );
