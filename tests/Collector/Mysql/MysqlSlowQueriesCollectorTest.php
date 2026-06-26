@@ -7,7 +7,6 @@ namespace Jmonitor\Tests\Collector\Mysql;
 use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlSlowQueriesCollector;
 use Jmonitor\Exceptions\BootFailedException;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class MysqlSlowQueriesCollectorTest extends TestCase
@@ -110,7 +109,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
                 return [];
             });
 
-        $collector = new MysqlSlowQueriesCollector($dbMock, 'test_db', minAvgTimeMs: 100);
+        $collector = new MysqlSlowQueriesCollector($dbMock, 'test_db', 5, 1, 100);
         $collector->boot();
         $collector->collect();
 
@@ -124,10 +123,12 @@ class MysqlSlowQueriesCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
 
         $this->expectException(\InvalidArgumentException::class);
-        new MysqlSlowQueriesCollector($dbMock, 'test_db', orderBy: 'INVALID_FIELD');
+        new MysqlSlowQueriesCollector($dbMock, 'test_db', 5, 1, 0, 'INVALID_FIELD');
     }
 
-    #[DataProvider('orderByProvider')]
+    /**
+     * @dataProvider orderByProvider
+     */
     public function testOrderByIsUsedInSql(string $orderByConstant, string $expectedField): void
     {
         $capturedSql = null;
@@ -142,7 +143,7 @@ class MysqlSlowQueriesCollectorTest extends TestCase
                 return [];
             });
 
-        $collector = new MysqlSlowQueriesCollector($dbMock, 'test_db', orderBy: $orderByConstant);
+        $collector = new MysqlSlowQueriesCollector($dbMock, 'test_db', 5, 1, 0, $orderByConstant);
         $collector->boot();
         $collector->collect();
 
@@ -182,7 +183,9 @@ class MysqlSlowQueriesCollectorTest extends TestCase
         return $data;
     }
 
-    #[DataProvider('mysqlVersionsProvider')]
+    /**
+     * @dataProvider mysqlVersionsProvider
+     */
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {
@@ -192,8 +195,8 @@ class MysqlSlowQueriesCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql) use ($fixture): array {
-                if (str_contains($sql, 'performance_schema')) {
-                    if (str_contains($sql, 'SELECT 1')) {
+                if (strpos($sql, 'performance_schema') !== false) {
+                    if (strpos($sql, 'SELECT 1') !== false) {
                         if (!$fixture['slowQueries']['readable']) {
                             throw new \Exception('performance_schema not readable');
                         }

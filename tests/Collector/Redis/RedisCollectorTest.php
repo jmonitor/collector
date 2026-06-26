@@ -132,7 +132,9 @@ class RedisCollectorTest extends TestCase
         return $data;
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('redisVersionsProvider')]
+    /**
+     * @dataProvider redisVersionsProvider
+     */
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {

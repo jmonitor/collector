@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Jmonitor\Tests\Collector\Apache;
 
 use Jmonitor\Collector\Apache\ApacheCollector;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ApacheCollectorTest extends TestCase
@@ -70,7 +69,9 @@ class ApacheCollectorTest extends TestCase
         return $data;
     }
 
-    #[DataProvider('apacheVersionsProvider')]
+    /**
+     * @dataProvider apacheVersionsProvider
+     */
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {

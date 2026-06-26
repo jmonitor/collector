@@ -7,7 +7,6 @@ namespace Jmonitor\Tests\Collector\Caddy;
 use Jmonitor\Collector\Caddy\CaddyCollector;
 use Jmonitor\Prometheus\PrometheusMetricsProvider;
 use Jmonitor\Utils\ShellExecutor;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class CaddyCollectorTest extends TestCase
@@ -122,7 +121,9 @@ class CaddyCollectorTest extends TestCase
         return $data;
     }
 
-    #[DataProvider('caddyVersionsProvider')]
+    /**
+     * @dataProvider caddyVersionsProvider
+     */
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {

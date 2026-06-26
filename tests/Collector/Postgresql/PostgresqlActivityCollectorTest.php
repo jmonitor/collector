@@ -7,7 +7,6 @@ namespace Jmonitor\Tests\Collector\Postgresql;
 use Jmonitor\Collector\Postgresql\PostgresqlActivityCollector;
 use Jmonitor\Exceptions\BootFailedException;
 use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class PostgresqlActivityCollectorTest extends TestCase
@@ -17,23 +16,23 @@ class PostgresqlActivityCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'server_version_num')) {
+                if (strpos($sql, 'server_version_num') !== false) {
                     return [['server_version_num' => '170004']];
                 }
-                if (str_contains($sql, 'pg_stat_database')) {
+                if (strpos($sql, 'pg_stat_database') !== false) {
                     return [['numbackends' => '5', 'xact_commit' => '1000', 'xact_rollback' => '2',
                         'blks_read' => '100', 'blks_hit' => '9900', 'tup_returned' => '50000',
                         'tup_fetched' => '12000', 'tup_inserted' => '300', 'tup_updated' => '80',
                         'tup_deleted' => '5', 'conflicts' => '0', 'deadlocks' => '0',
                         'temp_files' => '0', 'temp_bytes' => '0']];
                 }
-                if (str_contains($sql, 'pg_stat_checkpointer')) {
+                if (strpos($sql, 'pg_stat_checkpointer') !== false) {
                     return [['checkpoints_timed' => '24', 'checkpoints_req' => '1', 'buffers_checkpoint' => '5000']];
                 }
-                if (str_contains($sql, 'pg_stat_bgwriter')) {
+                if (strpos($sql, 'pg_stat_bgwriter') !== false) {
                     return [['buffers_clean' => '120', 'maxwritten_clean' => '0', 'buffers_alloc' => '9800']];
                 }
-                if (str_contains($sql, 'GROUP BY state')) {
+                if (strpos($sql, 'GROUP BY state') !== false) {
                     return [['state' => 'active', 'count' => '3'], ['state' => 'idle', 'count' => '10']];
                 }
 
@@ -59,22 +58,22 @@ class PostgresqlActivityCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'server_version_num')) {
+                if (strpos($sql, 'server_version_num') !== false) {
                     return [['server_version_num' => '150008']];
                 }
-                if (str_contains($sql, 'pg_stat_database')) {
+                if (strpos($sql, 'pg_stat_database') !== false) {
                     return [['numbackends' => '3', 'xact_commit' => '500', 'xact_rollback' => '0',
                         'blks_read' => '50', 'blks_hit' => '4950', 'tup_returned' => '25000',
                         'tup_fetched' => '6000', 'tup_inserted' => '150', 'tup_updated' => '40',
                         'tup_deleted' => '2', 'conflicts' => '0', 'deadlocks' => '0',
                         'temp_files' => '0', 'temp_bytes' => '0']];
                 }
-                if (str_contains($sql, 'pg_stat_bgwriter')) {
+                if (strpos($sql, 'pg_stat_bgwriter') !== false) {
                     return [['checkpoints_timed' => '12', 'checkpoints_req' => '0',
                         'buffers_checkpoint' => '2500', 'buffers_clean' => '60',
                         'maxwritten_clean' => '0', 'buffers_alloc' => '4900', 'buffers_backend' => '170']];
                 }
-                if (str_contains($sql, 'GROUP BY state')) {
+                if (strpos($sql, 'GROUP BY state') !== false) {
                     return [['state' => 'idle', 'count' => '5']];
                 }
 
@@ -144,7 +143,9 @@ class PostgresqlActivityCollectorTest extends TestCase
         return $data;
     }
 
-    #[DataProvider('postgresqlVersionsProvider')]
+    /**
+     * @dataProvider postgresqlVersionsProvider
+     */
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {
@@ -154,29 +155,29 @@ class PostgresqlActivityCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql) use ($fixture): array {
-                if (str_contains($sql, 'server_version_num')) {
+                if (strpos($sql, 'server_version_num') !== false) {
                     $settings = array_column($fixture['settings'], 'setting', 'name');
                     return [['server_version_num' => (string) ((int) $settings['server_version'] * 10000)]];
                 }
-                if (str_contains($sql, 'pg_stat_database')) {
+                if (strpos($sql, 'pg_stat_database') !== false) {
                     return $fixture['activity']['database_stats'];
                 }
-                if (str_contains($sql, 'pg_stat_checkpointer')) {
+                if (strpos($sql, 'pg_stat_checkpointer') !== false) {
                     return $fixture['activity']['checkpointer'];
                 }
-                if (str_contains($sql, 'pg_stat_bgwriter')) {
+                if (strpos($sql, 'pg_stat_bgwriter') !== false) {
                     return $fixture['activity']['bgwriter'];
                 }
-                if (str_contains($sql, 'GROUP BY state')) {
+                if (strpos($sql, 'GROUP BY state') !== false) {
                     return $fixture['activity']['connections'];
                 }
-                if (str_contains($sql, 'xact_start')) {
+                if (strpos($sql, 'xact_start') !== false) {
                     return $fixture['activity']['sessions']['oldest_transaction'] ?? [];
                 }
-                if (str_contains($sql, 'idle in transaction')) {
+                if (strpos($sql, 'idle in transaction') !== false) {
                     return $fixture['activity']['sessions']['idle_in_transaction'] ?? [];
                 }
-                if (str_contains($sql, 'pg_blocking_pids')) {
+                if (strpos($sql, 'pg_blocking_pids') !== false) {
                     return $fixture['activity']['sessions']['blocked_queries'] ?? [];
                 }
 
@@ -211,7 +212,7 @@ class PostgresqlActivityCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'server_version_num')) {
+                if (strpos($sql, 'server_version_num') !== false) {
                     return [['server_version_num' => '160000']];
                 }
 
@@ -236,10 +237,10 @@ class PostgresqlActivityCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'server_version_num')) {
+                if (strpos($sql, 'server_version_num') !== false) {
                     return [['server_version_num' => '160000']];
                 }
-                if (str_contains($sql, 'xact_start')) {
+                if (strpos($sql, 'xact_start') !== false) {
                     return [['oldest_transaction_seconds' => '120']];
                 }
 
@@ -258,10 +259,10 @@ class PostgresqlActivityCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'server_version_num')) {
+                if (strpos($sql, 'server_version_num') !== false) {
                     return [['server_version_num' => '160000']];
                 }
-                if (str_contains($sql, 'idle in transaction')) {
+                if (strpos($sql, 'idle in transaction') !== false) {
                     return [['cnt' => '3', 'oldest_seconds' => '60']];
                 }
 
@@ -281,10 +282,10 @@ class PostgresqlActivityCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'server_version_num')) {
+                if (strpos($sql, 'server_version_num') !== false) {
                     return [['server_version_num' => '160000']];
                 }
-                if (str_contains($sql, 'pg_blocking_pids')) {
+                if (strpos($sql, 'pg_blocking_pids') !== false) {
                     return [
                         ['blocked_pid' => 101, 'blocked_wait_seconds' => 45, 'blocked_query_sample' => 'SELECT 1',
                             'blocking_pid' => 99, 'blocking_query_sample' => 'UPDATE users', 'blocking_state' => 'idle in transaction'],
@@ -311,10 +312,10 @@ class PostgresqlActivityCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'server_version_num')) {
+                if (strpos($sql, 'server_version_num') !== false) {
                     return [['server_version_num' => '160000']];
                 }
-                if (str_contains($sql, 'pg_blocking_pids')) {
+                if (strpos($sql, 'pg_blocking_pids') !== false) {
                     // PID 101 is blocked by two separate blockers — appears twice
                     return [
                         ['blocked_pid' => 101, 'blocked_wait_seconds' => 30, 'blocked_query_sample' => 'SELECT 1',
@@ -340,12 +341,12 @@ class PostgresqlActivityCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'server_version_num')) {
+                if (strpos($sql, 'server_version_num') !== false) {
                     return [['server_version_num' => '160000']];
                 }
-                if (str_contains($sql, 'xact_start')
-                    || str_contains($sql, 'idle in transaction')
-                    || str_contains($sql, 'pg_blocking_pids')
+                if (strpos($sql, 'xact_start') !== false
+                    || strpos($sql, 'idle in transaction') !== false
+                    || strpos($sql, 'pg_blocking_pids') !== false
                 ) {
                     throw new \RuntimeException('Permission denied');
                 }

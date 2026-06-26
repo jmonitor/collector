@@ -7,7 +7,6 @@ namespace Jmonitor\Tests\Collector\Mysql;
 use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlVariablesCollector;
 use Jmonitor\Exceptions\BootFailedException;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class MysqlVariablesCollectorTest extends TestCase
@@ -99,7 +98,9 @@ class MysqlVariablesCollectorTest extends TestCase
         return $data;
     }
 
-    #[DataProvider('mysqlVersionsProvider')]
+    /**
+     * @dataProvider mysqlVersionsProvider
+     */
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {
@@ -109,7 +110,7 @@ class MysqlVariablesCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql) use ($fixture): array {
-                if (str_contains($sql, 'SHOW GLOBAL VARIABLES')) {
+                if (strpos($sql, 'SHOW GLOBAL VARIABLES') !== false) {
                     return $fixture['variables'];
                 }
 

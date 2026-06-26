@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Jmonitor\Tests\Collector\Php;
 
 use Jmonitor\Collector\Php\PhpCollector;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class PhpCollectorTest extends TestCase
@@ -110,7 +109,9 @@ class PhpCollectorTest extends TestCase
         return $data;
     }
 
-    #[DataProvider('phpWebVersionsProvider')]
+    /**
+     * @dataProvider phpWebVersionsProvider
+     */
     public function testWebFixtureStructure(array $fixture): void
     {
         if ($fixture === []) {

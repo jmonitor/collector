@@ -7,7 +7,6 @@ namespace Jmonitor\Tests\Collector\Postgresql;
 use Jmonitor\Collector\Postgresql\PostgresqlDatabaseCollector;
 use Jmonitor\Exceptions\BootFailedException;
 use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class PostgresqlDatabaseCollectorTest extends TestCase
@@ -17,14 +16,14 @@ class PostgresqlDatabaseCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'pg_database_size')) {
+                if (strpos($sql, 'pg_database_size') !== false) {
                     return [['db_size' => '104857600']];
                 }
-                if (str_contains($sql, 'n_live_tup')) {
+                if (strpos($sql, 'n_live_tup') !== false) {
                     return [['table_count' => '5', 'live_tuples' => '1500',
                         'dead_tuples' => '42', 'seq_scans' => '34', 'idx_scans' => '890']];
                 }
-                if (str_contains($sql, 'pg_total_relation_size')) {
+                if (strpos($sql, 'pg_total_relation_size') !== false) {
                     return [['total_size' => '98765432', 'indexes_size' => '20485760']];
                 }
 
@@ -104,7 +103,9 @@ class PostgresqlDatabaseCollectorTest extends TestCase
         return $data;
     }
 
-    #[DataProvider('postgresqlVersionsProvider')]
+    /**
+     * @dataProvider postgresqlVersionsProvider
+     */
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {
@@ -114,13 +115,13 @@ class PostgresqlDatabaseCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql) use ($fixture): array {
-                if (str_contains($sql, 'pg_database_size')) {
+                if (strpos($sql, 'pg_database_size') !== false) {
                     return $fixture['database']['db_size'];
                 }
-                if (str_contains($sql, 'n_live_tup')) {
+                if (strpos($sql, 'n_live_tup') !== false) {
                     return $fixture['database']['table_stats'];
                 }
-                if (str_contains($sql, 'pg_total_relation_size')) {
+                if (strpos($sql, 'pg_total_relation_size') !== false) {
                     return $fixture['database']['size_stats'];
                 }
 

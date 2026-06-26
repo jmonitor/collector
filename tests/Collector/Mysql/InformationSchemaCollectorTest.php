@@ -7,7 +7,6 @@ namespace Jmonitor\Tests\Collector\Mysql;
 use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
 use Jmonitor\Collector\Mysql\MysqlInformationSchemaCollector;
 use Jmonitor\Exceptions\BootFailedException;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class InformationSchemaCollectorTest extends TestCase
@@ -123,7 +122,9 @@ class InformationSchemaCollectorTest extends TestCase
         return $data;
     }
 
-    #[DataProvider('mysqlVersionsProvider')]
+    /**
+     * @dataProvider mysqlVersionsProvider
+     */
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {
@@ -133,8 +134,8 @@ class InformationSchemaCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql) use ($fixture): array {
-                if (str_contains($sql, 'information_schema')) {
-                    if (str_contains($sql, 'SELECT 1')) {
+                if (strpos($sql, 'information_schema') !== false) {
+                    if (strpos($sql, 'SELECT 1') !== false) {
                         if (!$fixture['informationSchema']['readable']) {
                             throw new \Exception('information_schema not readable');
                         }

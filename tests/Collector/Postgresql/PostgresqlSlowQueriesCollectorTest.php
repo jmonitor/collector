@@ -7,7 +7,6 @@ namespace Jmonitor\Tests\Collector\Postgresql;
 use Jmonitor\Collector\Postgresql\PostgresqlSlowQueriesCollector;
 use Jmonitor\Exceptions\BootFailedException;
 use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class PostgresqlSlowQueriesCollectorTest extends TestCase
@@ -25,7 +24,7 @@ class PostgresqlSlowQueriesCollectorTest extends TestCase
                     'rows' => '42', 'shared_blks_hit' => '420', 'shared_blks_read' => '5'],
             ]);
 
-        $collector = new PostgresqlSlowQueriesCollector($dbMock, limit: 5, minCalls: 2, minMeanTimeMs: 1.0);
+        $collector = new PostgresqlSlowQueriesCollector($dbMock, 5, 2, 1.0);
         $result = $collector->collect();
 
         self::assertSame(2, $result['min_calls']);
@@ -60,7 +59,7 @@ class PostgresqlSlowQueriesCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
 
         $this->expectException(\InvalidArgumentException::class);
-        new PostgresqlSlowQueriesCollector($dbMock, orderBy: 'invalid');
+        new PostgresqlSlowQueriesCollector($dbMock, 10, 1, 0.0, 'invalid');
     }
 
     public function testOrderByConstants(): void
@@ -88,7 +87,7 @@ class PostgresqlSlowQueriesCollectorTest extends TestCase
         $dbMock->expects($this->exactly(2))
             ->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'shared_preload_libraries')) {
+                if (strpos($sql, 'shared_preload_libraries') !== false) {
                     return [['shared_preload_libraries' => 'pg_stat_statements']];
                 }
 
@@ -117,7 +116,7 @@ class PostgresqlSlowQueriesCollectorTest extends TestCase
         $dbMock->expects($this->exactly(2))
             ->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'shared_preload_libraries')) {
+                if (strpos($sql, 'shared_preload_libraries') !== false) {
                     return [['shared_preload_libraries' => 'pg_stat_statements']];
                 }
                 throw new \Exception('relation "pg_stat_statements" does not exist');
@@ -134,16 +133,16 @@ class PostgresqlSlowQueriesCollectorTest extends TestCase
         $dbMock->expects($this->exactly(3))
             ->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'shared_preload_libraries')) {
+                if (strpos($sql, 'shared_preload_libraries') !== false) {
                     return [['shared_preload_libraries' => 'pg_stat_statements']];
                 }
-                if (str_contains($sql, 'CREATE EXTENSION')) {
+                if (strpos($sql, 'CREATE EXTENSION') !== false) {
                     return [];
                 }
                 throw new \Exception('relation "pg_stat_statements" does not exist');
             });
 
-        (new PostgresqlSlowQueriesCollector($dbMock, autoCreateExtension: true))->boot();
+        (new PostgresqlSlowQueriesCollector($dbMock, 10, 1, 0.0, PostgresqlSlowQueriesCollector::ORDER_BY_AVG_TIME, true))->boot();
         $this->addToAssertionCount(1);
     }
 
@@ -152,7 +151,7 @@ class PostgresqlSlowQueriesCollectorTest extends TestCase
         $dbMock = $this->createMock(DatabaseAdapterInterface::class);
         $dbMock->method('fetchAllAssociative')
             ->willReturnCallback(static function (string $sql): array {
-                if (str_contains($sql, 'shared_preload_libraries')) {
+                if (strpos($sql, 'shared_preload_libraries') !== false) {
                     return [['shared_preload_libraries' => 'pg_stat_statements']];
                 }
                 throw new \Exception('permission denied');
@@ -160,7 +159,7 @@ class PostgresqlSlowQueriesCollectorTest extends TestCase
 
         $this->expectException(BootFailedException::class);
         $this->expectExceptionMessage('Failed to create pg_stat_statements extension');
-        (new PostgresqlSlowQueriesCollector($dbMock, autoCreateExtension: true))->boot();
+        (new PostgresqlSlowQueriesCollector($dbMock, 10, 1, 0.0, PostgresqlSlowQueriesCollector::ORDER_BY_AVG_TIME, true))->boot();
     }
 
     public static function postgresqlVersionsProvider(): array
@@ -180,7 +179,9 @@ class PostgresqlSlowQueriesCollectorTest extends TestCase
         return $data;
     }
 
-    #[DataProvider('postgresqlVersionsProvider')]
+    /**
+     * @dataProvider postgresqlVersionsProvider
+     */
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {

@@ -61,3 +61,11 @@ When adding a new collector that needs version-specific testing, add a correspon
 - PSR-12/PER coding standards enforced by php-cs-fixer
 - PHPStan level 5 applied to `src/` only
 - Tests mirror `src/` directory structure and extend `PHPUnit\Framework\TestCase`
+
+### PHP 7.4 compatibility (1.x branch)
+
+The `1.x` line supports PHP `^7.4|^8.0`, and CI runs the test suite down to PHP 7.4 (where only PHPUnit 9 is available). Both `src/` **and** `tests/` must stay parseable/runnable on PHP 7.4 + PHPUnit 9:
+
+- No PHP 8.0+ functions/syntax: use `strpos($h, $n) !== false` instead of `str_contains()`; no `match`, named arguments, nullsafe `?->`, enums, `readonly`, or constructor promotion.
+- Data providers: use `@dataProvider` docblock annotations, **not** `#[DataProvider]` attributes (attributes need PHPUnit 10+, which can't run on 7.4/8.0).
+- The `main`/`2.x` line targets PHP 8.1+ and is free of these restrictions.

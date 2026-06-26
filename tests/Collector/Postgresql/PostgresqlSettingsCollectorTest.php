@@ -7,7 +7,6 @@ namespace Jmonitor\Tests\Collector\Postgresql;
 use Jmonitor\Collector\Postgresql\PostgresqlSettingsCollector;
 use Jmonitor\Exceptions\BootFailedException;
 use Jmonitor\Utils\DatabaseAdapter\DatabaseAdapterInterface;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class PostgresqlSettingsCollectorTest extends TestCase
@@ -95,7 +94,9 @@ class PostgresqlSettingsCollectorTest extends TestCase
         return $data;
     }
 
-    #[DataProvider('postgresqlVersionsProvider')]
+    /**
+     * @dataProvider postgresqlVersionsProvider
+     */
     public function testCollectWithRealVersionFixture(array $fixture): void
     {
         if ($fixture === []) {
