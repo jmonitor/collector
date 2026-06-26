@@ -10,28 +10,94 @@ permissions:
     contents: read
 
 jobs:
-    build:
+    # Code style + static analysis are version-independent: run them once
+    # (on the newest PHP) instead of on every matrix cell.
+    static:
+        name: Static analysis (PHP 8.4)
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
 
-            - name: Cache Composer packages
-              id: composer-cache
-              uses: actions/cache@v3
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
               with:
-                  path: vendor
-                  key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-                  restore-keys: |
-                      ${{ runner.os }}-php-
+                  php-version: '8.4'
+                  coverage: none
+                  tools: composer:v2
+
+            - name: Get Composer cache directory
+              id: composer-cache
+              run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+            - name: Cache Composer packages
+              uses: actions/cache@v4
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-static-${{ hashFiles('composer.json') }}
+                  restore-keys: ${{ runner.os }}-static-
 
             - name: Install dependencies
-              run: composer install --prefer-dist --no-progress
+              # composer.lock is gitignored, so resolve from composer.json directly.
+              run: composer update --prefer-dist --no-progress
 
             - name: lint
               run: composer run-script lint:check
 
             - name: phpstan
               run: composer run-script phpstan
+
+    tests:
+        name: Tests PHP ${{ matrix.php }} (${{ matrix.deps }} deps)
+        runs-on: ubuntu-latest
+
+        strategy:
+            # Don't cancel the whole matrix when one combination fails:
+            # we want every PHP/deps result independently.
+            fail-fast: false
+            matrix:
+                include:
+                    # Package floor: lowest supported PHP with the lowest
+                    # installable dependencies (Symfony 6.4, PHPUnit 10, DBAL 3…).
+                    - { php: '8.1', deps: 'lowest' }
+                    - { php: '8.2', deps: 'highest' }
+                    - { php: '8.3', deps: 'highest' }
+                    # Newest PHP with the newest deps: catches deprecations early.
+                    - { php: '8.4', deps: 'highest' }
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup PHP ${{ matrix.php }}
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php }}
+                  coverage: none
+                  tools: composer:v2
+
+            - name: Get Composer cache directory
+              id: composer-cache
+              run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+            - name: Cache Composer packages
+              uses: actions/cache@v4
+              with:
+                  # Cache Composer's download cache (not vendor/): each cell resolves
+                  # a different dependency set, so vendor/ must not be shared.
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  # Key on PHP + deps flavor + composer.json (no per-cell lock is committed).
+                  key: ${{ runner.os }}-php${{ matrix.php }}-${{ matrix.deps }}-${{ hashFiles('composer.json') }}
+                  restore-keys: ${{ runner.os }}-php${{ matrix.php }}-${{ matrix.deps }}-
+
+            - name: Install dependencies (${{ matrix.deps }})
+              # composer.lock is gitignored, so every cell resolves from composer.json.
+              # --prefer-lowest pins every package to the bottom of its range to
+              # validate the declared dependency floor.
+              run: |
+                  if [ "${{ matrix.deps }}" = "lowest" ]; then
+                      composer update --prefer-lowest --prefer-dist --no-progress
+                  else
+                      composer update --prefer-dist --no-progress
+                  fi
 
             - name: phpunit
               run: composer run-script phpunit

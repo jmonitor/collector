@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-06-26
+
+### Changed
+- **BREAKING**: The minimum supported PHP version is now **8.1** (PHP 7.4 and 8.0 are no longer supported). The previous `^7.4|^8.0` constraint was never actually installable — `symfony/process` and the PHPUnit 10+ test suite already required PHP 8.1+. Projects running on PHP 7.4/8.0 should stay on the `1.x` line.
+
+### Changed (internal)
+- CI now runs a dedicated static-analysis job (lint + PHPStan) plus a PHP 8.1–8.4 test matrix covering the lowest and highest dependency resolutions.
+- Raised the `phpunit/phpunit` requirement to `^10.0|^11.5` (the test suite uses PHPUnit 10+ attributes).
+
 ## [1.4.0] - 2026-06-05
 
 ### Changed
