@@ -94,7 +94,7 @@ class PostgresqlActivityCollector implements CollectorInterface, BootableCollect
             $sessions['oldest_transaction_seconds'] = isset($rows[0]['oldest_transaction_seconds'])
                 ? (int) $rows[0]['oldest_transaction_seconds']
                 : null;
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
         }
 
         try {
@@ -108,7 +108,7 @@ class PostgresqlActivityCollector implements CollectorInterface, BootableCollect
             $sessions['oldest_idle_in_transaction_seconds'] = isset($rows[0]['oldest_seconds'])
                 ? (int) $rows[0]['oldest_seconds']
                 : null;
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
         }
 
         try {
@@ -134,7 +134,7 @@ class PostgresqlActivityCollector implements CollectorInterface, BootableCollect
                 $sessions['blocked_count'] = count($blockedPids);
                 $sessions['max_wait_seconds'] = (int) max(array_column($rows, 'blocked_wait_seconds'));
             }
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
         }
 
         return $sessions;
