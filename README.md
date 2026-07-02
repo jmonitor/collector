@@ -6,7 +6,7 @@ Plug the collectors, get clear dashboards in minutes — without building and ma
 
 [![Packagist Version](https://img.shields.io/packagist/v/jmonitor/collector?style=flat-square)](https://packagist.org/packages/jmonitor/collector)
 [![PHP Version](https://img.shields.io/packagist/php-v/jmonitor/collector?style=flat-square)](https://packagist.org/packages/jmonitor/collector)
-[![Tests](https://img.shields.io/github/actions/workflow/status/jmonitor/collector/tests.yml?branch=1.x&label=tests&style=flat-square)](https://github.com/jmonitor/collector/actions)
+[![Tests](https://img.shields.io/github/actions/workflow/status/jmonitor/collector/tests.yml?branch=2.x&label=tests&style=flat-square)](https://github.com/jmonitor/collector/actions)
 [![License](https://img.shields.io/github/license/jmonitor/collector?style=flat-square)](LICENSE)
 [![Last Commit](https://img.shields.io/github/last-commit/jmonitor/collector?style=flat-square)](https://github.com/jmonitor/collector/commits)
 
@@ -30,7 +30,7 @@ Grafana, Prometheus and Datadog are powerful, but they take time to configure an
 **This package** provides the PHP collectors that gather metrics and send them to [Jmonitor.io](https://jmonitor.io). For Symfony projects, use the [Jmonitor bundle](https://github.com/jmonitor/jmonitor-bundle) for drop-in integration.
 
 ## Requirements
-- PHP 7.4 or 8.x
+- PHP 8.1+ (for PHP 7.4/8.0, use the [1.x branch](https://github.com/jmonitor/collector/tree/1.x))
 - A project using [Composer](https://getcomposer.org/)
 
 ## Installation
