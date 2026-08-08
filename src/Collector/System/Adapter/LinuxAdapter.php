@@ -90,7 +90,7 @@ class LinuxAdapter implements AdapterInterface
 
         $uptime = explode(' ', $uptime);
 
-        return isset($uptime[0]) ? (int) $uptime[0] : null;
+        return (int) $uptime[0];
     }
 
     public function getTimeZone(): ?string

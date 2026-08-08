@@ -29,7 +29,7 @@
         "friendsofphp/php-cs-fixer": "^3.86",
         "nyholm/psr7": "^1.8",
         "php-http/message": "^1.0",
-        "phpstan/phpstan": "^1.10",
+        "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^10.0|^11.5",
         "predis/predis": "^3.0",
         "symfony/http-client": "^6.4|^7.0|^8.0"
