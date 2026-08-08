@@ -156,10 +156,50 @@ class PhpCollector implements CollectorInterface, BootableCollectorInterface, Lo
 
         unset($status['preload_statistics']);
 
-        return $this->sanitizeFloats([
+        // ini_get() returns a bare number of megabytes here (e.g. "128"), not a shorthand like "128M"
+        $memoryConsumption = (int) ini_get('opcache.memory_consumption') * 1024 * 1024;
+
+        return $this->sanitizeFloats($this->fixOpcacheMemoryConsumption($status, $config, $memoryConsumption));
+    }
+
+    /**
+     * On ZTS builds of PHP >= 8.5 (FrankenPHP, Swoole, RoadRunner…), OnUpdateMemoryConsumption()
+     * bails out before writing its value when the directive is re-applied on a worker thread, so
+     * opcache reports a memory_consumption of 0. used_memory then comes out negative and
+     * current_wasted_percentage is a NAN. Actual shared memory is unaffected, only the report is.
+     *
+     * @see https://github.com/php/php-src/issues/22216
+     *
+     * @param array<mixed> $status
+     * @param array<mixed> $config
+     * @param int          $memoryConsumption real opcache.memory_consumption, in bytes
+     *
+     * @return array{config: array<mixed>, status: array<mixed>}
+     */
+    private function fixOpcacheMemoryConsumption(array $status, array $config, int $memoryConsumption): array
+    {
+        $reported = $config['directives']['opcache.memory_consumption'] ?? null;
+        $free = $status['memory_usage']['free_memory'] ?? null;
+        $wasted = $status['memory_usage']['wasted_memory'] ?? null;
+
+        $isBroken = $memoryConsumption > 0
+            && is_numeric($reported) && $reported <= 0
+            && is_numeric($free)
+            && is_numeric($wasted);
+
+        if ($isBroken) {
+            $free = (int) $free;
+            $wasted = (int) $wasted;
+
+            $config['directives']['opcache.memory_consumption'] = $memoryConsumption;
+            $status['memory_usage']['used_memory'] = $memoryConsumption - $free - $wasted;
+            $status['memory_usage']['current_wasted_percentage'] = (float) $wasted / $memoryConsumption * 100;
+        }
+
+        return [
             'config' => $config,
             'status' => $status,
-        ]);
+        ];
     }
 
     /**
