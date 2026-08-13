@@ -17,7 +17,14 @@ use Psr\Log\NullLogger;
 
 class Jmonitor
 {
-    public const VERSION = '1.0';
+    /**
+     * @deprecated since 2.1, use Jmonitor::getVersion() instead. Will be removed in 3.0.
+     *
+     * Kept for backward compatibility only. It used to be bumped by hand and never was,
+     * so it advertised "1.0" whatever the installed version. It now holds the value
+     * returned when the version cannot be resolved, and no longer a wrong version number.
+     */
+    public const VERSION = Version::FALLBACK;
 
     /**
      * @var CollectorInterface[]
@@ -39,6 +46,15 @@ class Jmonitor
     {
         $this->client = $projectApiKey ? new Client($projectApiKey, $httpClient) : null;
         $this->logger = $logger ?? new NullLogger();
+    }
+
+    /**
+     * Version of this package, as installed. Never empty: falls back to Version::FALLBACK
+     * when it cannot be resolved.
+     */
+    public static function getVersion(): string
+    {
+        return Version::get();
     }
 
     public function addCollector(CollectorInterface $collector): void
