@@ -2,12 +2,14 @@
 
 namespace Jmonitor\Tests;
 
+use Composer\InstalledVersions;
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\ResetInterface;
 use Jmonitor\Exceptions\InvalidServerResponseException;
 use Jmonitor\Exceptions\NoCollectorException;
 use Jmonitor\Jmonitor;
+use Jmonitor\Version;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Psr18Client;
@@ -61,6 +63,15 @@ class JmonitorTest extends TestCase
         self::assertTrue($result->getMetrics()[1]['threw']);
         self::assertCount(1, $result->getErrors());
         self::assertSame('Metric(s) collected with some errors. Inspect the logs and result for more informations.', $result->getConclusion());
+    }
+
+    public function testGetVersionReturnsTheInstalledVersion(): void
+    {
+        // Expectation comes from Composer, not from the code under test: returning the
+        // (deprecated) Jmonitor::VERSION constant instead of resolving fails here.
+        $expected = InstalledVersions::getPrettyVersion('jmonitor/collector') ?? Version::FALLBACK;
+
+        self::assertSame($expected, Jmonitor::getVersion());
     }
 
     public function testCollectHttpErrorReturnsResultWhenNotThrowing(): void
