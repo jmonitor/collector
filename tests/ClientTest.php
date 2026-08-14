@@ -33,13 +33,16 @@ class ClientTest extends TestCase
         $httpClient = new MockHttpClient($mockResponse);
         $httpClient = new Psr18Client($httpClient);
 
-        $client = new Client('test-api-key', $httpClient, '9.9.9-test');
+        $client = new Client('test-api-key', $httpClient);
         $result = $client->sendMetrics($requestData);
+
+        // Expectation comes from Composer, not from the code under test.
+        $installedVersion = InstalledVersions::getPrettyVersion('jmonitor/collector') ?? Version::FALLBACK;
 
         $expectedRequestHeaders = [
             'Host: collector.jmonitor.io',
-            'User-Agent: jmonitor-collector/9.9.9-test (+https://jmonitor.io)',
-            'X-JMONITOR-VERSION: 9.9.9-test',
+            'User-Agent: jmonitor-collector/' . $installedVersion . ' (+https://jmonitor.io)',
+            'X-JMONITOR-VERSION: ' . $installedVersion,
             'X-JMONITOR-API-KEY: test-api-key',
         ];
 
@@ -53,34 +56,15 @@ class ClientTest extends TestCase
         self::assertSame(json_encode($requestData), $options['body']);
     }
 
-    public function testSendMetricsAdvertisesTheInstalledVersionByDefault(): void
+    public function testSendMetricsNeverSendsAnEmptyVersionHeader(): void
     {
         $mockResponse = new MockResponse('', ['http_code' => 201]);
 
         $client = new Client('test-api-key', new Psr18Client(new MockHttpClient($mockResponse)));
         $client->sendMetrics([]);
 
-        // Expectation comes from Composer, not from the code under test.
-        $installedVersion = InstalledVersions::getPrettyVersion('jmonitor/collector') ?? Version::FALLBACK;
-        $headers = $mockResponse->getRequestOptions()['headers'];
-
-        self::assertContains('X-JMONITOR-VERSION: ' . $installedVersion, $headers);
-        self::assertContains('User-Agent: jmonitor-collector/' . $installedVersion . ' (+https://jmonitor.io)', $headers);
-    }
-
-    public function testSendMetricsNeverSendsAnEmptyVersionHeader(): void
-    {
-        $mockResponse = new MockResponse('', ['http_code' => 201]);
-
         // The server answers 400 "Malformed request" on an empty X-JMONITOR-VERSION header,
-        // so an empty version must fall back to the resolved one instead of being forwarded.
-        $client = new Client('test-api-key', new Psr18Client(new MockHttpClient($mockResponse)), '');
-        $client->sendMetrics([]);
-
-        $headers = $mockResponse->getRequestOptions()['headers'];
-        $installedVersion = InstalledVersions::getPrettyVersion('jmonitor/collector') ?? Version::FALLBACK;
-
-        self::assertNotContains('X-JMONITOR-VERSION: ', $headers);
-        self::assertContains('X-JMONITOR-VERSION: ' . $installedVersion, $headers);
+        // which would cut metric ingestion off entirely.
+        self::assertNotContains('X-JMONITOR-VERSION: ', $mockResponse->getRequestOptions()['headers']);
     }
 }
