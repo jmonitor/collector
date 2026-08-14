@@ -27,17 +27,12 @@ class Client
     private string $baseUrl;
     private string $version;
 
-    /**
-     * @param string|null $version Version advertised to Jmonitor. Defaults to the installed
-     *                             version of this package. An empty value falls back to it too,
-     *                             as the server rejects requests without a version.
-     */
-    public function __construct(string $projectApiKey, ?ClientInterface $httpClient = null, ?string $version = null)
+    public function __construct(string $projectApiKey, ?ClientInterface $httpClient = null)
     {
         $this->httpClient = $httpClient ?? Psr18ClientDiscovery::find();
         $this->messageFactory = $this->httpClient instanceof RequestFactoryInterface && $this->httpClient instanceof StreamFactoryInterface ? $this->httpClient : new Psr17Factory();
         $this->projectApiKey = $projectApiKey;
-        $this->version = $version ?: Version::get();
+        $this->version = Version::get();
 
         $this->baseUrl = $_ENV['JMONITOR_COLLECTOR_URL'] ?? $_SERVER['JMONITOR_COLLECTOR_URL'] ?? (getenv('JMONITOR_COLLECTOR_URL') ?: self::BASE_URL);
         $this->baseUrl = rtrim($this->baseUrl, '/');
