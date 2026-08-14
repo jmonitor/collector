@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Jmonitor;
 
 /**
- * Resolves the installed version of this package at runtime.
+ * Resolves the installed version of a package at runtime.
  *
  * @internal
  */
@@ -20,7 +20,8 @@ final class Version
     private const PACKAGE = 'jmonitor/collector';
 
     /**
-     * @param string $package Only meant to be overridden in tests
+     * @param string $package Composer package to resolve, this one unless a framework
+     *                        integration asks for its own
      */
     public static function get(string $package = self::PACKAGE): string
     {

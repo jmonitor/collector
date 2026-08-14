@@ -57,6 +57,17 @@ class Jmonitor
         return Version::get();
     }
 
+    /**
+     * Declares the framework integration this collector runs behind, so its own version is
+     * reported alongside. Meant to be called by that integration, not by end users.
+     *
+     * @param string $composerPackage Package name of the integration, e.g. jmonitor/jmonitor-bundle
+     */
+    public function setBundle(string $composerPackage): void
+    {
+        $this->client?->setBundle($composerPackage);
+    }
+
     public function addCollector(CollectorInterface $collector): void
     {
         if (isset($this->collectors[$collector->getName()])) {
