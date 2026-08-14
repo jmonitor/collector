@@ -9,6 +9,11 @@ This project is the PHP library installed on your server via composer that gathe
 - Ensure this document is edited and kept up to date following any task that modifies the information or context described herein.
 - Never prepend `cd [some path]` before commands, and never use `git -C "C:/..."` for git commands. The shell is already running at the project root — use commands directly as-is.
 
+### CHANGELOG
+
+- **NEVER invent a version number in `CHANGELOG.md`.** When implementing a feature, a fix, or any other change, the entry goes under the `## [Unreleased]` section — create that section if it doesn't exist.
+- Only the `release` skill is allowed to assign a version number and convert `[Unreleased]` into a versioned, dated section.
+
 ## Commands
 
 ```bash
