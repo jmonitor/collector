@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.2.0] - 2026-08-14
 
 ### Added
-- `Jmonitor::setBundle()` (and `Client::setBundle()`) lets a framework integration — the [Symfony bundle](https://github.com/jmonitor/jmonitor-bundle), typically — declare its own Composer package. Its installed version then travels in a new `X-JMONITOR-BUNDLE-VERSION` header, so a project can be told its integration is outdated even when the collector itself is up to date. The header is omitted when no integration is declared, and carries `unknown` when the declared package cannot be resolved.
+- `Jmonitor::setBundle()` lets an integration (the Symfony bundle, typically) declare its Composer package, whose version is then sent in the `X-JMONITOR-BUNDLE-VERSION` header.
 
 ## [2.1.0] - 2026-08-14
 
