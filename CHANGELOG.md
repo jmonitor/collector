@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-08-14
+
+### Fixed
+- The collector now advertises the version it is actually running (`X-JMONITOR-VERSION` header and `User-Agent`).
+
+### Added
+- `Jmonitor::getVersion()` returns the installed version of the package.
+- `composer-runtime-api: ^2.0` is now required.
+
+### Deprecated
+- `Jmonitor::VERSION` is deprecated in favour of `Jmonitor::getVersion()` and will be removed in 3.0. Its value is now `unknown`: it no longer advertises a version number that was wrong anyway.
+
 ## [2.0.1] - 2026-08-08
 
 ### Fixed
