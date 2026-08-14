@@ -26,6 +26,8 @@ class Client
     private string $projectApiKey;
     private string $baseUrl;
     private string $version;
+    private ?string $bundlePackage = null;
+    private ?string $bundleVersion = null;
 
     public function __construct(string $projectApiKey, ?ClientInterface $httpClient = null)
     {
@@ -36,6 +38,18 @@ class Client
 
         $this->baseUrl = $_ENV['JMONITOR_COLLECTOR_URL'] ?? $_SERVER['JMONITOR_COLLECTOR_URL'] ?? (getenv('JMONITOR_COLLECTOR_URL') ?: self::BASE_URL);
         $this->baseUrl = rtrim($this->baseUrl, '/');
+    }
+
+    /**
+     * Declares the framework integration this collector runs behind, so its own version
+     * travels along. Meant to be called by that integration, not by end users.
+     *
+     * @param string $composerPackage Package name of the integration, e.g. jmonitor/jmonitor-bundle
+     */
+    public function setBundle(string $composerPackage): void
+    {
+        $this->bundlePackage = $composerPackage;
+        $this->bundleVersion = Version::get($composerPackage);
     }
 
     /**
@@ -85,12 +99,23 @@ class Client
      */
     private function buildHeaders(): array
     {
-        return [
-            'User-Agent' => 'jmonitor-collector/' . $this->version . ' (+https://jmonitor.io)',
+        $comment = $this->bundlePackage === null ? '' : '; ' . $this->bundlePackage . ' ' . $this->bundleVersion;
+
+        $headers = [
+            'User-Agent' => 'jmonitor-collector/' . $this->version . ' (+https://jmonitor.io' . $comment . ')',
             'X-JMONITOR-VERSION' => $this->version,
             'X-JMONITOR-API-KEY' => $this->projectApiKey,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];
+
+        // A missing header and Version::FALLBACK are two different answers for the server: no
+        // header means the collector runs bare, the fallback means an integration is installed
+        // but cannot read its own version. Never collapse one into the other.
+        if ($this->bundleVersion !== null) {
+            $headers['X-JMONITOR-BUNDLE-VERSION'] = $this->bundleVersion;
+        }
+
+        return $headers;
     }
 }

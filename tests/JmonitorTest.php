@@ -74,6 +74,41 @@ class JmonitorTest extends TestCase
         self::assertSame($expected, Jmonitor::getVersion());
     }
 
+    public function testSetBundleAdvertisesTheBundleVersionWhenSending(): void
+    {
+        $mockResponse = new MockResponse('', ['http_code' => 201]);
+        $jmonitor = new Jmonitor('api', new Psr18Client(new MockHttpClient($mockResponse)));
+        $jmonitor->setBundle('psr/http-client');
+
+        $collector = $this->createMock(CollectorInterface::class);
+        $collector->method('getVersion')->willReturn(1);
+        $collector->method('getName')->willReturn('dummy');
+        $collector->method('collect')->willReturn(['a' => 1]);
+
+        $jmonitor->addCollector($collector);
+        $jmonitor->collect();
+
+        // Expectation comes from Composer, not from the code under test.
+        $expected = 'X-JMONITOR-BUNDLE-VERSION: ' . InstalledVersions::getPrettyVersion('psr/http-client');
+
+        self::assertContains($expected, $mockResponse->getRequestOptions()['headers']);
+    }
+
+    public function testSetBundleWithoutApiKeyIsSilent(): void
+    {
+        $jmonitor = new Jmonitor(null, $this->createMock(\Psr\Http\Client\ClientInterface::class));
+        $jmonitor->setBundle('psr/http-client');
+
+        $collector = $this->createMock(CollectorInterface::class);
+        $collector->method('getVersion')->willReturn(1);
+        $collector->method('getName')->willReturn('dummy');
+        $collector->method('collect')->willReturn(['a' => 1]);
+
+        $jmonitor->addCollector($collector);
+
+        self::assertCount(1, $jmonitor->collect()->getMetrics());
+    }
+
     public function testCollectHttpErrorReturnsResultWhenNotThrowing(): void
     {
         $mockResponse = new MockResponse('', [ 'http_code' => 500 ]);
