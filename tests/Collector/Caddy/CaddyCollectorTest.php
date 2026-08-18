@@ -99,8 +99,6 @@ class CaddyCollectorTest extends TestCase
      * `caddy version` sort le hash du build derrière le numéro sur les binaires officiels :
      * il ne doit pas se retrouver dans la valeur remontée, sinon le badge EOL côté JMonitor
      * devient illisible. Certains builds (Clever Cloud) n'affichent que "2.11.4".
-     *
-     * @dataProvider caddyVersionOutputProvider
      */
     #[DataProvider('caddyVersionOutputProvider')]
     public function testVersionIsNormalized(string $output, ?string $expected): void
