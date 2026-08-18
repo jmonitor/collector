@@ -32,13 +32,14 @@ class CaddyCollectorTest extends TestCase
     {
         $this->shellExecutor->method('execute')
             ->willReturnMap([
-                ['caddy version', 'v2.7.6'],
+                ['caddy version', "v2.7.6 h1:w0NymbG2m9PcvKWsrXO6EEkY9Ru4FJK8uQbYcev1p3A=
+"],
             ]);
 
         $metrics = $this->collector->collect();
 
         self::assertIsArray($metrics);
-        self::assertSame('v2.7.6', $metrics['version']);
+        self::assertSame('2.7.6', $metrics['version']);
 
         // Vérifie la présence des clés attendues dans caddy
         $expectedKeys = [
@@ -94,6 +95,135 @@ class CaddyCollectorTest extends TestCase
         self::assertGreaterThan(0, $metrics['process_resident_memory_bytes']);
     }
 
+    /**
+     * `caddy version` sort le hash du build derrière le numéro sur les binaires officiels :
+     * il ne doit pas se retrouver dans la valeur remontée, sinon le badge EOL côté JMonitor
+     * devient illisible. Certains builds (Clever Cloud) n'affichent que "2.11.4".
+     */
+    #[DataProvider('caddyVersionOutputProvider')]
+    public function testVersionIsNormalized(string $output, ?string $expected): void
+    {
+        $this->shellExecutor->method('execute')
+            ->willReturnMap([
+                ['caddy version', $output],
+            ]);
+
+        self::assertSame($expected, $this->collector->collect()['version']);
+    }
+
+    public static function caddyVersionOutputProvider(): array
+    {
+        return [
+            'binaire officiel' => ["v2.11.4 h1:XKxkMTgNSizEvKG6QHue6cAsFOteU2qA61w2tKkCWi0=
+", '2.11.4'],
+            'build sans hash (Clever Cloud)' => ["2.11.4
+", '2.11.4'],
+            'sortie inattendue' => ["unknown command \"version\"
+", null],
+        ];
+    }
+
+    /**
+     * Sous FrankenPHP il n'existe aucun binaire `caddy` : la version de Caddy se lit
+     * dans la sortie de `frankenphp version`.
+     */
+    public function testVersionIsReadFromFrankenPhpWhenItServesTheMetrics(): void
+    {
+        $this->shellExecutor->method('execute')
+            ->willReturnMap([
+                ['caddy version', null],
+                ['frankenphp version', "FrankenPHP v1.9.1 PHP 8.4.15 Caddy v2.10.2 h1:g/gTYjGMD0dec+UgMw8SnfmJ3I9+M2TdvoRL/Ovu6U8=
+"],
+            ]);
+
+        self::assertSame('2.10.2', $this->frankenPhpCollector()->collect()['version']);
+    }
+
+    /**
+     * FrankenPHP embarque son propre Caddy, dont la version diffère de celle d'un binaire
+     * `caddy` installé à côté. C'est celle du serveur qui sert les métriques qui compte.
+     */
+    public function testVersionIgnoresAStandaloneCaddyBinaryWhenFrankenPhpServesTheMetrics(): void
+    {
+        $this->shellExecutor->method('execute')
+            ->willReturnMap([
+                ['caddy version', "v2.11.4 h1:XKxkMTgNSizEvKG6QHue6cAsFOteU2qA61w2tKkCWi0=
+"],
+                ['frankenphp version', "FrankenPHP v1.9.1 PHP 8.4.15 Caddy v2.10.2 h1:g/gTYjGMD0dec+UgMw8SnfmJ3I9+M2TdvoRL/Ovu6U8=
+"],
+            ]);
+
+        self::assertSame('2.10.2', $this->frankenPhpCollector()->collect()['version']);
+    }
+
+    /**
+     * Symétriquement : un binaire `frankenphp` traînant sur un serveur qui fait tourner un
+     * Caddy standalone ne doit pas être consulté.
+     */
+    public function testVersionIgnoresFrankenPhpWhenAStandaloneCaddyServesTheMetrics(): void
+    {
+        $this->shellExecutor->method('execute')
+            ->willReturnMap([
+                ['caddy version', null],
+                ['frankenphp version', "FrankenPHP v1.9.1 PHP 8.4.15 Caddy v2.10.2 h1:g/gTYjGMD0dec+UgMw8SnfmJ3I9+M2TdvoRL/Ovu6U8=
+"],
+            ]);
+
+        // _fake_metrics.txt porte go_build_info{path="caddy"} : le serveur n'est pas FrankenPHP
+        self::assertNull($this->collector->collect()['version']);
+    }
+
+    /**
+     * Caddy < 2.10 n'expose pas de `path` dans go_build_info : le serveur est indéterminé,
+     * on tente les deux binaires en commençant par `caddy`.
+     */
+    public function testVersionFallsBackToFrankenPhpWhenTheServerCannotBeIdentified(): void
+    {
+        $this->shellExecutor->method('execute')
+            ->willReturnMap([
+                ['caddy version', null],
+                ['frankenphp version', "FrankenPHP v1.9.1 PHP 8.4.15 Caddy v2.10.2 h1:g/gTYjGMD0dec+UgMw8SnfmJ3I9+M2TdvoRL/Ovu6U8=
+"],
+            ]);
+
+        $collector = new CaddyCollector(
+            new PrometheusMetricsProvider(__DIR__ . '/_fake_metrics_caddy_2.7.txt'),
+            $this->shellExecutor
+        );
+
+        self::assertSame('2.10.2', $collector->collect()['version']);
+    }
+
+    public function testVersionIsNullWhenNoBinaryAnswers(): void
+    {
+        $this->shellExecutor->method('execute')->willReturn(null);
+
+        self::assertNull($this->collector->collect()['version']);
+        self::assertNull($this->frankenPhpCollector()->collect()['version']);
+    }
+
+    public function testVersionIsNullOnUnexpectedFrankenPhpOutput(): void
+    {
+        $this->shellExecutor->method('execute')
+            ->willReturnMap([
+                ['frankenphp version', "FrankenPHP (devel)
+"],
+            ]);
+
+        self::assertNull($this->frankenPhpCollector()->collect()['version']);
+    }
+
+    /**
+     * Métriques réellement capturées sur dunglas/frankenphp:1.9-php8.4.
+     */
+    private function frankenPhpCollector(): CaddyCollector
+    {
+        return new CaddyCollector(
+            new PrometheusMetricsProvider(__DIR__ . '/_fake_metrics_frankenphp.txt'),
+            $this->shellExecutor
+        );
+    }
+
     public function testGetVersion(): void
     {
         self::assertSame(1, $this->collector->getVersion());
@@ -138,15 +268,16 @@ class CaddyCollectorTest extends TestCase
             $prometheusProvider = new PrometheusMetricsProvider($tmpFile);
             $shellExecutor = $this->createMock(ShellExecutor::class);
             $shellExecutor->method('execute')
-                ->with('caddy version')
-                ->willReturn($fixture['version']);
+                ->willReturnMap([
+                    ['caddy version', $fixture['version']],
+                ]);
 
             $result = (new CaddyCollector($prometheusProvider, $shellExecutor))->collect();
 
             self::assertIsArray($result);
 
-            // La version doit être renseignée (caddy version s'exécute dans le container)
-            self::assertNotEmpty($result['version']);
+            // La version doit être renseignée, normalisée, et sans le hash du build
+            self::assertMatchesRegularExpression('/^\d+\.\d+\.\d+$/', (string) $result['version']);
 
             // Les métriques process sont toujours présentes dans un Caddy qui tourne
             self::assertNotNull($result['process_cpu_seconds_total']);

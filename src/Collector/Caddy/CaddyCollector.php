@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Jmonitor\Collector\Caddy;
 
 use Jmonitor\Collector\CollectorInterface;
+use Jmonitor\Prometheus\PrometheusMetrics;
 use Jmonitor\Prometheus\PrometheusMetricsProvider;
 use Jmonitor\Utils\ShellExecutor;
 
@@ -29,7 +30,7 @@ class CaddyCollector implements CollectorInterface
         $metrics = $this->prometheusMetricsProvider->getMetrics('caddy');
 
         return [
-            'version' => $this->getCaddyVersion(),
+            'version' => $this->getCaddyVersion($metrics),
 
             'requests_total' => [
                 'php' => $metrics->getFirstValue('caddy_http_requests_total', ['handler' => 'php'], 'int') ?? 0,
@@ -100,12 +101,86 @@ class CaddyCollector implements CollectorInterface
         return 'caddy';
     }
 
-    private function getCaddyVersion(): ?string
+    private function getCaddyVersion(PrometheusMetrics $metrics): ?string
     {
         if (array_key_exists('caddyVersion', $this->propertyCache)) {
             return $this->propertyCache['caddyVersion'];
         }
 
-        return $this->propertyCache['caddyVersion'] = $this->shellExecutor->execute('caddy version');
+        return $this->propertyCache['caddyVersion'] = $this->readCaddyVersion($metrics);
+    }
+
+    /**
+     * FrankenPHP embarque son propre Caddy, dont la version diffère de celle d'un binaire
+     * `caddy` éventuellement installé à côté : seule celle du serveur qui sert réellement
+     * les métriques est correcte. On interroge donc le binaire qui correspond au serveur.
+     *
+     * Aucune commande ne répond ? C'est un cas normal : l'agent peut tourner dans un
+     * conteneur distinct de celui qui exécute le serveur.
+     */
+    private function readCaddyVersion(PrometheusMetrics $metrics): ?string
+    {
+        $server = $this->detectServer($metrics);
+
+        if ($server === 'frankenphp') {
+            return $this->getFrankenPhpCaddyVersion();
+        }
+
+        if ($server === 'caddy') {
+            return $this->getStandaloneCaddyVersion();
+        }
+
+        // Serveur indéterminé (Caddy < 2.10) : on tente les deux, `caddy` d'abord.
+        return $this->getStandaloneCaddyVersion() ?? $this->getFrankenPhpCaddyVersion();
+    }
+
+    /**
+     * `go_build_info` identifie le binaire qui sert les métriques :
+     *   path="caddy"                                  -> Caddy standalone
+     *   path="github.com/dunglas/frankenphp/caddy"    -> FrankenPHP
+     *   path=""                                       -> Caddy < 2.10, indéterminable
+     *
+     * @return 'frankenphp'|'caddy'|null
+     */
+    private function detectServer(PrometheusMetrics $metrics): ?string
+    {
+        $path = $metrics->getSamples('go_build_info')[0]['labels']['path'] ?? '';
+
+        if (str_contains($path, 'frankenphp')) {
+            return 'frankenphp';
+        }
+
+        return $path !== '' ? 'caddy' : null;
+    }
+
+    /**
+     * `caddy version` affiche "v2.11.4 h1:XKxkMTgNSizEvKG6QHue6cAsFOteU2qA61w2tKkCWi0=" sur les
+     * binaires officiels, et "2.11.4" seul sur d'autres builds. Le hash ne doit pas être remonté.
+     */
+    private function getStandaloneCaddyVersion(): ?string
+    {
+        return $this->extractVersion('/^v?(\d+\.\d+\.\d+)/', $this->shellExecutor->execute('caddy version'));
+    }
+
+    /**
+     * `frankenphp version` affiche
+     * "FrankenPHP v1.9.1 PHP 8.4.15 Caddy v2.10.2 h1:g/gTYjGMD0dec+UgMw8SnfmJ3I9+M2TdvoRL/Ovu6U8=".
+     */
+    private function getFrankenPhpCaddyVersion(): ?string
+    {
+        return $this->extractVersion('/\bCaddy\s+v?(\d+\.\d+\.\d+)/i', $this->shellExecutor->execute('frankenphp version'));
+    }
+
+    private function extractVersion(string $pattern, ?string $output): ?string
+    {
+        if ($output === null) {
+            return null;
+        }
+
+        if (preg_match($pattern, trim($output), $matches) !== 1) {
+            return null;
+        }
+
+        return $matches[1];
     }
 }

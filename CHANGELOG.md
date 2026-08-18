@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- [Caddy Collector] Under FrankenPHP, which ships no `caddy` binary, the Caddy version is now read from `frankenphp version` instead of being left empty.
+- [Caddy Collector] The version is now read from the binary that actually serves the metrics (detected via `go_build_info`), so a `caddy` binary sitting next to FrankenPHP — or the reverse — no longer reports someone else's version.
+- [Caddy Collector] The reported version no longer carries the build hash printed by official binaries: `v2.11.4 h1:XKxk…=` becomes `2.11.4`.
+
 ## [2.2.0] - 2026-08-14
 
 ### Added
