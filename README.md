@@ -1,8 +1,11 @@
-# Jmonitor
+# Jmonitor Collector
 
 ### Simple monitoring for PHP & Symfony stacks
 
-Plug the collectors, get clear dashboards in minutes — without building and maintaining a Grafana/Prometheus stack.
+Jmonitor is a **monitoring service for PHP web stacks**. It collects server and application metrics and turns them into **readable, premade dashboards and alerts**.
+
+This library provides the **PHP collectors** that gather metrics from your server and your stack, and send them to Jmonitor.  
+For **Symfony** projects, use the [Jmonitor bundle](https://github.com/jmonitor/jmonitor-bundle) for drop-in integration.
 
 [![Packagist Version](https://img.shields.io/packagist/v/jmonitor/collector?style=flat-square)](https://packagist.org/packages/jmonitor/collector)
 [![PHP Version](https://img.shields.io/packagist/php-v/jmonitor/collector?style=flat-square)](https://packagist.org/packages/jmonitor/collector)
@@ -13,21 +16,6 @@ Plug the collectors, get clear dashboards in minutes — without building and ma
 [**Website**](https://jmonitor.io) · [**Symfony bundle** (optional)](https://github.com/jmonitor/jmonitor-bundle)
 
 <img src=".github/assets/hero-dashboard.png" alt="Jmonitor dashboard" width="700">
-
-## Why Jmonitor?
-
-Grafana, Prometheus and Datadog are powerful, but they take time to configure and expertise to run. Jmonitor focuses on getting you readable dashboards fast, made for the PHP world.
-
-- **Built for the PHP/Symfony ecosystem** — dedicated collectors for MySQL, Redis, Apache, Nginx, Caddy, PHP, FrankenPHP & PostgreSQL, plus a Symfony bundle for drop-in integration.
-- **Readable out of the box** — premade dashboards (gauges + graphs) anyone on the team can understand, not just observability experts.
-- **Lightweight to install** — a small PHP collector library running as a worker. No agent, no heavy infra to maintain.
-- **Multi-project & team-ready** — manage several projects with role-based access (Owner / Admin / Member).
-
-> Jmonitor monitors itself with Jmonitor.
-
----
-
-**This package** provides the PHP collectors that gather metrics and send them to [Jmonitor.io](https://jmonitor.io). For Symfony projects, use the [Jmonitor bundle](https://github.com/jmonitor/jmonitor-bundle) for drop-in integration.
 
 ## Requirements
 - PHP 8.1+ (for PHP 7.4/8.0, use the [1.x branch](https://github.com/jmonitor/collector/tree/1.x))
