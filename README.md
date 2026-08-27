@@ -13,9 +13,9 @@ For **Symfony** projects, use the [Jmonitor bundle](https://github.com/jmonitor/
 
 <table>
   <tr>
-    <th><a href="https://github.com/jmonitor/jmonitor">jmonitor/jmonitor</a></th>
-    <th>jmonitor/collector <img src="https://img.shields.io/badge/you_are_here-0969da?style=flat-square" alt="you are here"></th>
-    <th><a href="https://github.com/jmonitor/jmonitor-bundle">jmonitor/jmonitor-bundle</a></th>
+    <th valign="top"><a href="https://github.com/jmonitor/jmonitor">jmonitor/jmonitor</a><br>&nbsp;</th>
+    <th valign="top">jmonitor/collector<br><img src="https://img.shields.io/badge/you_are_here-0969da?style=flat-square" alt="you are here"></th>
+    <th valign="top"><a href="https://github.com/jmonitor/jmonitor-bundle">jmonitor/jmonitor-bundle</a><br>&nbsp;</th>
   </tr>
   <tr>
     <td>Self-hostable backend — not needed with the cloud version</td>
