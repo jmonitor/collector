@@ -1,7 +1,5 @@
 # Jmonitor Collector
 
-### Simple monitoring for PHP & Symfony stacks
-
 Jmonitor is a **monitoring service for PHP web stacks**. It collects server and application metrics and turns them into **readable, premade dashboards and alerts**.
 
 This library provides the **PHP collectors** that gather metrics from your server and your stack, and send them to Jmonitor.  
@@ -13,7 +11,24 @@ For **Symfony** projects, use the [Jmonitor bundle](https://github.com/jmonitor/
 [![License](https://img.shields.io/github/license/jmonitor/collector?style=flat-square)](LICENSE)
 [![Last Commit](https://img.shields.io/github/last-commit/jmonitor/collector?style=flat-square)](https://github.com/jmonitor/collector/commits)
 
-[**Website**](https://jmonitor.io) · [**Symfony bundle** (optional)](https://github.com/jmonitor/jmonitor-bundle)
+<table>
+  <tr>
+    <th><a href="https://github.com/jmonitor/jmonitor">jmonitor/jmonitor</a></th>
+    <th>jmonitor/collector <img src="https://img.shields.io/badge/you_are_here-0969da?style=flat-square" alt="you are here"></th>
+    <th><a href="https://github.com/jmonitor/jmonitor-bundle">jmonitor/jmonitor-bundle</a></th>
+  </tr>
+  <tr>
+    <td>Self-hostable backend — not needed with the cloud version</td>
+    <td>The collectors — install them in the project to monitor</td>
+    <td>Symfony-specific integration of the collectors</td>
+  </tr>
+  <tr>
+    <td colspan="3" align="center">
+      <a href="https://jmonitor.io">Website and cloud edition</a> ·
+      <a href="https://hub.docker.com/r/jmonitor/jmonitor">Docker Hub image for self-hosting</a>
+    </td>
+  </tr>
+</table>
 
 <img src=".github/assets/hero-dashboard.png" alt="Jmonitor dashboard" width="700">
 
