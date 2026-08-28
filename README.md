@@ -33,65 +33,49 @@ This library provides the **PHP collectors** that gather metrics from your serve
 - PHP 8.1+ (for PHP 7.4/8.0, use the [1.x branch](https://github.com/jmonitor/collector/tree/1.x))
 - A project using [Composer](https://getcomposer.org/)
 
-## Installation
+## Getting started
+
+### 1. Create your project
+
+Create a project on [jmonitor.io](https://jmonitor.io) — or on your self-hosted instance — and copy its API key.
+
+### 2. Install the library
 
 ```bash
 composer require jmonitor/collector
 ```
 
-Quick Start
----------------
-Create a project in [jmonitor.io](https://jmonitor.io) and get your API key.
+### 3. Set up your worker
 
-Then, create a separate script and start collecting metrics:
+The collector runs as a **worker, in a separate process**. This means you **must not** integrate it into your
+application and call `$jmonitor->collect()` on every web request.
 
-```php
-use Jmonitor\Jmonitor;
-use Jmonitor\Collector\Apache\ApacheCollector;
-
-$jmonitor = new Jmonitor('apiKey');
-
-// Add some collectors... see the documentation below for more collectors
-$jmonitor->addCollector(new ApacheCollector('https://example.com/server-status'));
-$jmonitor->addCollector(new SystemCollector());
-// ... 
-
-// send metrics to Jmonitor (see "Running the collector" section)
-$jmonitor->collect();
-```
-
-### HTTP Client (PSR-18)
-You can inject any PSR-18 HTTP client (e.g., Symfony HttpClient via Psr18Client, Guzzle via an adapter, etc.). Example :
+A ready-to-use worker ships with the package. Copy it into your project:
 
 ```bash
-composer require symfony/http-client nyholm/psr7
+mkdir -p scripts && cp vendor/jmonitor/collector/scripts/worker.php scripts/worker.php
 ```
 
-```php
-use Symfony\Component\HttpClient\Psr18Client;
+From now on it is **your** script: set your API key, add the collectors matching your stack (see
+[Collectors](#collectors)), and adapt it however you like — `composer update` will never touch it.
+If you move it elsewhere, adjust the `require` path to `vendor/autoload.php` accordingly.
 
-$httpClient = ... // create or retrieve your Symfony HttpClient instance
-$client = (new Psr18Client())->withOptions(...);
-
-$jmonitor = new Jmonitor('apiKey', $client);
+```bash
+php scripts/worker.php
 ```
 
-Running the collector
--------------------
-The collector is designed to be run as a worker in a separate process.
+### 4. Run it in production
 
-This means you **must not** integrate it into your application and call `$jmonitor->collect()` on every web request.
-  
-One basic worker script is provided in the `examples` folder. Copy it into your project, update it to include the collectors you need, and run it from CLI.
-
-In production, it is recommended to run the worker under a process manager (e.g. Supervisor or systemd) to ensure it is kept running and restarted periodically.
-For practical guidance, you can follow Symfony Messenger's recommendations:  
+Run the worker under a process manager (Supervisor, systemd…) so it stays up and is restarted periodically.
+Symfony Messenger's recommendations apply as-is:
 https://symfony.com/doc/current/messenger.html#deploying-to-production
 
-You also can take a look at the CollectorCommand from the Symfony bundle for a more advanced example:  
-https://github.com/jmonitor/jmonitor-bundle/blob/master/src/Command/CollectorCommand.php
+Some metrics are fairly static and remain cached for the lifetime of the process, so among other reasons
+(memory…), it is **strongly recommended** to restart the worker regularly, at least once a day. The provided
+worker has `$timeLimitSeconds` and `$memoryLimitBytes` options for that.
 
-Some metrics are fairly static and remain cached for the lifetime of the collector, so among others reasons (memory, ...), it is **strongly recommended** to restart the collector regularly, at least once a day.
+On Symfony, the [bundle](https://github.com/jmonitor/jmonitor-bundle) ships a console command that replaces
+this worker.
 
 Debugging and Error Handling
 -----------------------------
@@ -239,20 +223,14 @@ Collectors
     ```
 
   - Collect web-server context metrics from CLI  
-    Expose a metrics endpoint (and **make sure it is properly secured**). You can reuse php-exposer.php from this repo or create your own:
-    ```php
-    <?php
-  
-    use Jmonitor\Collector\Php\PhpCollector;
-  
-    require __DIR__ . '/../vendor/autoload.php';
-
-    header('Content-Type: application/json');
-    
-    echo json_encode((new PhpCollector())->collect(), JSON_THROW_ON_ERROR);
+    Copy the exposer script shipped with the package into a publicly reachable directory, and **make sure it is
+    properly secured**:
+    ```bash
+    cp vendor/jmonitor/collector/scripts/php-exposer.php public/php-metrics.php
     ```
+    It is a plain PHP file echoing the metrics as JSON — it is yours too, adapt it if needed.
 
-    Then, in your CLI script, point the collector to that URL:    
+    Then, in your CLI script, point the collector to its URL:    
 
     ```php
     use Jmonitor\Collector\Php\PhpCollector;
