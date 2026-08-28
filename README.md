@@ -316,17 +316,8 @@ Collectors
   // - autoCreateExtension: create pg_stat_statements if missing (default: false)
   $collector = new PostgresqlSlowQueriesCollector($adapter, limit: 10, minCalls: 5, minMeanTimeMs: 100.0, orderBy: PostgresqlSlowQueriesCollector::ORDER_BY_AVG_TIME);
   ```
-
-Integrations
-------------
-- Symfony: https://github.com/jmonitor/jmonitor-bundle
-
-Roadmap
--------
-- Custom metrics collection
-
 ---
 
 Need help?
-- Open an issue on this repo https://github.com/jmonitor/collector/issues
-- Open a discussion on https://github.com/orgs/jmonitor/discussions
+- Anything about this package — installation, the worker, a collector, a missing or wrong metric: open an issue on this repo https://github.com/jmonitor/collector/issues
+- Anything about the app itself — dashboards, alerts, [dash.jmonitor.io](https://dash.jmonitor.io): open an issue on https://github.com/jmonitor/jmonitor/issues
