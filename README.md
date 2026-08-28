@@ -29,6 +29,16 @@ This library provides the **PHP collectors** that gather metrics from your serve
 
 <img src=".github/assets/hero-dashboard.png" alt="Jmonitor dashboard" width="700">
 
+## Supported components
+
+| Category          | Components                                                                                                                                                                                                                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime           | ![PHP](https://img.shields.io/badge/PHP-777BB4?style=flat-square&logo=php&logoColor=white) ![FrankenPHP](https://img.shields.io/badge/FrankenPHP-444444?style=flat-square)                                                                                                                                  |
+| Framework         | ![Symfony](https://img.shields.io/badge/Symfony-000000?style=flat-square&logo=symfony&logoColor=white)<br><sub>via the [bundle](https://github.com/jmonitor/jmonitor-bundle)</sub>                                                                                                                                                                                                   |
+| Web servers       | ![Apache](https://img.shields.io/badge/Apache-D22128?style=flat-square&logo=apache&logoColor=white) ![Nginx](https://img.shields.io/badge/Nginx-009639?style=flat-square&logo=nginx&logoColor=white) ![Caddy](https://img.shields.io/badge/Caddy-1F88C0?style=flat-square&logo=caddy&logoColor=white)        |
+| Databases & cache | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) ![Redis](https://img.shields.io/badge/Redis-FF4438?style=flat-square&logo=redis&logoColor=white) |
+| System            | ![Linux](https://img.shields.io/badge/CPU%20·%20RAM%20·%20Disk-FCC624?style=flat-square&logo=linux&logoColor=black)                                                                                                                                                                                        |
+
 ## Requirements
 - PHP 8.1+ (for PHP 7.4/8.0, use the [1.x branch](https://github.com/jmonitor/collector/tree/1.x))
 - A project using [Composer](https://getcomposer.org/)
@@ -316,8 +326,7 @@ Collectors
   // - autoCreateExtension: create pg_stat_statements if missing (default: false)
   $collector = new PostgresqlSlowQueriesCollector($adapter, limit: 10, minCalls: 5, minMeanTimeMs: 100.0, orderBy: PostgresqlSlowQueriesCollector::ORDER_BY_AVG_TIME);
   ```
----
 
-Need help?
+## Need help?
 - Anything about this package — installation, the worker, a collector, a missing or wrong metric: open an issue on this repo https://github.com/jmonitor/collector/issues
 - Anything about the app itself — dashboards, alerts, [dash.jmonitor.io](https://dash.jmonitor.io): open an issue on https://github.com/jmonitor/jmonitor/issues
