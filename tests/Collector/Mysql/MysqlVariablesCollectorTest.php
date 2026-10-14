@@ -24,10 +24,19 @@ class MysqlVariablesCollectorTest extends TestCase
             ['Variable_name' => 'table_open_cache', 'Value' => '2000'],
         ];
 
-        $dbMock->expects($this->once())
+        $dbMock->expects($this->exactly(2))
             ->method('fetchAllAssociative')
-            ->with($this->stringContains("SHOW GLOBAL VARIABLES WHERE Variable_name IN"))
-            ->willReturn($dbResult);
+            ->willReturnCallback(static function (string $sql) use ($dbResult): array {
+                if (str_contains($sql, 'SHOW GLOBAL VARIABLES WHERE Variable_name IN')) {
+                    return $dbResult;
+                }
+
+                if (str_contains($sql, 'UNIX_TIMESTAMP()')) {
+                    return [['ts' => '1760438400']];
+                }
+
+                self::fail("Unexpected query: {$sql}");
+            });
 
         $expectedResult = [
             'innodb_buffer_pool_size' => '134217728',
@@ -35,12 +44,36 @@ class MysqlVariablesCollectorTest extends TestCase
             'time_zone' => 'SYSTEM',
             'slow_query_log' => 'OFF',
             'table_open_cache' => '2000',
+            'timestamp' => 1760438400,
         ];
 
         $collector = new MysqlVariablesCollector($dbMock);
         $result = $collector->collect();
 
-        self::assertEquals($expectedResult, $result);
+        self::assertSame($expectedResult, $result);
+    }
+
+    public function testShowGlobalVariablesDoesNotRequestSessionOnlyTimestamp(): void
+    {
+        $queries = [];
+
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
+        $dbMock->method('fetchAllAssociative')
+            ->willReturnCallback(static function (string $sql) use (&$queries): array {
+                $queries[] = $sql;
+
+                return str_contains($sql, 'UNIX_TIMESTAMP()') ? [['ts' => 1760438400]] : [];
+            });
+
+        (new MysqlVariablesCollector($dbMock))->collect();
+
+        $showVariables = array_values(array_filter($queries, static function (string $sql): bool {
+            return str_contains($sql, 'SHOW GLOBAL VARIABLES');
+        }));
+
+        self::assertCount(1, $showVariables);
+        self::assertStringNotContainsString("'timestamp'", $showVariables[0]);
+        self::assertSame(1, substr_count($showVariables[0], "'collation_server'"));
     }
 
     public function testGetVersion(): void
@@ -113,6 +146,10 @@ class MysqlVariablesCollectorTest extends TestCase
                     return $fixture['variables'];
                 }
 
+                if (str_contains($sql, 'UNIX_TIMESTAMP()')) {
+                    return [['ts' => '1760438400']];
+                }
+
                 return [];
             });
 
@@ -131,5 +168,8 @@ class MysqlVariablesCollectorTest extends TestCase
             self::assertArrayHasKey($variable, $result, "SHOW GLOBAL VARIABLES missing '{$variable}'");
             self::assertNotNull($result[$variable], "SHOW GLOBAL VARIABLES '{$variable}' is null");
         }
+
+        self::assertIsInt($result['timestamp']);
+        self::assertGreaterThan(0, $result['timestamp']);
     }
 }
