@@ -23,7 +23,6 @@ class MysqlVariablesCollector implements CollectorInterface, BootableCollectorIn
         'long_query_time',
         'time_zone',
         'system_time_zone',
-        'timestamp',
         'tmp_table_size',          // a checker
         'max_heap_table_size',      // a checker
         'sort_buffer_size',     // a checker
@@ -37,7 +36,6 @@ class MysqlVariablesCollector implements CollectorInterface, BootableCollectorIn
         'character_set_server',  // a checker
         'character_set_system',  // a checker
         'collation_connection',  // a checker
-        'collation_server',  // a checker
         'collation_server',  // a checker
         'wait_timeout',
         'log_bin',
@@ -66,7 +64,17 @@ class MysqlVariablesCollector implements CollectorInterface, BootableCollectorIn
     {
         $result = $this->db->fetchAllAssociative("SHOW GLOBAL VARIABLES WHERE Variable_name IN ('" . implode("', '", self::VARIABLES) . "')");
 
-        return array_column($result, 'Value', 'Variable_name');
+        $variables = array_column($result, 'Value', 'Variable_name');
+
+        // `timestamp` is session-only, so SHOW GLOBAL VARIABLES never returns it.
+        $variables['timestamp'] = null;
+        try {
+            $rows = $this->db->fetchAllAssociative('SELECT UNIX_TIMESTAMP() AS ts');
+            $variables['timestamp'] = isset($rows[0]['ts']) ? (int) $rows[0]['ts'] : null;
+        } catch (\Throwable) {
+        }
+
+        return $variables;
     }
 
     public function getVersion(): int

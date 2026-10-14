@@ -107,7 +107,7 @@ function fixturesCaptureMySQL(): void
     $globalVars = [
         'innodb_buffer_pool_size', 'innodb_buffer_pool_read_requests', 'innodb_buffer_pool_reads',
         'max_connections', 'version', 'version_comment', 'slow_query_log', 'slow_query_log_file',
-        'long_query_time', 'time_zone', 'system_time_zone', 'timestamp', 'tmp_table_size',
+        'long_query_time', 'time_zone', 'system_time_zone', 'tmp_table_size',
         'max_heap_table_size', 'sort_buffer_size', 'join_buffer_size', 'thread_cache_size',
         'table_open_cache', 'character_set_client', 'character_set_connection',
         'character_set_database', 'character_set_results', 'character_set_server',
