@@ -67,7 +67,12 @@ class MysqlVariablesCollector implements CollectorInterface, BootableCollectorIn
         $variables = array_column($result, 'Value', 'Variable_name');
 
         // `timestamp` is session-only, so SHOW GLOBAL VARIABLES never returns it.
-        $variables['timestamp'] = (int) $this->db->fetchAllAssociative('SELECT UNIX_TIMESTAMP() AS ts')[0]['ts'];
+        $variables['timestamp'] = null;
+        try {
+            $rows = $this->db->fetchAllAssociative('SELECT UNIX_TIMESTAMP() AS ts');
+            $variables['timestamp'] = isset($rows[0]['ts']) ? (int) $rows[0]['ts'] : null;
+        } catch (\Throwable) {
+        }
 
         return $variables;
     }

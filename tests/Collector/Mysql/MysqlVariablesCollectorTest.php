@@ -53,6 +53,23 @@ class MysqlVariablesCollectorTest extends TestCase
         self::assertSame($expectedResult, $result);
     }
 
+    public function testVariablesAreKeptWhenServerTimeQueryFails(): void
+    {
+        $dbMock = $this->createMock(DatabaseAdapterInterface::class);
+        $dbMock->method('fetchAllAssociative')
+            ->willReturnCallback(static function (string $sql): array {
+                if (str_contains($sql, 'UNIX_TIMESTAMP()')) {
+                    throw new \RuntimeException('Lost connection');
+                }
+
+                return [['Variable_name' => 'version', 'Value' => '8.0.23']];
+            });
+
+        $result = (new MysqlVariablesCollector($dbMock))->collect();
+
+        self::assertSame(['version' => '8.0.23', 'timestamp' => null], $result);
+    }
+
     public function testShowGlobalVariablesDoesNotRequestSessionOnlyTimestamp(): void
     {
         $queries = [];
