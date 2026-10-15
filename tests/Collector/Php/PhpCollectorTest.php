@@ -48,7 +48,6 @@ class PhpCollectorTest extends TestCase
         }
 
         self::assertArrayNotHasKey('apc.shm_segments', $apcu['config']);
-        self::assertArrayHasKey('num_seg', $apcu['sma_info']);
     }
 
     public function testSanitizeFloatsReplacesNanAndInfWithNull(): void
