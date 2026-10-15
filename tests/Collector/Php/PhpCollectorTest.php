@@ -39,6 +39,17 @@ class PhpCollectorTest extends TestCase
         self::assertIsString($encoded);
     }
 
+    public function testApcuConfigOmitsShmSegments(): void
+    {
+        $apcu = (new PhpCollector())->collect()['apcu'];
+
+        if ($apcu === []) {
+            self::markTestSkipped('APCu is not loaded.');
+        }
+
+        self::assertArrayNotHasKey('apc.shm_segments', $apcu['config']);
+    }
+
     public function testSanitizeFloatsReplacesNanAndInfWithNull(): void
     {
         $collector = new PhpCollector();
