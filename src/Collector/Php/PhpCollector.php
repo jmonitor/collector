@@ -230,7 +230,6 @@ class PhpCollector implements CollectorInterface, BootableCollectorInterface, Lo
                 'apc.enabled' => $this->getIniValue('apc.enabled', 'bool'),
                 'apc.enable_cli' => $this->getIniValue('apc.enable_cli', 'bool'),
                 'apc.shm_size' => $this->getIniValue('apc.shm_size'),
-                'apc.shm_segments' => $this->getIniValue('apc.shm_segments', 'int'),
                 'apc.ttl' => $this->getIniValue('apc.ttl', 'int'),
             ],
             'cache_info' => $enabled ? \apcu_cache_info(true) : [],
