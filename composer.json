@@ -17,10 +17,7 @@
         "ext-json": "*",
         "ext-zlib": "*",
         "composer-runtime-api": "^2.0",
-        "php-http/discovery": "^1.17",
         "psr/http-client": "^1.0",
-        "psr/http-client-implementation": "*",
-        "psr/http-factory-implementation": "*",
         "psr/log": "^1 || ^2 || ^3",
         "symfony/process": "^6.4|^7.0|^8.0"
     },
@@ -29,6 +26,7 @@
         "doctrine/dbal": "^3.0|^4.2",
         "friendsofphp/php-cs-fixer": "^3.86",
         "nyholm/psr7": "^1.8",
+        "php-http/discovery": "^1.17",
         "php-http/message": "^1.0",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^10.0|^11.5",
@@ -37,7 +35,13 @@
     },
     "suggest": {
         "ext-pdo": "If you want to collect mysql datas with Pdo as driver.",
-        "doctrine/dbal": "If you want to collect mysql datas with Doctrine DBAL as driver."
+        "doctrine/dbal": "If you want to collect mysql datas with Doctrine DBAL as driver.",
+        "php-http/discovery": "To send the metrics to jmonitor.io with whatever PSR-18 client and PSR-17 factories are installed.",
+        "psr/http-client-implementation": "To send the metrics to jmonitor.io, e.g. symfony/http-client.",
+        "psr/http-factory-implementation": "To send the metrics to jmonitor.io, e.g. nyholm/psr7."
+    },
+    "conflict": {
+        "php-http/discovery": "<1.17"
     },
     "autoload": {
         "psr-4": {

@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace Jmonitor;
 
+use Http\Discovery\Exception as DiscoveryException;
 use Http\Discovery\Psr17Factory;
+use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
+use Jmonitor\Exceptions\MissingHttpClientException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
+use Symfony\Component\HttpClient\Psr18Client as SymfonyPsr18Client;
 
 class Client
 {
@@ -31,8 +35,8 @@ class Client
 
     public function __construct(string $projectApiKey, ?ClientInterface $httpClient = null)
     {
-        $this->httpClient = $httpClient ?? Psr18ClientDiscovery::find();
-        $this->messageFactory = $this->httpClient instanceof RequestFactoryInterface && $this->httpClient instanceof StreamFactoryInterface ? $this->httpClient : new Psr17Factory();
+        $this->httpClient = $httpClient ?? self::findHttpClient();
+        $this->messageFactory = $this->httpClient instanceof RequestFactoryInterface && $this->httpClient instanceof StreamFactoryInterface ? $this->httpClient : self::findMessageFactory();
         $this->projectApiKey = $projectApiKey;
         $this->version = Version::get();
 
@@ -92,6 +96,47 @@ class Client
     private function sendRequest(RequestInterface $request): ResponseInterface
     {
         return $this->httpClient->sendRequest($request);
+    }
+
+    /**
+     * The HTTP stack is optional: the collectors alone need none of it.
+     * The interface checks come first, since loading a class whose interface is missing is fatal.
+     */
+    private static function findHttpClient(): ClientInterface
+    {
+        if (class_exists(Psr18ClientDiscovery::class)) {
+            try {
+                return Psr18ClientDiscovery::find();
+            } catch (DiscoveryException $e) {
+                throw new MissingHttpClientException($e);
+            }
+        }
+
+        if (interface_exists(ClientInterface::class) && interface_exists(RequestFactoryInterface::class) && class_exists(SymfonyPsr18Client::class)) {
+            try {
+                return new SymfonyPsr18Client();
+            } catch (\LogicException $e) {
+                throw new MissingHttpClientException($e);
+            }
+        }
+
+        throw new MissingHttpClientException();
+    }
+
+    private static function findMessageFactory(): RequestFactoryInterface&StreamFactoryInterface
+    {
+        if (!interface_exists(RequestFactoryInterface::class) || !class_exists(Psr17FactoryDiscovery::class)) {
+            throw new MissingHttpClientException();
+        }
+
+        try {
+            return new Psr17Factory(
+                requestFactory: Psr17FactoryDiscovery::findRequestFactory(),
+                streamFactory: Psr17FactoryDiscovery::findStreamFactory(),
+            );
+        } catch (DiscoveryException $e) {
+            throw new MissingHttpClientException($e);
+        }
     }
 
     /**

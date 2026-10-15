@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **BREAKING**: `php-http/discovery` and the PSR-18/PSR-17 implementations are no longer required, so the collectors install without any HTTP client. To keep sending metrics, run `composer require symfony/http-client nyholm/psr7` or `composer require php-http/discovery`, or pass your own PSR-18 client.
+
+### Added
+- Without `php-http/discovery`, `symfony/http-client` (with `nyholm/psr7`) is used to send the metrics.
+- `MissingHttpClientException` is thrown, telling what to install, when no HTTP client is available to send the metrics.
+
 ## [2.2.3] - 2026-10-15
 
 ### Removed

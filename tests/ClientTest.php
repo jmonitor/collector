@@ -3,9 +3,12 @@
 namespace Jmonitor\Tests;
 
 use Composer\InstalledVersions;
+use Http\Discovery\ClassDiscovery;
 use Jmonitor\Client;
+use Jmonitor\Exceptions\MissingHttpClientException;
 use Jmonitor\Version;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Client\ClientInterface;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Psr18Client;
 use Symfony\Component\HttpClient\Response\MockResponse;
@@ -111,6 +114,35 @@ class ClientTest extends TestCase
         // reporting it as installed with an unreadable version.
         self::assertSame(Version::FALLBACK, self::headerValue($mockResponse, 'X-JMONITOR-BUNDLE-VERSION'));
         self::assertSame(self::installedCollectorVersion(), self::headerValue($mockResponse, 'X-JMONITOR-VERSION'));
+    }
+
+    public function testConstructorThrowsAClearExceptionWhenNoHttpClientCanBeFound(): void
+    {
+        $strategies = ClassDiscovery::getStrategies();
+        ClassDiscovery::setStrategies([]);
+
+        try {
+            $this->expectException(MissingHttpClientException::class);
+            $this->expectExceptionMessage('composer require symfony/http-client nyholm/psr7');
+
+            new Client('test-api-key');
+        } finally {
+            ClassDiscovery::setStrategies($strategies);
+        }
+    }
+
+    public function testConstructorThrowsAClearExceptionWhenTheGivenClientComesWithoutFactories(): void
+    {
+        $strategies = ClassDiscovery::getStrategies();
+        ClassDiscovery::setStrategies([]);
+
+        try {
+            $this->expectException(MissingHttpClientException::class);
+
+            new Client('test-api-key', $this->createMock(ClientInterface::class));
+        } finally {
+            ClassDiscovery::setStrategies($strategies);
+        }
     }
 
     private static function installedCollectorVersion(): string
