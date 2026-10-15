@@ -9,6 +9,7 @@ use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
 use Jmonitor\Exceptions\MissingHttpClientException;
+use Nyholm\Psr7\Factory\Psr17Factory as NyholmPsr17Factory;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
@@ -104,39 +105,47 @@ class Client
      */
     private static function findHttpClient(): ClientInterface
     {
+        $previous = null;
+
         if (class_exists(Psr18ClientDiscovery::class)) {
             try {
                 return Psr18ClientDiscovery::find();
             } catch (DiscoveryException $e) {
-                throw new MissingHttpClientException($e);
+                $previous = $e;
             }
         }
 
-        if (interface_exists(ClientInterface::class) && interface_exists(RequestFactoryInterface::class) && class_exists(SymfonyPsr18Client::class)) {
+        if (interface_exists(RequestFactoryInterface::class) && class_exists(SymfonyPsr18Client::class)) {
             try {
                 return new SymfonyPsr18Client();
             } catch (\LogicException $e) {
-                throw new MissingHttpClientException($e);
+                $previous = $e;
             }
         }
 
-        throw new MissingHttpClientException();
+        throw new MissingHttpClientException($previous);
     }
 
     private static function findMessageFactory(): RequestFactoryInterface&StreamFactoryInterface
     {
-        if (!interface_exists(RequestFactoryInterface::class) || !class_exists(Psr17FactoryDiscovery::class)) {
-            throw new MissingHttpClientException();
+        $previous = null;
+
+        if (interface_exists(RequestFactoryInterface::class) && class_exists(Psr17FactoryDiscovery::class)) {
+            try {
+                return new Psr17Factory(
+                    requestFactory: Psr17FactoryDiscovery::findRequestFactory(),
+                    streamFactory: Psr17FactoryDiscovery::findStreamFactory(),
+                );
+            } catch (DiscoveryException $e) {
+                $previous = $e;
+            }
         }
 
-        try {
-            return new Psr17Factory(
-                requestFactory: Psr17FactoryDiscovery::findRequestFactory(),
-                streamFactory: Psr17FactoryDiscovery::findStreamFactory(),
-            );
-        } catch (DiscoveryException $e) {
-            throw new MissingHttpClientException($e);
+        if (class_exists(NyholmPsr17Factory::class)) {
+            return new NyholmPsr17Factory();
         }
+
+        throw new MissingHttpClientException($previous);
     }
 
     /**

@@ -31,7 +31,13 @@ class Jmonitor
      */
     private array $collectors = [];
 
-    private ?Client $client;
+    private ?string $projectApiKey;
+
+    private ?ClientInterface $httpClient;
+
+    private ?string $bundlePackage = null;
+
+    private ?Client $client = null;
 
     private LoggerInterface $logger;
 
@@ -44,7 +50,8 @@ class Jmonitor
 
     public function __construct(?string $projectApiKey, ?ClientInterface $httpClient = null, ?LoggerInterface $logger = null)
     {
-        $this->client = $projectApiKey ? new Client($projectApiKey, $httpClient) : null;
+        $this->projectApiKey = $projectApiKey;
+        $this->httpClient = $httpClient;
         $this->logger = $logger ?? new NullLogger();
     }
 
@@ -65,6 +72,7 @@ class Jmonitor
      */
     public function setBundle(string $composerPackage): void
     {
+        $this->bundlePackage = $composerPackage;
         $this->client?->setBundle($composerPackage);
     }
 
@@ -106,7 +114,7 @@ class Jmonitor
             throw new NoCollectorException();
         }
 
-        if ($send && !$this->client) {
+        if ($send && !$this->projectApiKey) {
             $this->logger->notice('No API key provided, metrics will not be sent to Jmonitor.');
             $send = false;
         }
@@ -160,8 +168,10 @@ class Jmonitor
         $this->logger->debug('Metrics collected', ['metrics' => $metrics]);
 
         if ($send) {
+            $client = $this->getClient();
+
             try {
-                $result->setResponse($this->client->sendMetrics($metrics));
+                $result->setResponse($client->sendMetrics($metrics));
             } catch (\Throwable $e) {
                 if ($throwOnFailure) {
                     throw $e;
@@ -230,6 +240,22 @@ class Jmonitor
         $this->logger->info($message, ['total' => count($metrics)]);
 
         return $result->setConclusion($message);
+    }
+
+    /**
+     * Built on first send, so that collecting without sending needs no HTTP client.
+     */
+    private function getClient(): Client
+    {
+        if ($this->client === null) {
+            $this->client = new Client((string) $this->projectApiKey, $this->httpClient);
+
+            if ($this->bundlePackage !== null) {
+                $this->client->setBundle($this->bundlePackage);
+            }
+        }
+
+        return $this->client;
     }
 
     private function boot(): void

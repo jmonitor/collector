@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jmonitor\Tests;
 
 use Composer\InstalledVersions;
@@ -7,14 +9,18 @@ use Http\Discovery\ClassDiscovery;
 use Jmonitor\Client;
 use Jmonitor\Exceptions\MissingHttpClientException;
 use Jmonitor\Version;
+use Nyholm\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Psr18Client;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
 class ClientTest extends TestCase
 {
+    use RunsWithoutPackagesTrait;
+
     public function testSendMetrics(): void
     {
         $requestData = [
@@ -116,33 +122,81 @@ class ClientTest extends TestCase
         self::assertSame(self::installedCollectorVersion(), self::headerValue($mockResponse, 'X-JMONITOR-VERSION'));
     }
 
-    public function testConstructorThrowsAClearExceptionWhenNoHttpClientCanBeFound(): void
+    public function testFallsBackToSymfonyWhenDiscoveryFindsNoClient(): void
     {
         $strategies = ClassDiscovery::getStrategies();
         ClassDiscovery::setStrategies([]);
 
         try {
-            $this->expectException(MissingHttpClientException::class);
-            $this->expectExceptionMessage('composer require symfony/http-client nyholm/psr7');
-
-            new Client('test-api-key');
+            $client = new Client('test-api-key');
         } finally {
             ClassDiscovery::setStrategies($strategies);
         }
+
+        self::assertInstanceOf(Psr18Client::class, (new \ReflectionProperty($client, 'httpClient'))->getValue($client));
     }
 
-    public function testConstructorThrowsAClearExceptionWhenTheGivenClientComesWithoutFactories(): void
+    public function testFallsBackToSymfonyWithoutDiscovery(): void
     {
+        $output = self::runWithoutPackages(['Http\\Discovery\\'], <<<'PHP'
+            $client = new Jmonitor\Client('test-api-key');
+            echo get_class((new ReflectionProperty($client, 'httpClient'))->getValue($client));
+            PHP);
+
+        self::assertSame(Psr18Client::class, $output);
+    }
+
+    public function testThrowsAClearExceptionWhenNoHttpClientIsInstalled(): void
+    {
+        $output = self::runWithoutPackages(['Http\\Discovery\\', 'Symfony\\Component\\HttpClient\\'], <<<'PHP'
+            try {
+                new Jmonitor\Client('test-api-key');
+            } catch (Jmonitor\Exceptions\MissingHttpClientException $e) {
+                echo $e->getMessage();
+            }
+            PHP);
+
+        self::assertStringContainsString('composer require symfony/http-client nyholm/psr7', $output);
+    }
+
+    public function testGivenClientWithoutFactoriesBuildsRequestsWithNyholmWhenDiscoveryFindsNone(): void
+    {
+        $httpClient = $this->createMock(ClientInterface::class);
+        $httpClient->expects($this->once())
+            ->method('sendRequest')
+            ->with($this->callback(fn(RequestInterface $request) => $request->getMethod() === 'POST' && (string) $request->getBody() === '[]'))
+            ->willReturn(new Response(201));
+
         $strategies = ClassDiscovery::getStrategies();
         ClassDiscovery::setStrategies([]);
 
         try {
-            $this->expectException(MissingHttpClientException::class);
-
-            new Client('test-api-key', $this->createMock(ClientInterface::class));
+            $client = new Client('test-api-key', $httpClient);
         } finally {
             ClassDiscovery::setStrategies($strategies);
         }
+
+        self::assertSame(201, $client->sendMetrics([])->getStatusCode());
+    }
+
+    public function testThrowsAClearExceptionWhenTheGivenClientComesWithoutFactoriesAndNoneIsInstalled(): void
+    {
+        $output = self::runWithoutPackages(['Http\\Discovery\\', 'Nyholm\\'], <<<'PHP'
+            $httpClient = new class implements Psr\Http\Client\ClientInterface {
+                public function sendRequest(Psr\Http\Message\RequestInterface $request): Psr\Http\Message\ResponseInterface
+                {
+                    throw new LogicException('Not expected to send anything.');
+                }
+            };
+
+            try {
+                new Jmonitor\Client('test-api-key', $httpClient);
+            } catch (Jmonitor\Exceptions\MissingHttpClientException $e) {
+                echo get_class($e);
+            }
+            PHP);
+
+        self::assertSame(MissingHttpClientException::class, $output);
     }
 
     private static function installedCollectorVersion(): string

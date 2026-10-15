@@ -10,8 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **BREAKING**: `php-http/discovery` and the PSR-18/PSR-17 implementations are no longer required, so the collectors install without any HTTP client. To keep sending metrics, run `composer require symfony/http-client nyholm/psr7` or `composer require php-http/discovery`, or pass your own PSR-18 client.
 
+- `Jmonitor` builds its HTTP client on the first send, so `collect(send: false)` needs none, even with an API key.
+
 ### Added
-- Without `php-http/discovery`, `symfony/http-client` (with `nyholm/psr7`) is used to send the metrics.
+- Without `php-http/discovery`, `symfony/http-client` sends the metrics, and `nyholm/psr7` builds the requests of a client given to the constructor.
 - `MissingHttpClientException` is thrown, telling what to install, when no HTTP client is available to send the metrics.
 
 ## [2.2.3] - 2026-10-15

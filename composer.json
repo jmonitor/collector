@@ -41,7 +41,7 @@
         "psr/http-factory-implementation": "To send the metrics to jmonitor.io, e.g. nyholm/psr7."
     },
     "conflict": {
-        "php-http/discovery": "<1.17"
+        "php-http/discovery": "<1.17 || >=2.0"
     },
     "autoload": {
         "psr-4": {
