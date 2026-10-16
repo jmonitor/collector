@@ -57,8 +57,17 @@ Create a project on [jmonitor.io](https://jmonitor.io) — or on your self-hoste
 ### 2. Install the library
 
 ```bash
-composer require jmonitor/collector
+composer require jmonitor/collector symfony/http-client nyholm/psr7
 ```
+
+`symfony/http-client` and `nyholm/psr7` send the metrics to Jmonitor. Any other PSR-18 client works too: install
+`php-http/discovery` to have it found automatically, or pass it to the `Jmonitor` constructor along with
+`nyholm/psr7`. If you only read the metrics yourself (`collect(send: false)`), `composer require jmonitor/collector`
+is enough.
+
+> [!NOTE]
+> Upgrading: the HTTP client is no longer installed along with this package. If metrics stop being sent with a
+> `MissingHttpClientException`, run one of the commands above.
 
 ### 3. Set up your worker
 

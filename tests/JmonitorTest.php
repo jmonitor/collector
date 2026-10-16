@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jmonitor\Tests;
 
 use Composer\InstalledVersions;
@@ -7,6 +9,7 @@ use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Collector\ResetInterface;
 use Jmonitor\Exceptions\InvalidServerResponseException;
+use Jmonitor\Exceptions\MissingHttpClientException;
 use Jmonitor\Exceptions\NoCollectorException;
 use Jmonitor\Jmonitor;
 use Jmonitor\Version;
@@ -17,6 +20,8 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 
 class JmonitorTest extends TestCase
 {
+    use RunsWithoutPackagesTrait;
+
     public function testCollectWithOneCollectorAndSuccessfulSend(): void
     {
         $mockResponse = new MockResponse('', [ 'http_code' => 201 ]);
@@ -257,6 +262,28 @@ class JmonitorTest extends TestCase
 
         self::assertStringContainsString('Http error', $result->getConclusion());
         self::assertSame(400, $result->getResponse()->getStatusCode());
+    }
+
+    public function testCollectWithoutSendingNeedsNoHttpClientEvenWithAnApiKey(): void
+    {
+        $output = self::runWithoutPackages(['Http\\Discovery\\', 'Symfony\\Component\\HttpClient\\'], <<<'PHP'
+            $jmonitor = new Jmonitor\Jmonitor('api');
+            $jmonitor->addCollector(new class implements Jmonitor\Collector\CollectorInterface {
+                public function collect(): array { return ['a' => 1]; }
+                public function getVersion(): int { return 1; }
+                public function getName(): string { return 'dummy'; }
+            });
+
+            echo $jmonitor->collect(send: false)->getConclusion(), "\n";
+
+            try {
+                $jmonitor->collect();
+            } catch (Jmonitor\Exceptions\MissingHttpClientException $e) {
+                echo get_class($e);
+            }
+            PHP);
+
+        self::assertSame("All metric(s) collected successfully.\n" . MissingHttpClientException::class, $output);
     }
 
     public function testCollectWithNullApiKeyDoesNotSend(): void
