@@ -5,11 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.3.0] - 2026-10-16
 
 ### Changed
 - **BREAKING**: `php-http/discovery` and the PSR-18/PSR-17 implementations are no longer required, so the collectors install without any HTTP client. To keep sending metrics, run `composer require symfony/http-client nyholm/psr7` or `composer require php-http/discovery`, or pass your own PSR-18 client.
-
 - `Jmonitor` builds its HTTP client on the first send, so `collect(send: false)` needs none, even with an API key.
 
 ### Added
