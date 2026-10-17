@@ -23,6 +23,11 @@ class CaddyCollector implements CollectorInterface, LoggerAwareInterface
     private ShellExecutor $shellExecutor;
     private array $propertyCache = [];
 
+    /**
+     * @var array<string, string> commande => sortie
+     */
+    private array $unrecognizedOutputs = [];
+
     public function __construct(PrometheusMetricsProvider $prometheusMetricsProvider, ?ShellExecutor $shellExecutor = null)
     {
         $this->prometheusMetricsProvider = $prometheusMetricsProvider;
@@ -111,7 +116,19 @@ class CaddyCollector implements CollectorInterface, LoggerAwareInterface
             return $this->propertyCache['caddyVersion'];
         }
 
-        return $this->propertyCache['caddyVersion'] = $this->readCaddyVersion($metrics);
+        $version = $this->readCaddyVersion($metrics);
+
+        // Journalisé une fois tous les binaires tentés : le repli peut encore donner la version.
+        if ($version === null) {
+            foreach ($this->unrecognizedOutputs as $command => $output) {
+                $this->logger?->notice(sprintf('Unrecognized output of "%s", the Caddy version will not be reported.', $command), [
+                    'command' => $command,
+                    'output' => substr($output, 0, 500),
+                ]);
+            }
+        }
+
+        return $this->propertyCache['caddyVersion'] = $version;
     }
 
     /**
@@ -183,11 +200,10 @@ class CaddyCollector implements CollectorInterface, LoggerAwareInterface
             return null;
         }
 
-        if (preg_match($pattern, trim($output), $matches) !== 1) {
-            $this->logger?->notice(sprintf('Unrecognized output of "%s", the Caddy version will not be reported.', $command), [
-                'command' => $command,
-                'output' => substr(trim($output), 0, 500),
-            ]);
+        $output = trim($output);
+
+        if (preg_match($pattern, $output, $matches) !== 1) {
+            $this->unrecognizedOutputs[$command] = $output;
 
             return null;
         }

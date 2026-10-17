@@ -250,6 +250,46 @@ class CaddyCollectorTest extends TestCase
         ];
     }
 
+    /**
+     * Serveur indéterminé : `caddy` est tenté en premier, mais si `frankenphp` donne la
+     * version ensuite, la sortie illisible de `caddy` n'a rien coûté.
+     */
+    public function testNothingIsLoggedWhenTheFallbackBinaryGivesTheVersion(): void
+    {
+        $this->shellExecutor->method('execute')
+            ->willReturnMap([
+                ['caddy version', "unknown command \"version\"\n"],
+                ['frankenphp version', "FrankenPHP v1.9.1 PHP 8.4.15 Caddy v2.10.2\n"],
+            ]);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::never())->method('notice');
+
+        $collector = new CaddyCollector(new PrometheusMetricsProvider(__DIR__ . '/_fake_metrics_caddy_2.7.txt'), $this->shellExecutor);
+        $collector->setLogger($logger);
+
+        self::assertSame('2.10.2', $collector->collect()['version']);
+    }
+
+    public function testUnrecognizedOutputIsLoggedWhenTheFallbackBinaryDoesNotAnswer(): void
+    {
+        $this->shellExecutor->method('execute')
+            ->willReturnMap([
+                ['caddy version', "unknown command \"version\"\n"],
+                ['frankenphp version', null],
+            ]);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())
+            ->method('notice')
+            ->with(self::anything(), ['command' => 'caddy version', 'output' => 'unknown command "version"']);
+
+        $collector = new CaddyCollector(new PrometheusMetricsProvider(__DIR__ . '/_fake_metrics_caddy_2.7.txt'), $this->shellExecutor);
+        $collector->setLogger($logger);
+
+        self::assertNull($collector->collect()['version']);
+    }
+
     public function testNothingIsLoggedWhenNoBinaryAnswers(): void
     {
         $this->shellExecutor->method('execute')->willReturn(null);
