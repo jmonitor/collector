@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.3.1] - 2026-10-18
 
 ### Added
 - [FrankenPHP Collector] [Caddy Collector] When `frankenphp version` or `caddy version` prints an output the version cannot be read from, a notice is logged with the raw output (truncated to 500 characters), instead of the version silently going missing.
