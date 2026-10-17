@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- [FrankenPHP Collector] [Caddy Collector] When `frankenphp version` or `caddy version` prints an output the version cannot be read from, a notice is logged with the raw output (truncated to 500 characters), instead of the version silently going missing.
+
+### Fixed
+- [Redis Collector] A failing `CONFIG GET` (often disabled on managed Redis) no longer crashes the collection when no logger was given to the collector.
+- [FrankenPHP Collector] The version is now read when the binary prints it with a doubled "v" prefix (Clever Cloud builds: "FrankenPHP vv1.12.7").
+
 ## [2.3.0] - 2026-10-16
 
 ### Changed

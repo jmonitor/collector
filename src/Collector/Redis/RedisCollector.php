@@ -184,7 +184,7 @@ class RedisCollector implements CollectorInterface, LoggerAwareInterface
         try {
             $save = $this->redis->config('GET', 'save');
         } catch (\Throwable $e) {
-            $this->logger->error('Failed to retrieve Redis configuration', [
+            $this->logger?->error('Failed to retrieve Redis configuration', [
                 'exception' => $e,
             ]);
 

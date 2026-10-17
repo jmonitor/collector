@@ -6,6 +6,7 @@ namespace Jmonitor\Tests\Collector\Redis;
 
 use Jmonitor\Collector\Redis\RedisCollector;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class RedisCollectorTest extends TestCase
 {
@@ -98,6 +99,43 @@ class RedisCollectorTest extends TestCase
         self::assertSame('10', $result['databases']['db0']['expires']);
         self::assertSame('5000', $result['databases']['db0']['avg_ttl']);
         self::assertSame('900 1 300 10 60 10000', $result['config']['save']);
+    }
+
+    /**
+     * `CONFIG` est souvent désactivée sur les Redis managés : la collecte doit continuer
+     * sans la config, que le collecteur ait reçu un logger ou non.
+     */
+    public function testCollectSurvivesAFailingConfigCommandWithoutLogger(): void
+    {
+        $collector = new RedisCollector($this->redisWithFailingConfig());
+
+        self::assertSame([], $collector->collect()['config']);
+    }
+
+    public function testFailingConfigCommandIsLogged(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error');
+
+        $collector = new RedisCollector($this->redisWithFailingConfig());
+        $collector->setLogger($logger);
+
+        $collector->collect();
+    }
+
+    private function redisWithFailingConfig(): \Predis\Client
+    {
+        $redisMock = $this->createMock(\Predis\Client::class);
+        $redisMock->method('__call')
+            ->willReturnCallback(function (string $method) {
+                if ($method === 'config') {
+                    throw new \RuntimeException('ERR unknown command \'CONFIG\'');
+                }
+
+                return ['Server' => ['redis_version' => '7.2.4']];
+            });
+
+        return $redisMock;
     }
 
     public function testGetVersion(): void
