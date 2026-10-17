@@ -8,9 +8,13 @@ use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Prometheus\PrometheusMetrics;
 use Jmonitor\Prometheus\PrometheusMetricsProvider;
 use Jmonitor\Utils\ShellExecutor;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 
-class FrankenPhpCollector implements CollectorInterface
+class FrankenPhpCollector implements CollectorInterface, LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     private ShellExecutor $shellExecutor;
     private array $propertyCache = [];
     private PrometheusMetricsProvider $prometheusMetricsProvider;
@@ -57,9 +61,14 @@ class FrankenPhpCollector implements CollectorInterface
             return $this->propertyCache['frankenPhpVersion'] = null;
         }
 
-        if (preg_match('/\bFrankenPHP\s+v(\d+\.\d+\.\d+)\b/i', $version, $m) === 1) {
+        if (preg_match('/\bFrankenPHP\s+v*(\d+\.\d+\.\d+)\b/i', $version, $m) === 1) {
             return $this->propertyCache['frankenPhpVersion'] = $m[1];
         }
+
+        $this->logger?->notice('Unrecognized output of "frankenphp version", the FrankenPHP version will not be reported.', [
+            'command' => 'frankenphp version',
+            'output' => substr(trim($version), 0, 500),
+        ]);
 
         return $this->propertyCache['frankenPhpVersion'] = null;
     }

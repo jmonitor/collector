@@ -8,13 +8,17 @@ use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Prometheus\PrometheusMetrics;
 use Jmonitor\Prometheus\PrometheusMetricsProvider;
 use Jmonitor\Utils\ShellExecutor;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 
 /**
  * Collects metrics using Caddy metrics url, collect frankenphp metrics is present
  * https://caddyserver.com/docs/metrics
  */
-class CaddyCollector implements CollectorInterface
+class CaddyCollector implements CollectorInterface, LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     private PrometheusMetricsProvider $prometheusMetricsProvider;
     private ShellExecutor $shellExecutor;
     private array $propertyCache = [];
@@ -159,7 +163,7 @@ class CaddyCollector implements CollectorInterface
      */
     private function getStandaloneCaddyVersion(): ?string
     {
-        return $this->extractVersion('/^v?(\d+\.\d+\.\d+)/', $this->shellExecutor->execute('caddy version'));
+        return $this->extractVersion('/^v?(\d+\.\d+\.\d+)/', 'caddy version');
     }
 
     /**
@@ -168,16 +172,23 @@ class CaddyCollector implements CollectorInterface
      */
     private function getFrankenPhpCaddyVersion(): ?string
     {
-        return $this->extractVersion('/\bCaddy\s+v?(\d+\.\d+\.\d+)/i', $this->shellExecutor->execute('frankenphp version'));
+        return $this->extractVersion('/\bCaddy\s+v?(\d+\.\d+\.\d+)/i', 'frankenphp version');
     }
 
-    private function extractVersion(string $pattern, ?string $output): ?string
+    private function extractVersion(string $pattern, string $command): ?string
     {
+        $output = $this->shellExecutor->execute($command);
+
         if ($output === null) {
             return null;
         }
 
         if (preg_match($pattern, trim($output), $matches) !== 1) {
+            $this->logger?->notice(sprintf('Unrecognized output of "%s", the Caddy version will not be reported.', $command), [
+                'command' => $command,
+                'output' => substr(trim($output), 0, 500),
+            ]);
+
             return null;
         }
 

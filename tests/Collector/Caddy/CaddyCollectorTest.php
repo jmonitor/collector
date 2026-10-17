@@ -9,6 +9,7 @@ use Jmonitor\Prometheus\PrometheusMetricsProvider;
 use Jmonitor\Utils\ShellExecutor;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class CaddyCollectorTest extends TestCase
 {
@@ -127,16 +128,24 @@ class CaddyCollectorTest extends TestCase
      * Sous FrankenPHP il n'existe aucun binaire `caddy` : la version de Caddy se lit
      * dans la sortie de `frankenphp version`.
      */
-    public function testVersionIsReadFromFrankenPhpWhenItServesTheMetrics(): void
+    #[DataProvider('frankenPhpVersionOutputProvider')]
+    public function testVersionIsReadFromFrankenPhpWhenItServesTheMetrics(string $output, string $expected): void
     {
         $this->shellExecutor->method('execute')
             ->willReturnMap([
                 ['caddy version', null],
-                ['frankenphp version', "FrankenPHP v1.9.1 PHP 8.4.15 Caddy v2.10.2 h1:g/gTYjGMD0dec+UgMw8SnfmJ3I9+M2TdvoRL/Ovu6U8=
-"],
+                ['frankenphp version', $output],
             ]);
 
-        self::assertSame('2.10.2', $this->frankenPhpCollector()->collect()['version']);
+        self::assertSame($expected, $this->frankenPhpCollector()->collect()['version']);
+    }
+
+    public static function frankenPhpVersionOutputProvider(): array
+    {
+        return [
+            'image officielle' => ["FrankenPHP v1.9.1 PHP 8.4.15 Caddy v2.10.2 h1:g/gTYjGMD0dec+UgMw8SnfmJ3I9+M2TdvoRL/Ovu6U8=\n", '2.10.2'],
+            'double v (Clever Cloud)' => ["FrankenPHP vv1.12.7 PHP 8.5.11 Caddy v2.11.4 h1:XKxkMTgNSizEvKG6QHue6cAsFOteU2qA61w2tKkCWi0=\n", '2.11.4'],
+        ];
     }
 
     /**
@@ -211,6 +220,48 @@ class CaddyCollectorTest extends TestCase
             ]);
 
         self::assertNull($this->frankenPhpCollector()->collect()['version']);
+    }
+
+    #[DataProvider('unrecognizedVersionOutputProvider')]
+    public function testUnrecognizedVersionOutputIsLogged(string $metricsFile, string $command, string $output, string $expectedOutput): void
+    {
+        $this->shellExecutor->method('execute')
+            ->willReturnMap([
+                [$command, $output],
+            ]);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())
+            ->method('notice')
+            ->with(self::anything(), ['command' => $command, 'output' => $expectedOutput]);
+
+        $collector = new CaddyCollector(new PrometheusMetricsProvider(__DIR__ . '/' . $metricsFile), $this->shellExecutor);
+        $collector->setLogger($logger);
+
+        self::assertNull($collector->collect()['version']);
+        $collector->collect();
+    }
+
+    public static function unrecognizedVersionOutputProvider(): array
+    {
+        return [
+            'caddy' => ['_fake_metrics.txt', 'caddy version', "unknown command \"version\"\n", 'unknown command "version"'],
+            'frankenphp' => ['_fake_metrics_frankenphp.txt', 'frankenphp version', "FrankenPHP (devel)\n", 'FrankenPHP (devel)'],
+        ];
+    }
+
+    public function testNothingIsLoggedWhenNoBinaryAnswers(): void
+    {
+        $this->shellExecutor->method('execute')->willReturn(null);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::never())->method('notice');
+
+        // Serveur indéterminé : les deux binaires sont interrogés.
+        $collector = new CaddyCollector(new PrometheusMetricsProvider(__DIR__ . '/_fake_metrics_caddy_2.7.txt'), $this->shellExecutor);
+        $collector->setLogger($logger);
+
+        self::assertNull($collector->collect()['version']);
     }
 
     /**
