@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.4.0] - 2026-10-21
 
 ### Changed
 - [Apache Collector] The payload moves to version 2: `requests_per_second` and `duration_per_request` are now floats, so values under 1 (e.g. 0.05 req/s, 0.734 ms) are no longer reported as 0.
