@@ -118,7 +118,7 @@ class NginxCollectorTest extends TestCase
         self::assertSame(['http_ssl_module', 'http_v2_module'], $metrics['modules']);
     }
 
-    public function testConfigOnlyReadsMainEventsAndHttpContextsOfMainFile(): void
+    public function testConfigOnlyReadsGlobalContextsAndTheFilesIncludedThere(): void
     {
         $nginxTOutput = <<<'EOD'
             # configuration file /etc/nginx/nginx.conf:
@@ -126,11 +126,11 @@ class NginxCollectorTest extends TestCase
             worker_processes 4;
             include /etc/nginx/modules-enabled/*.conf;
 
+            # configuration file for example.com:
             events { worker_connections 1024; }
 
             http {
-                access_log /var/log/nginx/access.log;
-                gzip on;
+                access_log /var/log/nginx/${hostname}.log;
                 keepalive_timeout 65;
                 log_format main '$remote_addr "${request}" {;}';
 
@@ -143,22 +143,33 @@ class NginxCollectorTest extends TestCase
                     listen 80;
                     gzip off; # not global
                     location /health { access_log off; }
+                    location / { return 200 don't; }
+                    location ~ \{ { return 204; }
                     location ~ \.php$ {
                         include fastcgi_params;
                     }
                 }
 
-                include /etc/nginx/conf.d/*.conf;
+                include conf.d/*.conf;
+                gzip on;
             }
 
+            # configuration file /etc/nginx/modules-enabled/50-mod-stream.conf:
+            load_module modules/ngx_stream_module.so;
+
             # configuration file /etc/nginx/conf.d/default.conf:
-            gzip off;
             server {
                 listen 8080;
                 access_log off;
                 keepalive_timeout 5;
                 include snippets/ssl.conf;
             }
+
+            # configuration file /etc/nginx/snippets/ssl.conf:
+            ssl_protocols TLSv1.3;
+
+            # configuration file /etc/nginx/conf.d/security.conf:
+            server_tokens off;
             EOD;
 
         $shellExecutor = $this->createMock(ShellExecutor::class);
@@ -173,12 +184,14 @@ class NginxCollectorTest extends TestCase
         self::assertSame('nginx', $config['user']);
         self::assertSame('4', $config['worker_processes']);
         self::assertSame(1024, $config['worker_connections']);
-        self::assertSame('/var/log/nginx/access.log', $config['access_log']);
+        self::assertSame('/var/log/nginx/${hostname}.log', $config['access_log']);
         self::assertSame('on', $config['gzip']);
         self::assertSame(65, $config['keepalive_timeout']);
+        self::assertSame('off', $config['server_tokens']);
+        self::assertNull($config['ssl_protocols']);
         self::assertSame([
             '/etc/nginx/modules-enabled/*.conf',
-            '/etc/nginx/conf.d/*.conf',
+            'conf.d/*.conf',
         ], $config['include']);
     }
 
@@ -205,7 +218,8 @@ class NginxCollectorTest extends TestCase
         yield 'seconds' => ['75s', 75];
         yield 'minutes' => ['1m', 60];
         yield 'combined units' => ['1h30m', 5400];
-        yield 'milliseconds' => ['2500ms', 2];
+        yield 'milliseconds' => ['2500ms', 3];
+        yield 'under a second' => ['500ms', 1];
         yield 'header timeout' => ['75s 60s', 75];
         yield 'disabled' => ['0', 0];
         yield 'invalid' => ['abc', null];
