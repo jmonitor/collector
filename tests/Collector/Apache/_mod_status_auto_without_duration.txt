@@ -1,0 +1,27 @@
+localhost
+ServerVersion: Apache/2.4.29 (Ubuntu)
+ServerMPM: prefork
+Server Built: 2019-09-16T12:58:48
+CurrentTime: Wednesday, 21-Oct-2026 08:15:02 UTC
+RestartTime: Wednesday, 21-Oct-2026 07:15:02 UTC
+ParentServerConfigGeneration: 1
+ParentServerMPMGeneration: 0
+ServerUptimeSeconds: 3600
+ServerUptime: 1 hour
+Load1: 0.10
+Load5: 0.05
+Load15: 0.01
+Total Accesses: 120
+Total kBytes: 340
+CPUUser: .12
+CPUSystem: .04
+CPUChildrenUser: 0
+CPUChildrenSystem: 0
+CPULoad: .00444444
+Uptime: 3600
+ReqPerSec: .0333333
+BytesPerSec: 96.7111
+BytesPerReq: 2901.33
+BusyWorkers: 1
+IdleWorkers: 9
+Scoreboard: W_________......
