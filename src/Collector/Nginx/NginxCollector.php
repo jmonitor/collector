@@ -90,7 +90,7 @@ class NginxCollector implements CollectorInterface, BootableCollectorInterface
     private function getNginxV(): array
     {
         if (!isset($this->propertyCache['nginxV'])) {
-            $output = $this->shellExecutor->execute('nginx -V') ?: '';
+            $output = $this->shellExecutor->execute('nginx -V 2>&1') ?: '';
 
             return $this->propertyCache['nginxV'] = $this->parseNginxV($output);
         }
@@ -163,53 +163,109 @@ class NginxCollector implements CollectorInterface, BootableCollectorInterface
             return $result;
         }
 
-        $lines = explode("\n", $output);
-        $keys = [
-            'user', 'worker_processes', 'worker_connections', 'sendfile',
-            'tcp_nopush', 'tcp_nodelay', 'keepalive_timeout', 'types_hash_max_size',
-            'server_tokens', 'ssl_protocols', 'ssl_prefer_server_ciphers',
-            'access_log', 'error_log', 'gzip', 'include',
-        ];
+        // nginx -T prints nginx.conf first, then each included file, detached from the context it is included in
+        $files = preg_split('/^# configuration file (.+):\r?$/m', $output, 3, PREG_SPLIT_DELIM_CAPTURE) ?: [];
 
-        $pattern = '/^(' . implode('|', $keys) . ')\s+([^;]+);/';
+        if (count($files) < 3) {
+            return $result;
+        }
 
-        foreach ($lines as $line) {
-            $line = trim($line);
+        $result['config_path'] = $files[1];
 
-            if ($line === '') {
-                continue;
-            }
-
-            if (preg_match('/^# configuration file ([^:]+):/', $line, $matches)) {
-                if ($result['config_path'] === null) {
-                    $result['config_path'] = $matches[1];
-                }
-                continue;
-            }
-
-            if (isset($line[0]) && $line[0] === '#') {
-                continue;
-            }
-
-            if (preg_match($pattern, $line, $matches)) {
-                $key = $matches[1];
-                $value = $matches[2];
-
-                if ($key === 'include') {
-                    $result['include'][] = $value;
-                } else {
-                    $result[$key] = $value;
-                }
+        foreach ($this->readGlobalDirectives($files[2]) as [$name, $value]) {
+            if ($name === 'include') {
+                $result['include'][] = $value;
+            } elseif (array_key_exists($name, $result)) {
+                $result[$name] = $value;
             }
         }
 
-        foreach (['worker_connections', 'types_hash_max_size', 'keepalive_timeout'] as $key) {
+        foreach (['worker_connections', 'types_hash_max_size'] as $key) {
             if (isset($result[$key])) {
                 $result[$key] = (int) $result[$key];
             }
         }
 
+        if (isset($result['keepalive_timeout'])) {
+            $result['keepalive_timeout'] = $this->parseSeconds($result['keepalive_timeout']);
+        }
+
         return $result;
+    }
+
+    /**
+     * Directives of the main, events and http contexts, those of server, location, upstream... blocks excluded.
+     *
+     * @return list<array{string, string}> name and arguments of each directive
+     */
+    private function readGlobalDirectives(string $config): array
+    {
+        $directives = [];
+        $blocks = [];
+        $statement = '';
+        $quote = null;
+        $length = strlen($config);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $config[$i];
+
+            if ($quote !== null) {
+                $statement .= $char;
+                if ($char === '\\' && $i + 1 < $length) {
+                    $statement .= $config[++$i];
+                } elseif ($char === $quote) {
+                    $quote = null;
+                }
+                continue;
+            }
+
+            if ($char === '#' && trim(substr($statement, -1)) === '') {
+                $newline = strpos($config, "\n", $i);
+                $i = $newline === false ? $length : $newline;
+                $statement .= ' ';
+            } elseif ($char === '"' || $char === "'") {
+                $quote = $char;
+                $statement .= $char;
+            } elseif ($char === '{') {
+                $blocks[] = preg_split('/\s+/', trim($statement))[0];
+                $statement = '';
+            } elseif ($char === '}') {
+                array_pop($blocks);
+                $statement = '';
+            } elseif ($char === ';') {
+                $parts = preg_split('/\s+/', trim($statement), 2) ?: [];
+                if (count($parts) === 2 && in_array(implode(' ', $blocks), ['', 'events', 'http'], true)) {
+                    $directives[] = [$parts[0], preg_replace('/\s+/', ' ', $parts[1])];
+                }
+                $statement = '';
+            } else {
+                $statement .= $char;
+            }
+        }
+
+        return $directives;
+    }
+
+    /**
+     * Converts an nginx time ("75", "75s", "1m", "1h30m", "500ms") to seconds, ignoring any second argument.
+     */
+    private function parseSeconds(string $value): ?int
+    {
+        $time = explode(' ', $value)[0];
+        $unitsInMs = ['ms' => 1, '' => 1000, 's' => 1000, 'm' => 60000, 'h' => 3600000, 'd' => 86400000, 'w' => 604800000, 'M' => 2592000000, 'y' => 31536000000];
+
+        if (!preg_match('/^(?:\d+(?:ms|s|m|h|d|w|M|y)?)+$/', $time)) {
+            return null;
+        }
+
+        preg_match_all('/(\d+)(ms|s|m|h|d|w|M|y)?/', $time, $parts, PREG_SET_ORDER);
+
+        $milliseconds = 0;
+        foreach ($parts as $part) {
+            $milliseconds += (int) $part[1] * $unitsInMs[$part[2] ?? ''];
+        }
+
+        return intdiv($milliseconds, 1000);
     }
 
     private function getCpuCount(): ?int
@@ -219,7 +275,8 @@ class NginxCollector implements CollectorInterface, BootableCollectorInterface
         }
 
         if (PHP_OS_FAMILY === 'Linux') {
-            $output = $this->shellExecutor->execute('nproc --all');
+            // the sysconf() call nginx makes for "worker_processes auto": musl honours the CPU affinity, glibc does not
+            $output = $this->shellExecutor->execute('getconf _NPROCESSORS_ONLN');
 
             return $this->propertyCache['cpuCount'] = $output ? (int) trim($output) : null;
         }
