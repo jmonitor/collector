@@ -200,6 +200,7 @@ Collectors
   
   $collector = new NginxCollector('http://localhost/nginx_status');
   ```
+  The configuration is read with `nginx -T`, run by the PHP user. When that user is not root and the master process is (e.g. `www-data` on Debian), `nginx -T` fails on the pid file (`open() "/run/nginx.pid" failed (13: Permission denied)`) and the `config` metrics stay empty.
 - ### Mysql <a name="mysql"></a>
   Collects MySQL metrics from variables, status, and the `performance_schema` and `information_schema` tables if availables.  
   Connect via PDO or Doctrine DBAL (open an issue if you need other drivers, e.g., mysqli).

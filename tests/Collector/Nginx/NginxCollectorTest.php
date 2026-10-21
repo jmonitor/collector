@@ -6,6 +6,7 @@ namespace Jmonitor\Tests\Collector\Nginx;
 
 use Jmonitor\Collector\Nginx\NginxCollector;
 use Jmonitor\Utils\ShellExecutor;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class NginxCollectorTest extends TestCase
@@ -56,7 +57,7 @@ class NginxCollectorTest extends TestCase
         $shellExecutor = $this->createMock(ShellExecutor::class);
         $shellExecutor->method('execute')
             ->willReturnMap([
-                ['nginx -V', "nginx version: nginx/1.22.0\nconfigure arguments: --with-http_ssl_module"],
+                ['nginx -V 2>&1', "nginx version: nginx/1.22.0\nconfigure arguments: --with-http_ssl_module"],
                 ['nginx -T', $nginxTOutput],
             ]);
 
@@ -97,6 +98,131 @@ class NginxCollectorTest extends TestCase
             '/etc/nginx/conf.d/*.conf',
             '/etc/nginx/sites-enabled/*',
         ], $metrics['config']['include']);
+    }
+
+    public function testVersionAndModulesAreReadFromStderr(): void
+    {
+        $shellExecutor = $this->createMock(ShellExecutor::class);
+        $shellExecutor->method('execute')
+            ->willReturnCallback(static function (string $command): ?string {
+                if ($command !== 'nginx -V 2>&1') {
+                    return null;
+                }
+
+                return "nginx version: nginx/1.27.5\nbuilt by gcc 14.2.0\nconfigure arguments: --prefix=/etc/nginx --with-http_ssl_module --with-http_v2_module --with-cc-opt='-O2'";
+            });
+
+        $metrics = (new NginxCollector(__DIR__ . '/_fake_nginx_status.txt', $shellExecutor))->collect();
+
+        self::assertSame('1.27.5', $metrics['version']);
+        self::assertSame(['http_ssl_module', 'http_v2_module'], $metrics['modules']);
+    }
+
+    public function testConfigOnlyReadsGlobalContextsAndTheFilesIncludedThere(): void
+    {
+        $nginxTOutput = <<<'EOD'
+            # configuration file /etc/nginx/nginx.conf:
+            user nginx;
+            worker_processes 4;
+            include /etc/nginx/modules-enabled/*.conf;
+
+            # configuration file for example.com:
+            events { worker_connections 1024; }
+
+            http {
+                access_log /var/log/nginx/${hostname}.log;
+                keepalive_timeout 65;
+                log_format main '$remote_addr "${request}" {;}';
+
+                upstream backend {
+                    server 127.0.0.1:9000;
+                    keepalive 16;
+                }
+
+                server {
+                    listen 80;
+                    gzip off; # not global
+                    location /health { access_log off; }
+                    location / { return 200 don't; }
+                    location ~ \{ { return 204; }
+                    location ~ \.php$ {
+                        include fastcgi_params;
+                    }
+                }
+
+                include conf.d/*.conf;
+                gzip on;
+            }
+
+            # configuration file /etc/nginx/modules-enabled/50-mod-stream.conf:
+            load_module modules/ngx_stream_module.so;
+
+            # configuration file /etc/nginx/conf.d/default.conf:
+            server {
+                listen 8080;
+                access_log off;
+                keepalive_timeout 5;
+                include snippets/ssl.conf;
+            }
+
+            # configuration file /etc/nginx/snippets/ssl.conf:
+            ssl_protocols TLSv1.3;
+
+            # configuration file /etc/nginx/conf.d/security.conf:
+            server_tokens off;
+            EOD;
+
+        $shellExecutor = $this->createMock(ShellExecutor::class);
+        $shellExecutor->method('execute')
+            ->willReturnMap([
+                ['nginx -T', $nginxTOutput],
+            ]);
+
+        $config = (new NginxCollector(__DIR__ . '/_fake_nginx_status.txt', $shellExecutor))->collect()['config'];
+
+        self::assertSame('/etc/nginx/nginx.conf', $config['config_path']);
+        self::assertSame('nginx', $config['user']);
+        self::assertSame('4', $config['worker_processes']);
+        self::assertSame(1024, $config['worker_connections']);
+        self::assertSame('/var/log/nginx/${hostname}.log', $config['access_log']);
+        self::assertSame('on', $config['gzip']);
+        self::assertSame(65, $config['keepalive_timeout']);
+        self::assertSame('off', $config['server_tokens']);
+        self::assertNull($config['ssl_protocols']);
+        self::assertSame([
+            '/etc/nginx/modules-enabled/*.conf',
+            'conf.d/*.conf',
+        ], $config['include']);
+    }
+
+    #[DataProvider('keepaliveTimeoutProvider')]
+    public function testKeepaliveTimeoutIsConvertedToSeconds(string $value, ?int $expected): void
+    {
+        $shellExecutor = $this->createMock(ShellExecutor::class);
+        $shellExecutor->method('execute')
+            ->willReturnMap([
+                ['nginx -T', "# configuration file /etc/nginx/nginx.conf:\nhttp {\n    keepalive_timeout {$value};\n}\n"],
+            ]);
+
+        $config = (new NginxCollector(__DIR__ . '/_fake_nginx_status.txt', $shellExecutor))->collect()['config'];
+
+        self::assertSame($expected, $config['keepalive_timeout']);
+    }
+
+    /**
+     * @return iterable<string, array{string, ?int}>
+     */
+    public static function keepaliveTimeoutProvider(): iterable
+    {
+        yield 'no unit' => ['75', 75];
+        yield 'seconds' => ['75s', 75];
+        yield 'minutes' => ['1m', 60];
+        yield 'combined units' => ['1h30m', 5400];
+        yield 'milliseconds' => ['2500ms', 3];
+        yield 'under a second' => ['500ms', 1];
+        yield 'header timeout' => ['75s 60s', 75];
+        yield 'disabled' => ['0', 0];
+        yield 'invalid' => ['abc', null];
     }
 
     public function testGetName(): void

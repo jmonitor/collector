@@ -90,7 +90,7 @@ class NginxCollector implements CollectorInterface, BootableCollectorInterface
     private function getNginxV(): array
     {
         if (!isset($this->propertyCache['nginxV'])) {
-            $output = $this->shellExecutor->execute('nginx -V') ?: '';
+            $output = $this->shellExecutor->execute('nginx -V 2>&1') ?: '';
 
             return $this->propertyCache['nginxV'] = $this->parseNginxV($output);
         }
@@ -163,53 +163,179 @@ class NginxCollector implements CollectorInterface, BootableCollectorInterface
             return $result;
         }
 
-        $lines = explode("\n", $output);
-        $keys = [
-            'user', 'worker_processes', 'worker_connections', 'sendfile',
-            'tcp_nopush', 'tcp_nodelay', 'keepalive_timeout', 'types_hash_max_size',
-            'server_tokens', 'ssl_protocols', 'ssl_prefer_server_ciphers',
-            'access_log', 'error_log', 'gzip', 'include',
-        ];
+        $files = $this->splitDump($output);
+        $configPath = array_key_first($files);
 
-        $pattern = '/^(' . implode('|', $keys) . ')\s+([^;]+);/';
+        if ($configPath === null) {
+            return $result;
+        }
 
-        foreach ($lines as $line) {
-            $line = trim($line);
+        $result['config_path'] = $configPath;
 
-            if ($line === '') {
-                continue;
-            }
-
-            if (preg_match('/^# configuration file ([^:]+):/', $line, $matches)) {
-                if ($result['config_path'] === null) {
-                    $result['config_path'] = $matches[1];
-                }
-                continue;
-            }
-
-            if (isset($line[0]) && $line[0] === '#') {
-                continue;
-            }
-
-            if (preg_match($pattern, $line, $matches)) {
-                $key = $matches[1];
-                $value = $matches[2];
-
-                if ($key === 'include') {
-                    $result['include'][] = $value;
-                } else {
-                    $result[$key] = $value;
-                }
+        foreach ($this->readGlobalDirectives($files, $configPath, [], []) as [$name, $value]) {
+            if ($name === 'include') {
+                $result['include'][] = $value;
+            } elseif (array_key_exists($name, $result)) {
+                $result[$name] = $value;
             }
         }
 
-        foreach (['worker_connections', 'types_hash_max_size', 'keepalive_timeout'] as $key) {
+        foreach (['worker_connections', 'types_hash_max_size'] as $key) {
             if (isset($result[$key])) {
                 $result[$key] = (int) $result[$key];
             }
         }
 
+        if (isset($result['keepalive_timeout'])) {
+            $result['keepalive_timeout'] = $this->parseSeconds($result['keepalive_timeout']);
+        }
+
         return $result;
+    }
+
+    /**
+     * @return array<string, string> content of each file of the nginx -T dump, by path, the main file first
+     */
+    private function splitDump(string $output): array
+    {
+        $parts = preg_split('~^# configuration file ((?:/|[A-Za-z]:).*):\r?$~m', $output, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [];
+        $files = [];
+
+        for ($i = 1; $i + 1 < count($parts); $i += 2) {
+            $files[$parts[$i]] ??= $parts[$i + 1];
+        }
+
+        return $files;
+    }
+
+    /**
+     * Directives of the main, events and http contexts, following the files included there.
+     * Those of server, location, upstream... blocks are excluded.
+     *
+     * @param array<string, string> $files
+     * @param list<string> $blocks blocks enclosing the include of the file
+     * @param list<string> $includedBy
+     *
+     * @return list<array{string, string}> name and arguments of each directive
+     */
+    private function readGlobalDirectives(array $files, string $path, array $blocks, array $includedBy): array
+    {
+        $directives = [];
+        $includedBy[] = $path;
+
+        foreach ($this->readStatements($files[$path]) as [$statementBlocks, $words]) {
+            $context = array_merge($blocks, $statementBlocks);
+
+            if (count($words) < 2 || !in_array(implode(' ', $context), ['', 'events', 'http'], true)) {
+                continue;
+            }
+
+            $name = array_shift($words);
+            $value = implode(' ', $words);
+            $directives[] = [$name, $value];
+
+            if ($name !== 'include') {
+                continue;
+            }
+
+            $pattern = str_starts_with($value, '/') ? $value : dirname($includedBy[0]) . '/' . $value;
+
+            foreach (array_keys($files) as $file) {
+                if (!in_array($file, $includedBy, true) && fnmatch($pattern, $file, FNM_PATHNAME)) {
+                    array_push($directives, ...$this->readGlobalDirectives($files, $file, $context, $includedBy));
+                }
+            }
+        }
+
+        return $directives;
+    }
+
+    /**
+     * Splits a configuration file into directives, reading words the way nginx does.
+     *
+     * @return list<array{list<string>, list<string>}> enclosing blocks and words of each directive
+     */
+    private function readStatements(string $config): array
+    {
+        $statements = [];
+        $blocks = [];
+        $words = [];
+        $word = null;
+        $quote = null;
+        $length = strlen($config);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $config[$i];
+
+            if ($char === '\\' && $i + 1 < $length) {
+                $word = ($word ?? '') . $char . $config[++$i];
+                continue;
+            }
+
+            if ($quote !== null) {
+                if ($char === $quote) {
+                    $words[] = (string) $word;
+                    $word = $quote = null;
+                } else {
+                    $word .= $char;
+                }
+                continue;
+            }
+
+            $separator = in_array($char, [' ', "\t", "\r", "\n", ';', '{'], true);
+
+            if ($word !== null) {
+                if (!$separator || ($char === '{' && substr($word, -1) === '$')) {
+                    $word .= $char;
+                    continue;
+                }
+                $words[] = $word;
+                $word = null;
+            }
+
+            if ($char === ';') {
+                $statements[] = [$blocks, $words];
+                $words = [];
+            } elseif ($char === '{') {
+                $blocks[] = $words[0] ?? '';
+                $words = [];
+            } elseif ($char === '}') {
+                array_pop($blocks);
+                $words = [];
+            } elseif ($char === '#') {
+                $newline = strpos($config, "\n", $i);
+                $i = $newline === false ? $length : $newline;
+            } elseif ($char === '"' || $char === "'") {
+                $quote = $char;
+                $word = '';
+            } elseif (!$separator) {
+                $word = $char;
+            }
+        }
+
+        return $statements;
+    }
+
+    /**
+     * Converts an nginx time ("75", "75s", "1m", "1h30m", "500ms") to seconds, rounded up, ignoring any second argument.
+     */
+    private function parseSeconds(string $value): ?int
+    {
+        $time = explode(' ', $value)[0];
+        $unitsInMs = ['ms' => 1, 's' => 1000, 'm' => 60000, 'h' => 3600000, 'd' => 86400000, 'w' => 604800000, 'M' => 2592000000, 'y' => 31536000000];
+
+        preg_match_all('/(\d+)(' . implode('|', array_keys($unitsInMs)) . ')?/', $time, $parts, PREG_SET_ORDER);
+
+        if ($time === '' || implode('', array_column($parts, 0)) !== $time) {
+            return null;
+        }
+
+        $milliseconds = 0;
+        foreach ($parts as $part) {
+            $milliseconds += (int) $part[1] * $unitsInMs[($part[2] ?? '') ?: 's'];
+        }
+
+        return (int) ceil($milliseconds / 1000);
     }
 
     private function getCpuCount(): ?int
@@ -219,7 +345,8 @@ class NginxCollector implements CollectorInterface, BootableCollectorInterface
         }
 
         if (PHP_OS_FAMILY === 'Linux') {
-            $output = $this->shellExecutor->execute('nproc --all');
+            // the CPU count nginx uses for "worker_processes auto"
+            $output = $this->shellExecutor->execute('getconf _NPROCESSORS_ONLN');
 
             return $this->propertyCache['cpuCount'] = $output ? (int) trim($output) : null;
         }

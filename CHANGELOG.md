@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - [Apache Collector] A status URL that does not return a mod_status report (no `Scoreboard` line) now fails with an explicit `CollectorException`, and fails the boot, instead of a `TypeError`.
+- [Nginx Collector] `version` and `modules` are now collected: `nginx -V` prints them on stderr, which was not read.
+- [Nginx Collector] `config` only reads the main, `events` and `http` contexts, and the files included there, so a directive of a `server` or `location` block (e.g. `access_log off;`) no longer overrides the global value.
+- [Nginx Collector] `keepalive_timeout` is converted to seconds, rounded up, from any nginx time unit (`1m` was reported as 1).
+- [Nginx Collector] `cpu_count` is read with `getconf _NPROCESSORS_ONLN`, the CPU count nginx uses for `worker_processes auto`, instead of `nproc --all`.
 
 ## [2.3.1] - 2026-10-18
 
