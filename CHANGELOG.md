@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- [Apache Collector] The payload moves to version 2: `requests_per_second` and `duration_per_request` are now floats, so values under 1 (e.g. 0.05 req/s, 0.734 ms) are no longer reported as 0.
+
+### Added
+- [Apache Collector] `total_duration`: the cumulated request duration in milliseconds, from the `Total Duration` line of mod_status.
+
+### Fixed
+- [Apache Collector] A status URL that does not return a mod_status report (no `Scoreboard` line) now fails with an explicit `CollectorException`, and fails the boot, instead of a `TypeError`.
+
 ## [2.3.1] - 2026-10-18
 
 ### Added

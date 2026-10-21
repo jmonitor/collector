@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Jmonitor\Tests\Collector\Apache;
 
 use Jmonitor\Collector\Apache\ApacheCollector;
+use Jmonitor\Exceptions\BootFailedException;
+use Jmonitor\Exceptions\CollectorException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -34,10 +36,11 @@ class ApacheCollectorTest extends TestCase
         self::assertSame(3.1, $metrics['load15']);
         self::assertSame(8, $metrics['total_accesses']);
         self::assertSame(5120, $metrics['total_bytes']);
-        self::assertSame(0, $metrics['requests_per_second']);
+        self::assertSame(119, $metrics['total_duration']);
+        self::assertSame(0.0620155, $metrics['requests_per_second']);
         self::assertSame(39, $metrics['bytes_per_second']);
         self::assertSame(640, $metrics['bytes_per_request']);
-        self::assertSame(14, $metrics['duration_per_request']);
+        self::assertSame(14.875, $metrics['duration_per_request']);
         self::assertSame(3, $metrics['workers']['busy']);
         self::assertSame(61, $metrics['workers']['idle']);
         self::assertSame([
@@ -47,9 +50,76 @@ class ApacheCollectorTest extends TestCase
         ], $metrics['scoreboard']);
     }
 
+    public function testCollectFullAutoReport(): void
+    {
+        $metrics = (new ApacheCollector(__DIR__ . '/_mod_status_auto_full.txt'))->collect();
+
+        self::assertSame('Apache/2.4.62 (Debian)', $metrics['server_version']);
+        self::assertSame('event', $metrics['server_mpm']);
+        self::assertSame(81680, $metrics['uptime']);
+        self::assertSame(0.21, $metrics['load1']);
+        self::assertSame(0.17, $metrics['load5']);
+        self::assertSame(0.11, $metrics['load15']);
+        self::assertSame(4084, $metrics['total_accesses']);
+        self::assertSame(12846 * 1024, $metrics['total_bytes']);
+        self::assertSame(2998, $metrics['total_duration']);
+        self::assertSame(0.05, $metrics['requests_per_second']);
+        self::assertSame(161, $metrics['bytes_per_second']);
+        self::assertSame(3220, $metrics['bytes_per_request']);
+        self::assertSame(0.734084, $metrics['duration_per_request']);
+        self::assertSame(1, $metrics['workers']['busy']);
+        self::assertSame(74, $metrics['workers']['idle']);
+        self::assertSame(['_' => 74, 'W' => 1, '.' => 36], $metrics['scoreboard']);
+    }
+
+    public function testCollectReportWithoutTotalDuration(): void
+    {
+        $metrics = (new ApacheCollector(__DIR__ . '/_mod_status_auto_without_duration.txt'))->collect();
+
+        self::assertNull($metrics['total_duration']);
+        self::assertNull($metrics['duration_per_request']);
+        self::assertSame(120, $metrics['total_accesses']);
+        self::assertSame(340 * 1024, $metrics['total_bytes']);
+        self::assertSame(0.0333333, $metrics['requests_per_second']);
+        self::assertSame(96, $metrics['bytes_per_second']);
+        self::assertSame(2901, $metrics['bytes_per_request']);
+        self::assertSame(['W' => 1, '_' => 9, '.' => 6], $metrics['scoreboard']);
+    }
+
+    public function testCollectKeepsFractionalAndExponentValues(): void
+    {
+        $metrics = (new ApacheCollector(__DIR__ . '/_mod_status_auto_fractional.txt'))->collect();
+
+        self::assertSame(1.5e-05, $metrics['requests_per_second']);
+        self::assertSame(0.733333, $metrics['duration_per_request']);
+        self::assertSame(22, $metrics['total_duration']);
+        self::assertSame(0, $metrics['bytes_per_second']);
+        self::assertSame(3072, $metrics['bytes_per_request']);
+    }
+
+    public function testCollectThrowsOnPageWithoutScoreboard(): void
+    {
+        $collector = new ApacheCollector(__DIR__ . '/_not_mod_status_page.html');
+
+        $this->expectException(CollectorException::class);
+        $this->expectExceptionMessage('not a mod_status report');
+
+        $collector->collect();
+    }
+
+    public function testBootThrowsOnPageWithoutScoreboard(): void
+    {
+        $collector = new ApacheCollector(__DIR__ . '/_not_mod_status_page.html');
+
+        $this->expectException(BootFailedException::class);
+        $this->expectExceptionMessage('not a mod_status report');
+
+        $collector->boot();
+    }
+
     public function testGetVersion(): void
     {
-        self::assertSame(1, $this->collector->getVersion());
+        self::assertSame(2, $this->collector->getVersion());
     }
 
     public static function apacheVersionsProvider(): array
@@ -99,12 +169,18 @@ class ApacheCollectorTest extends TestCase
             self::assertNotNull($result['uptime']);
             self::assertIsInt($result['uptime']);
 
-            self::assertArrayHasKey('total_accesses', $result);
-            self::assertArrayHasKey('total_bytes', $result);
-            self::assertArrayHasKey('requests_per_second', $result);
-            self::assertArrayHasKey('bytes_per_second', $result);
-            self::assertArrayHasKey('bytes_per_request', $result);
-            self::assertArrayHasKey('duration_per_request', $result);
+            self::assertIsInt($result['total_accesses']);
+            self::assertGreaterThan(0, $result['total_accesses']);
+            self::assertIsInt($result['total_bytes']);
+            self::assertGreaterThan(0, $result['total_bytes']);
+            self::assertIsInt($result['total_duration']);
+            self::assertIsFloat($result['requests_per_second']);
+            self::assertGreaterThan(0.0, $result['requests_per_second']);
+            self::assertIsInt($result['bytes_per_second']);
+            self::assertGreaterThan(0, $result['bytes_per_second']);
+            self::assertIsInt($result['bytes_per_request']);
+            self::assertGreaterThan(0, $result['bytes_per_request']);
+            self::assertIsFloat($result['duration_per_request']);
 
             self::assertArrayHasKey('workers', $result);
             self::assertIsArray($result['workers']);

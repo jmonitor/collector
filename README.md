@@ -185,6 +185,9 @@ Collectors
   $collector = new ApacheCollector('http://localhost/server-status');
   ```
 
+  Traffic metrics (accesses, bytes, request durations) are only reported by mod_status with `ExtendedStatus On`,
+  the default when mod_status is loaded: do not turn it off.
+
 - ### Nginx <a name="nginx"></a>
   Collects metrics from Nginx "stub_status" module. Enable it and expose a status URL.
   There are some resources to help you with that:

@@ -1,0 +1,37 @@
+www.example.com
+ServerVersion: Apache/2.4.62 (Debian)
+ServerMPM: event
+Server Built: 2024-07-23T13:44:10
+CurrentTime: Wednesday, 21-Oct-2026 10:03:44 UTC
+RestartTime: Saturday, 26-Sep-2026 22:30:24 UTC
+ParentServerConfigGeneration: 1
+ParentServerMPMGeneration: 0
+ServerUptimeSeconds: 2000000
+ServerUptime: 23 days 3 hours 33 minutes 20 seconds
+Load1: 0.00
+Load5: 0.00
+Load15: 0.00
+Total Accesses: 30
+Total kBytes: 90
+Total Duration: 22
+CPUUser: .87
+CPUSystem: .52
+CPUChildrenUser: 0
+CPUChildrenSystem: 0
+CPULoad: 6.95e-05
+Uptime: 2000000
+ReqPerSec: 1.5e-05
+BytesPerSec: .04608
+BytesPerReq: 3072
+DurationPerReq: .733333
+BusyWorkers: 1
+GracefulWorkers: 0
+IdleWorkers: 24
+Processes: 1
+Stopping: 0
+ConnsTotal: 0
+ConnsAsyncWaitIO: 0
+ConnsAsyncWriting: 0
+ConnsAsyncKeepAlive: 0
+ConnsAsyncClosing: 0
+Scoreboard: W________________________

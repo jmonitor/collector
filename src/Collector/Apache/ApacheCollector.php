@@ -62,10 +62,11 @@ class ApacheCollector implements CollectorInterface, BootableCollectorInterface
             'load15' => $load15 !== -1.0 ? $load15 : null,
             'total_accesses' => $this->getData('Total Accesses', 'int'),
             'total_bytes' => ($value = $this->getData('Total kBytes', 'int')) !== null ? $value * 1024 : null,
-            'requests_per_second' => ($value = $this->getData('ReqPerSec', 'float')) !== null ? (int) round($value) : null,
+            'total_duration' => $this->getData('Total Duration', 'int'),
+            'requests_per_second' => $this->getData('ReqPerSec', 'float'),
             'bytes_per_second' => $this->getData('BytesPerSec', 'int'),
             'bytes_per_request' => $this->getData('BytesPerReq', 'int'),
-            'duration_per_request' => $this->getData('DurationPerReq', 'int'),
+            'duration_per_request' => $this->getData('DurationPerReq', 'float'),
             'workers' => [
                 'busy' => $this->getData('BusyWorkers', 'int'),
                 'idle' => $this->getData('IdleWorkers', 'int'),
@@ -82,7 +83,7 @@ class ApacheCollector implements CollectorInterface, BootableCollectorInterface
 
     public function getVersion(): int
     {
-        return 1;
+        return 2;
     }
 
     private function loadDatas(): void
@@ -98,8 +99,15 @@ class ApacheCollector implements CollectorInterface, BootableCollectorInterface
         $lines = explode("\n", $content);
 
         foreach ($lines as $line) {
-            $parts = explode(':', $line);
+            $parts = explode(':', $line, 2);
             $this->datas[$parts[0]] = isset($parts[1]) ? trim($parts[1]) : null;
+        }
+
+        if (($this->datas['Scoreboard'] ?? '') === '') {
+            throw new CollectorException(
+                sprintf('"%s" did not return a Scoreboard line, it is not a mod_status report', $this->modStatusUrl),
+                __CLASS__
+            );
         }
     }
 
