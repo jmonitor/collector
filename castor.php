@@ -783,6 +783,12 @@ function fixturesCaptureApache(): void
             continue;
         }
 
+        // Serve some traffic and let the uptime grow, so ReqPerSec, BytesPerSec and the durations are populated
+        for ($i = 0; $i < 20; $i++) {
+            run("curl -sf -o /dev/null \"http://localhost:{$port}/\"", context: $allowFailureContext);
+        }
+        sleep(3);
+
         // Capture mod_status?auto output from the host
         $statusResult = run(
             "curl -sf \"http://localhost:{$port}/server-status?auto\"",

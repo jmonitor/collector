@@ -169,14 +169,18 @@ class ApacheCollectorTest extends TestCase
             self::assertNotNull($result['uptime']);
             self::assertIsInt($result['uptime']);
 
-            self::assertArrayHasKey('total_accesses', $result);
-            self::assertArrayHasKey('total_bytes', $result);
-            self::assertArrayHasKey('requests_per_second', $result);
-            self::assertArrayHasKey('bytes_per_second', $result);
-            self::assertArrayHasKey('bytes_per_request', $result);
-            self::assertArrayHasKey('duration_per_request', $result);
-            self::assertIsFloat($result['duration_per_request']);
+            self::assertIsInt($result['total_accesses']);
+            self::assertGreaterThan(0, $result['total_accesses']);
+            self::assertIsInt($result['total_bytes']);
+            self::assertGreaterThan(0, $result['total_bytes']);
             self::assertIsInt($result['total_duration']);
+            self::assertIsFloat($result['requests_per_second']);
+            self::assertGreaterThan(0.0, $result['requests_per_second']);
+            self::assertIsInt($result['bytes_per_second']);
+            self::assertGreaterThan(0, $result['bytes_per_second']);
+            self::assertIsInt($result['bytes_per_request']);
+            self::assertGreaterThan(0, $result['bytes_per_request']);
+            self::assertIsFloat($result['duration_per_request']);
 
             self::assertArrayHasKey('workers', $result);
             self::assertIsArray($result['workers']);
