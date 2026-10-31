@@ -6,12 +6,9 @@ namespace Jmonitor\Tests\Collector\Cloudflare\Block;
 
 use Jmonitor\Collector\Cloudflare\Block\TodayBlock;
 use Jmonitor\Tests\Collector\Cloudflare\FakeCloudflareClient;
-use PHPUnit\Framework\TestCase;
 
-class TodayBlockTest extends TestCase
+class TodayBlockTest extends BlockTestCase
 {
-    use BlockTestTrait;
-
     private FakeCloudflareClient $http;
 
     protected function setUp(): void

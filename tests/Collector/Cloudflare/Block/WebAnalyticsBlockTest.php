@@ -8,13 +8,10 @@ use Jmonitor\Collector\Cloudflare\Block\WebAnalyticsBlock;
 use Jmonitor\Collector\Cloudflare\CloudflareException;
 use Jmonitor\Tests\Collector\Cloudflare\FakeCloudflareClient;
 use Nyholm\Psr7\Response;
-use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 
-class WebAnalyticsBlockTest extends TestCase
+class WebAnalyticsBlockTest extends BlockTestCase
 {
-    use BlockTestTrait;
-
     private FakeCloudflareClient $http;
 
     protected function setUp(): void

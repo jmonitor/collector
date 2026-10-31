@@ -10,13 +10,10 @@ use Jmonitor\Collector\Cloudflare\CloudflareException;
 use Jmonitor\Collector\Cloudflare\CloudflareZone;
 use Jmonitor\Tests\Collector\Cloudflare\FakeCloudflareClient;
 use Nyholm\Psr7\Factory\Psr17Factory;
-use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class ImagesBlockTest extends TestCase
+class ImagesBlockTest extends BlockTestCase
 {
-    use BlockTestTrait;
-
     private FakeCloudflareClient $http;
 
     protected function setUp(): void
