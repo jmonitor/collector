@@ -6,6 +6,8 @@ namespace Jmonitor\Collector\Cloudflare;
 
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\Cloudflare\Block\BlockInterface;
+use Jmonitor\Collector\Cloudflare\Block\TodayBlock;
+use Jmonitor\Collector\Cloudflare\Block\TrafficBlock;
 use Jmonitor\Collector\Cloudflare\Block\ZoneBlock;
 use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Exceptions\BootFailedException;
@@ -100,6 +102,8 @@ class CloudflareCollector implements CollectorInterface, BootableCollectorInterf
 
         $this->blocks = [
             new ZoneBlock(),
+            new TrafficBlock($this->options['lookback'], $this->options['window']),
+            new TodayBlock(),
         ];
     }
 
