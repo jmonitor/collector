@@ -1,0 +1,24 @@
+{
+    "data": {
+        "viewer": {
+            "accounts": [
+                {
+                    "imagesRequests": [
+                        {
+                            "sum": {
+                                "requests": 162
+                            }
+                        }
+                    ],
+                    "imagesMonth": [
+                        {
+                            "date": "2025-10-31",
+                            "transformations": 136
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "errors": null
+}

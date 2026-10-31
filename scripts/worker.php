@@ -63,6 +63,7 @@ $jmonitor->addCollector(new SystemCollector());
 // $jmonitor->addCollector(new PhpCollector());
 // $jmonitor->addCollector(new MysqlCollector(...));
 // $jmonitor->addCollector(new RedisCollector(...));
+// $jmonitor->addCollector(new CloudflareCollector(getenv('CLOUDFLARE_API_TOKEN'), 'example.com'));
 
 // =============================================================================
 // SECTION 4 — Helper functions

@@ -1,0 +1,15 @@
+{
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": {
+        "buckets": [
+            {
+                "name": "public",
+                "creation_date": "2025-09-12T08:21:36.000Z",
+                "location": "WEUR",
+                "storage_class": "Standard"
+            }
+        ]
+    }
+}

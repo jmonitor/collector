@@ -43,6 +43,7 @@ This library provides the **PHP collectors** that gather metrics from your serve
 | Web servers       | ![Apache](https://img.shields.io/badge/Apache-D22128?style=flat-square&logo=apache&logoColor=white) ![Nginx](https://img.shields.io/badge/Nginx-009639?style=flat-square&logo=nginx&logoColor=white) ![Caddy](https://img.shields.io/badge/Caddy-1F88C0?style=flat-square&logo=caddy&logoColor=white)        |
 | Databases & cache | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) ![Redis](https://img.shields.io/badge/Redis-FF4438?style=flat-square&logo=redis&logoColor=white) |
 | System            | ![Linux](https://img.shields.io/badge/CPU%20·%20RAM%20·%20Disk-FCC624?style=flat-square&logo=linux&logoColor=black)                                                                                                                                                                                        |
+| CDN               | ![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=flat-square&logo=cloudflare&logoColor=white)                                                                                                                                                                                            |
 
 ## Requirements
 - PHP 8.1+ (for PHP 7.4/8.0, use the [1.x branch](https://github.com/jmonitor/collector/tree/1.x))
@@ -158,6 +159,7 @@ Collectors
 - [Caddy](#caddy)
 - [FrankenPHP](#frankenphp)
 - [PostgreSQL](#postgresql)
+- [Cloudflare](#cloudflare)
 
 - ### System <a name="system"></a>
   Collects system metrics like CPU usage, memory usage, disk usage, etc.
@@ -344,6 +346,59 @@ Collectors
   // - autoCreateExtension: create pg_stat_statements if missing (default: false)
   $collector = new PostgresqlSlowQueriesCollector($adapter, limit: 10, minCalls: 5, minMeanTimeMs: 100.0, orderBy: PostgresqlSlowQueriesCollector::ORDER_BY_AVG_TIME);
   ```
+
+- ### Cloudflare <a name="cloudflare"></a>
+  Collects, for one Cloudflare zone, what your server cannot see about itself: what Cloudflare absorbs (cache,
+  security), the origin latency seen from the edge, real-user experience (Web Analytics, Core Web Vitals), and the
+  state and usage of R2 and Images. It queries the Cloudflare REST and GraphQL Analytics APIs and works in full on
+  a **Free** plan.
+
+  ```php
+  use Jmonitor\Collector\Cloudflare\CloudflareCollector;
+
+  $collector = new CloudflareCollector(
+      apiToken: getenv('CLOUDFLARE_API_TOKEN'),
+      zone: 'example.com',            // zone name or zone id
+      httpClient: null,               // optional PSR-18 client, discovered when null
+      options: [
+          'refresh' => [              // seconds, these are the defaults
+              'traffic' => 60,
+              'today' => 300,
+              'web_analytics' => 300,
+              'storage' => 900,       // r2 and images
+              'zone' => 3600,
+          ],
+          'lag' => 180,               // seconds: the data window ends at the start of the minute of now - lag
+          'lookback' => 5,            // minutes of per-minute traffic re-read on every refresh (60 at most)
+          'window' => 15,             // minutes covered by the traffic breakdowns
+      ],
+  );
+  ```
+
+  Create an API token in the Cloudflare dashboard (My Profile → API Tokens) with these permissions:
+
+  | Permission                           | Needed for                                  |
+  |--------------------------------------|---------------------------------------------|
+  | Zone › Zone › Read                   | required: zone lookup, `zone` block         |
+  | Zone › Zone Settings › Read          | `zone.settings`                             |
+  | Zone › Analytics › Read              | `traffic`, `today`                          |
+  | Zone › SSL and Certificates › Read   | `zone.certificate`                          |
+  | Account › Account Analytics › Read   | `web_analytics`, `r2`, `images`             |
+  | Account › Workers R2 Storage › Read  | `r2`                                        |
+  | Account › Images › Read              | `images.stored`                             |
+
+  Only *Zone › Zone › Read* is required. A block whose permission is missing is reported as `forbidden` and the
+  others keep working. A rejected token or an unknown zone fails the collector at startup; a network error or a
+  Cloudflare outage at startup does not, the zone lookup is retried a minute later.
+
+  Cloudflare is not queried on every collection: each block is refreshed on its own interval (above) and served
+  from memory in between, which keeps the token well under the Cloudflare API rate limits.
+
+  The `web_analytics` block needs Web Analytics enabled on the zone (Cloudflare dashboard → Web Analytics).
+  Workers, Pages, KV, D1 and DNS analytics are left out on purpose.
+
+  When no client is passed and `symfony/http-client` is installed, the collector builds one with a 5-second
+  timeout. PSR-18 has no timeout API, so configure one on any client you pass yourself.
 
 ## Need help?
 - Anything about this package — installation, the worker, a collector, a missing or wrong metric: open an issue on this repo https://github.com/jmonitor/collector/issues

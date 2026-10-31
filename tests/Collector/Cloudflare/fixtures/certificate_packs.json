@@ -1,0 +1,74 @@
+{
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": [
+        {
+            "id": "pack-pending",
+            "type": "universal",
+            "status": "pending_validation",
+            "hosts": [
+                "jmonitor.io",
+                "*.jmonitor.io"
+            ],
+            "primary_certificate": "0",
+            "certificates": []
+        },
+        {
+            "id": "pack-advanced",
+            "type": "advanced",
+            "status": "active",
+            "hosts": [
+                "jmonitor.io",
+                "*.jmonitor.io"
+            ],
+            "primary_certificate": "cert-adv",
+            "certificates": [
+                {
+                    "id": "cert-adv",
+                    "status": "active",
+                    "issuer": "LetsEncrypt",
+                    "expires_on": "2025-12-01T00:00:00Z",
+                    "hosts": [
+                        "jmonitor.io",
+                        "*.jmonitor.io"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pack-universal",
+            "type": "universal",
+            "status": "active",
+            "hosts": [
+                "jmonitor.io",
+                "*.jmonitor.io"
+            ],
+            "primary_certificate": "cert-ecdsa",
+            "certificates": [
+                {
+                    "id": "cert-rsa",
+                    "status": "active",
+                    "issuer": "GoogleTrustServices",
+                    "signature": "SHA256WithRSA",
+                    "expires_on": "2025-12-20T10:00:00Z",
+                    "hosts": [
+                        "jmonitor.io",
+                        "*.jmonitor.io"
+                    ]
+                },
+                {
+                    "id": "cert-ecdsa",
+                    "status": "active",
+                    "issuer": "GoogleTrustServices",
+                    "signature": "ECDSAWithSHA256",
+                    "expires_on": "2026-01-04T16:00:46Z",
+                    "hosts": [
+                        "jmonitor.io",
+                        "*.jmonitor.io"
+                    ]
+                }
+            ]
+        }
+    ]
+}

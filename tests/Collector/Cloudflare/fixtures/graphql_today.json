@@ -1,0 +1,29 @@
+{
+    "data": {
+        "viewer": {
+            "zones": [
+                {
+                    "today": [
+                        {
+                            "dimensions": {
+                                "date": "2025-10-31"
+                            },
+                            "sum": {
+                                "requests": 12994,
+                                "cachedRequests": 193,
+                                "bytes": 33295308,
+                                "cachedBytes": 2965096,
+                                "pageViews": 932,
+                                "threats": 17
+                            },
+                            "uniq": {
+                                "uniques": 197
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "errors": null
+}

@@ -1,0 +1,92 @@
+{
+    "data": {
+        "viewer": {
+            "accounts": [
+                {
+                    "r2Storage": [
+                        {
+                            "dimensions": {
+                                "bucketName": "public",
+                                "storageClass": "Standard",
+                                "datetime": "2025-10-31T13:20:00Z"
+                            },
+                            "max": {
+                                "payloadSize": 0,
+                                "metadataSize": 0,
+                                "objectCount": 0,
+                                "uploadCount": 0
+                            }
+                        },
+                        {
+                            "dimensions": {
+                                "bucketName": "public",
+                                "storageClass": "InfrequentAccess",
+                                "datetime": "2025-10-31T13:20:00Z"
+                            },
+                            "max": {
+                                "payloadSize": 0,
+                                "metadataSize": 0,
+                                "objectCount": 0,
+                                "uploadCount": 0
+                            }
+                        },
+                        {
+                            "dimensions": {
+                                "bucketName": "public",
+                                "storageClass": "Standard",
+                                "datetime": "2025-10-31T13:00:00Z"
+                            },
+                            "max": {
+                                "payloadSize": 2048,
+                                "metadataSize": 120,
+                                "objectCount": 5,
+                                "uploadCount": 0
+                            }
+                        }
+                    ],
+                    "r2Ops": [
+                        {
+                            "dimensions": {
+                                "bucketName": "",
+                                "actionType": "ListBuckets"
+                            },
+                            "sum": {
+                                "requests": 1
+                            }
+                        },
+                        {
+                            "dimensions": {
+                                "bucketName": "public",
+                                "actionType": "GetObject"
+                            },
+                            "sum": {
+                                "requests": 1
+                            }
+                        },
+                        {
+                            "dimensions": {
+                                "bucketName": "public",
+                                "actionType": "DeleteObject"
+                            },
+                            "sum": {
+                                "requests": 3
+                            }
+                        }
+                    ],
+                    "r2Bandwidth": [
+                        {
+                            "dimensions": {
+                                "bucketName": "public"
+                            },
+                            "sum": {
+                                "bytesUpload": 0,
+                                "bytesDownload": 0
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "errors": null
+}

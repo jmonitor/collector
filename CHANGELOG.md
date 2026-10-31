@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- [Cloudflare Collector] New collector, the first remote one: for one Cloudflare zone, it reports traffic, cache and security breakdowns, origin latency seen from the edge, the current day's totals, Web Analytics (Core Web Vitals), R2 and Images usage, and the zone's settings and certificate. Works on a Free plan; each block is refreshed on its own interval and a block whose token permission is missing is reported as unavailable instead of failing the collection.
+
 ## [2.4.0] - 2026-10-21
 
 ### Changed

@@ -1,0 +1,59 @@
+{
+    "data": {
+        "viewer": {
+            "accounts": [
+                {
+                    "pageloads": [
+                        {
+                            "count": 11,
+                            "sum": {
+                                "visits": 11
+                            }
+                        }
+                    ],
+                    "byHost": [
+                        {
+                            "count": 7,
+                            "dimensions": {
+                                "requestHost": "dash.jmonitor.io"
+                            }
+                        },
+                        {
+                            "count": 4,
+                            "dimensions": {
+                                "requestHost": "jmonitor.io"
+                            }
+                        }
+                    ],
+                    "timings": [
+                        {
+                            "count": 11,
+                            "quantiles": {
+                                "pageLoadTimeP50": 826600,
+                                "pageLoadTimeP75": 2884000,
+                                "dnsTimeP75": 33000,
+                                "connectionTimeP75": 35000,
+                                "requestTimeP75": 111000,
+                                "responseTimeP75": 182000,
+                                "pageRenderTimeP75": 624000
+                            }
+                        }
+                    ],
+                    "vitals": [
+                        {
+                            "count": 9,
+                            "quantiles": {
+                                "largestContentfulPaintP75": 2624000,
+                                "interactionToNextPaintP75": 48000,
+                                "cumulativeLayoutShiftP75": 0.09,
+                                "timeToFirstByteP75": 898000,
+                                "firstContentfulPaintP75": 2592000
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "errors": null
+}

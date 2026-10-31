@@ -1,0 +1,35 @@
+{
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": [
+        {
+            "id": "70262cb0f66f27063f827218bfff44dc",
+            "name": "jmonitor.io",
+            "status": "active",
+            "paused": false,
+            "type": "full",
+            "development_mode": 0,
+            "name_servers": [
+                "ada.ns.cloudflare.com",
+                "bob.ns.cloudflare.com"
+            ],
+            "plan": {
+                "id": "0feeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "name": "Free Website",
+                "legacy_id": "free"
+            },
+            "account": {
+                "id": "0b064c654406ece8f233181736f105fb",
+                "name": "Main account"
+            }
+        }
+    ],
+    "result_info": {
+        "page": 1,
+        "per_page": 20,
+        "count": 1,
+        "total_count": 1,
+        "total_pages": 1
+    }
+}
