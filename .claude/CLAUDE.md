@@ -60,6 +60,8 @@ castor fixtures:capture-postgresql # PostgreSQL 15, 16, 17, 18 → tests/Collect
 
 When adding a new collector that needs version-specific testing, add a corresponding `fixtures:capture-<name>` task to `castor.php` following the same pattern.
 
+The Cloudflare collector is remote (Cloudflare REST and GraphQL APIs), so it has no Castor task: its fixtures under `tests/Collector/Cloudflare/fixtures/` are written by hand from the response shapes of a Free zone, and `FakeCloudflareClient` routes each request (`GET /zones/{zone}`, `graphql Traffic`…) to one of them. Never add a GraphQL field the fixtures do not show: an unknown field fails the whole request on Cloudflare's side.
+
 ### Code Style Requirements
 
 - `declare(strict_types=1);` in every PHP file
