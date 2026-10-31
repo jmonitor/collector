@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- [Cloudflare Collector] An empty or invalid token or zone now only disables the collector instead of preventing the worker from starting.
+- [Cloudflare Collector] An empty or malformed token, or an empty zone, now only disables the collector instead of preventing the worker from starting.
 
 ## [2.5.0] - 2026-10-31
 

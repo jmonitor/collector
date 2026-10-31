@@ -143,9 +143,8 @@ class CloudflareCollectorTest extends TestCase
     {
         yield 'empty token' => ['', 'jmonitor.io', 'The Cloudflare API token must not be empty.'];
         yield 'blank token' => ['  ', 'jmonitor.io', 'The Cloudflare API token must not be empty.'];
-        yield 'token with a control character' => ["token", 'jmonitor.io', 'The Cloudflare API token must not contain control characters.'];
-        yield 'token with an inner newline' => ["tok
-en", 'jmonitor.io', 'The Cloudflare API token must not contain control characters.'];
+        yield 'token with a control character' => ["tok\x01en", 'jmonitor.io', 'The Cloudflare API token must not contain control characters.'];
+        yield 'token with an inner newline' => ["tok\nen", 'jmonitor.io', 'The Cloudflare API token must not contain control characters.'];
         yield 'empty zone' => ['token', '', 'The Cloudflare zone must not be empty.'];
         yield 'blank zone' => ['token', ' ', 'The Cloudflare zone must not be empty.'];
     }
@@ -223,15 +222,14 @@ en", 'jmonitor.io', 'The Cloudflare API token must not contain control character
 
     public function testTokenWithATrailingNewlineIsTrimmed(): void
     {
-        (new CloudflareCollector("token
-", FakeCloudflareClient::ZONE_ID, $this->http, [], fn(): int => $this->now))->boot();
+        (new CloudflareCollector("token\n", FakeCloudflareClient::ZONE_ID, $this->http, [], fn(): int => $this->now))->boot();
 
         self::assertSame('Bearer token', $this->http->requests()[0]->getHeaderLine('Authorization'));
     }
 
     public function testTokenAndZoneSurroundedByWhitespaceAreTrimmed(): void
     {
-        (new CloudflareCollector("  token	", ' ' . FakeCloudflareClient::ZONE_ID . ' ', $this->http, [], fn(): int => $this->now))->boot();
+        (new CloudflareCollector("  token\t", ' ' . FakeCloudflareClient::ZONE_ID . ' ', $this->http, [], fn(): int => $this->now))->boot();
 
         self::assertSame('Bearer token', $this->http->requests()[0]->getHeaderLine('Authorization'));
         self::assertStringEndsWith('/zones/' . FakeCloudflareClient::ZONE_ID, $this->http->requests()[0]->getUri()->getPath());

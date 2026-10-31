@@ -357,7 +357,7 @@ Collectors
   use Jmonitor\Collector\Cloudflare\CloudflareCollector;
 
   $collector = new CloudflareCollector(
-      apiToken: getenv('CLOUDFLARE_API_TOKEN'),
+      apiToken: getenv('CLOUDFLARE_API_TOKEN') ?: '',
       zone: 'example.com',            // zone name or zone id
       httpClient: null,               // optional PSR-18 client, discovered when null
       options: [
