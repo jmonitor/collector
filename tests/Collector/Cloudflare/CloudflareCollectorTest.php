@@ -198,6 +198,23 @@ class CloudflareCollectorTest extends TestCase
         self::assertContains('GET /zones/{zone}', $this->http->routes());
     }
 
+    public function testDefinitiveFailureOnABootRetryStopsRetrying(): void
+    {
+        $this->http->respond('GET /zones/{zone}', 503, FakeCloudflareClient::errorBody('Service unavailable'));
+        $collector = $this->collector();
+        $collector->boot();
+        $collector->collect();
+
+        $this->http->respond('GET /zones/{zone}', 403, FakeCloudflareClient::errorBody('Authentication error'));
+        $this->now = self::NOW + 60;
+        self::assertSame('forbidden', $collector->collect()['unavailable']['zone']);
+        $this->http->reset();
+
+        $this->now = self::NOW + 3600;
+        self::assertSame('forbidden', $collector->collect()['unavailable']['traffic']);
+        self::assertSame([], $this->http->routes());
+    }
+
     public function testNetworkFailureOnBootIsTransient(): void
     {
         $this->http->throwOn('GET /zones/{zone}', new class ('Could not resolve host') extends \RuntimeException implements \Psr\Http\Client\NetworkExceptionInterface {

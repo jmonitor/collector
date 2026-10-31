@@ -150,7 +150,9 @@ class CloudflareApiTest extends TestCase
 
         $e = $this->catch(fn() => $this->api->get('/zones/' . FakeCloudflareClient::ZONE_ID));
 
-        self::assertStringNotContainsString(self::TOKEN, $e->getMessage());
+        for ($link = $e; $link !== null; $link = $link->getPrevious()) {
+            self::assertStringNotContainsString(self::TOKEN, $link->getMessage());
+        }
         self::assertStringContainsString('Invalid header', $e->getMessage());
     }
 

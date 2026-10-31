@@ -113,10 +113,11 @@ final class CloudflareApi
         try {
             $response = $this->client->sendRequest($request);
         } catch (ClientExceptionInterface $e) {
-            // Some clients quote the rejected header, token included, and this message ends up in the logs.
+            // Some clients quote the rejected header, token included, and this exception ends up in the logs:
+            // the original is not chained, since loggers serialize the previous exceptions too.
             $message = str_replace($this->apiToken, '[token]', $e->getMessage());
 
-            throw new CloudflareException(CloudflareException::ERROR, sprintf('%s: %s', $label, $message), null, $e);
+            throw new CloudflareException(CloudflareException::ERROR, sprintf('%s: %s (%s)', $label, $message, $e::class));
         }
 
         $status = $response->getStatusCode();

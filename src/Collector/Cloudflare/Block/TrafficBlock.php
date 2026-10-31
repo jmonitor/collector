@@ -143,7 +143,7 @@ final class TrafficBlock implements BlockInterface
         return [
             'from' => $from,
             'to' => $to,
-            // byCacheStatus is the only breakdown with no limit cutting rows off.
+            // Cloudflare has fewer cache statuses than byCacheStatus's limit, so its rows cover the whole window.
             'requests' => array_sum(array_map(static fn(array $row): int => (int) ($row['count'] ?? 0), $byCacheStatus)),
             'sampled' => $sampled,
             'by_cache_status' => Rows::countBy($byCacheStatus, 'cacheStatus'),
