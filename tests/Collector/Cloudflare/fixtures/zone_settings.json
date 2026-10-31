@@ -1,0 +1,109 @@
+{
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": [
+        {
+            "id": "always_online",
+            "value": "off",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "0rtt",
+            "value": "on",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "rocket_loader",
+            "value": "off",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "security_level",
+            "value": "medium",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "ssl",
+            "value": "full",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "min_tls_version",
+            "value": "1.2",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "tls_1_3",
+            "value": "zrt",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "cache_level",
+            "value": "aggressive",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "browser_cache_ttl",
+            "value": 0,
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "http3",
+            "value": "on",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "early_hints",
+            "value": "on",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "brotli",
+            "value": "on",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "ipv6",
+            "value": "on",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "websockets",
+            "value": "on",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "always_use_https",
+            "value": "on",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "automatic_https_rewrites",
+            "value": "on",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        },
+        {
+            "id": "email_obfuscation",
+            "value": "on",
+            "editable": true,
+            "modified_on": "2025-09-12T08:30:00.000000Z"
+        }
+    ]
+}

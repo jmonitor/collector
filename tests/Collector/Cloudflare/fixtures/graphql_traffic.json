@@ -1,0 +1,288 @@
+{
+    "data": {
+        "viewer": {
+            "zones": [
+                {
+                    "minutes": [
+                        {
+                            "dimensions": {
+                                "datetimeMinute": "2025-10-31T13:31:00Z"
+                            },
+                            "sum": {
+                                "requests": 13,
+                                "cachedRequests": 0,
+                                "bytes": 25778,
+                                "cachedBytes": 0,
+                                "pageViews": 1,
+                                "visits": 0
+                            },
+                            "ratio": {
+                                "status4xx": 0.0,
+                                "status5xx": 0.0
+                            },
+                            "avg": {
+                                "originResponseDurationMs": 34.2
+                            }
+                        },
+                        {
+                            "dimensions": {
+                                "datetimeMinute": "2025-10-31T13:32:00Z"
+                            },
+                            "sum": {
+                                "requests": 48,
+                                "cachedRequests": 4,
+                                "bytes": 120044,
+                                "cachedBytes": 9120,
+                                "pageViews": 3,
+                                "visits": 2
+                            },
+                            "ratio": {
+                                "status4xx": 0.0417,
+                                "status5xx": 0.0
+                            },
+                            "avg": {
+                                "originResponseDurationMs": 41.5
+                            }
+                        },
+                        {
+                            "dimensions": {
+                                "datetimeMinute": "2025-10-31T13:34:00Z"
+                            },
+                            "sum": {
+                                "requests": 6,
+                                "cachedRequests": 6,
+                                "bytes": 18000,
+                                "cachedBytes": 18000,
+                                "pageViews": 0,
+                                "visits": 0
+                            },
+                            "ratio": {
+                                "status4xx": 0.0,
+                                "status5xx": 0.0
+                            },
+                            "avg": {
+                                "originResponseDurationMs": -1.0
+                            }
+                        },
+                        {
+                            "dimensions": {
+                                "datetimeMinute": "2025-10-31T13:35:00Z"
+                            },
+                            "sum": {
+                                "requests": 50,
+                                "cachedRequests": 2,
+                                "bytes": 98000,
+                                "cachedBytes": 4000,
+                                "pageViews": 2,
+                                "visits": 1
+                            },
+                            "ratio": {
+                                "status4xx": 0.02,
+                                "status5xx": 0.02
+                            },
+                            "avg": {
+                                "originResponseDurationMs": 38.0
+                            }
+                        }
+                    ],
+                    "origin": [
+                        {
+                            "dimensions": {
+                                "datetimeMinute": "2025-10-31T13:31:00Z"
+                            },
+                            "count": 13,
+                            "quantiles": {
+                                "originResponseDurationMsP50": 30.0,
+                                "originResponseDurationMsP95": 56.0
+                            },
+                            "avg": {
+                                "sampleInterval": 1
+                            }
+                        },
+                        {
+                            "dimensions": {
+                                "datetimeMinute": "2025-10-31T13:32:00Z"
+                            },
+                            "count": 44,
+                            "quantiles": {
+                                "originResponseDurationMsP50": 33.5,
+                                "originResponseDurationMsP95": 80.25
+                            },
+                            "avg": {
+                                "sampleInterval": 1
+                            }
+                        },
+                        {
+                            "dimensions": {
+                                "datetimeMinute": "2025-10-31T13:35:00Z"
+                            },
+                            "count": 48,
+                            "quantiles": {
+                                "originResponseDurationMsP50": 29.0,
+                                "originResponseDurationMsP95": 61.0
+                            },
+                            "avg": {
+                                "sampleInterval": 1
+                            }
+                        }
+                    ],
+                    "byCacheStatus": [
+                        {
+                            "count": 9,
+                            "dimensions": {
+                                "cacheStatus": "miss"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
+                            }
+                        },
+                        {
+                            "count": 207,
+                            "dimensions": {
+                                "cacheStatus": "dynamic"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
+                            }
+                        },
+                        {
+                            "count": 3,
+                            "dimensions": {
+                                "cacheStatus": "revalidated"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
+                            }
+                        },
+                        {
+                            "count": 19,
+                            "dimensions": {
+                                "cacheStatus": "hit"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
+                            }
+                        }
+                    ],
+                    "byStatus": [
+                        {
+                            "count": 15,
+                            "dimensions": {
+                                "edgeResponseStatus": 302
+                            }
+                        },
+                        {
+                            "count": 52,
+                            "dimensions": {
+                                "edgeResponseStatus": 200
+                            }
+                        },
+                        {
+                            "count": 171,
+                            "dimensions": {
+                                "edgeResponseStatus": 202
+                            }
+                        }
+                    ],
+                    "byContentType": [
+                        {
+                            "count": 171,
+                            "dimensions": {
+                                "edgeResponseContentTypeName": "json"
+                            }
+                        },
+                        {
+                            "count": 36,
+                            "dimensions": {
+                                "edgeResponseContentTypeName": "html"
+                            }
+                        },
+                        {
+                            "count": 15,
+                            "dimensions": {
+                                "edgeResponseContentTypeName": "avif"
+                            }
+                        }
+                    ],
+                    "byCountry": [
+                        {
+                            "count": 192,
+                            "dimensions": {
+                                "clientCountryName": "FR"
+                            }
+                        },
+                        {
+                            "count": 20,
+                            "dimensions": {
+                                "clientCountryName": "DE"
+                            }
+                        },
+                        {
+                            "count": 16,
+                            "dimensions": {
+                                "clientCountryName": "US"
+                            }
+                        }
+                    ],
+                    "byHost": [
+                        {
+                            "count": 171,
+                            "dimensions": {
+                                "clientRequestHTTPHost": "collector.jmonitor.io"
+                            }
+                        },
+                        {
+                            "count": 37,
+                            "dimensions": {
+                                "clientRequestHTTPHost": "jmonitor.io"
+                            }
+                        },
+                        {
+                            "count": 30,
+                            "dimensions": {
+                                "clientRequestHTTPHost": "dash.jmonitor.io"
+                            }
+                        }
+                    ],
+                    "byProtocol": [
+                        {
+                            "count": 45,
+                            "dimensions": {
+                                "clientRequestHTTPProtocol": "HTTP/1.1"
+                            }
+                        },
+                        {
+                            "count": 172,
+                            "dimensions": {
+                                "clientRequestHTTPProtocol": "HTTP/2"
+                            }
+                        },
+                        {
+                            "count": 21,
+                            "dimensions": {
+                                "clientRequestHTTPProtocol": "HTTP/3"
+                            }
+                        }
+                    ],
+                    "bySecurity": [
+                        {
+                            "count": 67,
+                            "dimensions": {
+                                "securityAction": "unknown",
+                                "securitySource": "unknown"
+                            }
+                        },
+                        {
+                            "count": 171,
+                            "dimensions": {
+                                "securityAction": "skip",
+                                "securitySource": "firewallCustom"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "errors": null
+}
