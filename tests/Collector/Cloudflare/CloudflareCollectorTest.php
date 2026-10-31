@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Jmonitor\Tests\Collector\Cloudflare;
 
 use Jmonitor\Collector\Cloudflare\CloudflareCollector;
+use Jmonitor\Collector\CollectorInterface;
 use Jmonitor\Exceptions\BootFailedException;
 use Jmonitor\Exceptions\MissingHttpClientException;
 use Jmonitor\Jmonitor;
@@ -135,11 +136,88 @@ class CloudflareCollectorTest extends TestCase
         $this->collector(options: $options);
     }
 
-    public function testEmptyTokenIsRejected(): void
+    /**
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function invalidCredentialsProvider(): iterable
     {
-        $this->expectException(\InvalidArgumentException::class);
+        yield 'empty token' => ['', 'jmonitor.io', 'The Cloudflare API token must not be empty.'];
+        yield 'blank token' => ['  ', 'jmonitor.io', 'The Cloudflare API token must not be empty.'];
+        yield 'token with a control character' => ["tok\x01en", 'jmonitor.io', 'The Cloudflare API token must not contain control characters.'];
+        yield 'token with an inner newline' => ["tok\nen", 'jmonitor.io', 'The Cloudflare API token must not contain control characters.'];
+        yield 'empty zone' => ['token', '', 'The Cloudflare zone must not be empty.'];
+        yield 'blank zone' => ['token', ' ', 'The Cloudflare zone must not be empty.'];
+    }
 
-        new CloudflareCollector('', 'jmonitor.io', $this->http);
+    #[DataProvider('invalidCredentialsProvider')]
+    public function testInvalidCredentialsFailTheBootWithoutCallingCloudflare(string $token, string $zone, string $message): void
+    {
+        $collector = new CloudflareCollector($token, $zone, $this->http, [], fn(): int => $this->now);
+
+        try {
+            $collector->boot();
+            self::fail('boot() should have thrown');
+        } catch (BootFailedException $e) {
+            self::assertSame($message, $e->getMessage());
+        }
+
+        self::assertSame([], $this->http->requests());
+    }
+
+    public function testInvalidCredentialsMakeEveryCollectThrowWithoutCallingCloudflare(): void
+    {
+        $collector = new CloudflareCollector('', 'jmonitor.io', $this->http, [], fn(): int => $this->now);
+
+        for ($i = 0; $i < 2; $i++) {
+            try {
+                $collector->collect();
+                self::fail('collect() should have thrown');
+            } catch (BootFailedException $e) {
+                self::assertSame('The Cloudflare API token must not be empty.', $e->getMessage());
+            }
+
+            $this->now += 3600;
+        }
+
+        self::assertSame([], $this->http->requests());
+    }
+
+    public function testInvalidCredentialsOnlySkipTheCloudflareCollectorBehindJmonitor(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('error')
+            ->with(
+                'Failed to boot collector cloudflare, it will be skipped.',
+                $this->callback(fn(array $context): bool => $context['reason'] === 'The Cloudflare API token must not be empty.')
+            );
+
+        $jmonitor = new Jmonitor(null, null, $logger);
+        $jmonitor->addCollector(new CloudflareCollector('', 'jmonitor.io', $this->http));
+        $jmonitor->addCollector(new class implements CollectorInterface {
+            public function collect(): array
+            {
+                return ['a' => 1];
+            }
+
+            public function getName(): string
+            {
+                return 'other';
+            }
+
+            public function getVersion(): int
+            {
+                return 1;
+            }
+        });
+
+        $result = $jmonitor->collect(send: false);
+        $metrics = $result->getMetrics();
+
+        self::assertTrue($metrics[0]['skipped']);
+        self::assertArrayHasKey('cloudflare', $result->getBootErrors());
+        self::assertSame(['a' => 1], $metrics[1]['metrics']);
+        self::assertSame([], $this->http->requests());
     }
 
     public function testTokenWithATrailingNewlineIsTrimmed(): void
@@ -149,11 +227,12 @@ class CloudflareCollectorTest extends TestCase
         self::assertSame('Bearer token', $this->http->requests()[0]->getHeaderLine('Authorization'));
     }
 
-    public function testTokenWithControlCharactersIsRejected(): void
+    public function testTokenAndZoneSurroundedByWhitespaceAreTrimmed(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        (new CloudflareCollector("  token\t", ' ' . FakeCloudflareClient::ZONE_ID . ' ', $this->http, [], fn(): int => $this->now))->boot();
 
-        new CloudflareCollector("tok\nen", FakeCloudflareClient::ZONE_ID, $this->http);
+        self::assertSame('Bearer token', $this->http->requests()[0]->getHeaderLine('Authorization'));
+        self::assertStringEndsWith('/zones/' . FakeCloudflareClient::ZONE_ID, $this->http->requests()[0]->getUri()->getPath());
     }
 
     public function testTransientBootFailureIsRetriedOnTheNextInterval(): void

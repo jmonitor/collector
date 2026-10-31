@@ -95,21 +95,7 @@ class CloudflareCollector implements CollectorInterface, BootableCollectorInterf
     public function __construct(string $apiToken, string $zone, ?ClientInterface $httpClient = null, array $options = [], ?callable $clock = null)
     {
         // A token read from a file or a secret often ends with a newline.
-        $apiToken = trim($apiToken);
-
-        if ($apiToken === '') {
-            throw new \InvalidArgumentException('The Cloudflare API token must not be empty.');
-        }
-
-        if (preg_match('/[\x00-\x1F\x7F]/', $apiToken) === 1) {
-            throw new \InvalidArgumentException('The Cloudflare API token must not contain control characters.');
-        }
-
-        if (trim($zone) === '') {
-            throw new \InvalidArgumentException('The Cloudflare zone must not be empty.');
-        }
-
-        $this->apiToken = $apiToken;
+        $this->apiToken = trim($apiToken);
         $this->zone = trim($zone);
         $this->httpClient = $httpClient;
         $this->options = self::resolveOptions($options);
@@ -141,6 +127,9 @@ class CloudflareCollector implements CollectorInterface, BootableCollectorInterf
         if ($this->isBooted() || ($this->clock)() < $this->bootRetryAt) {
             return;
         }
+
+        // Token and zone usually come from the environment: a bad value must skip this collector, not the worker.
+        $this->validateCredentials();
 
         try {
             $client = $this->httpClient ?? HttpDiscovery::findHttpClient(self::HTTP_TIMEOUT);
@@ -308,6 +297,21 @@ class CloudflareCollector implements CollectorInterface, BootableCollectorInterf
         }
 
         return null;
+    }
+
+    private function validateCredentials(): void
+    {
+        if ($this->apiToken === '') {
+            throw new BootFailedException('The Cloudflare API token must not be empty.');
+        }
+
+        if (preg_match('/[\x00-\x1F\x7F]/', $this->apiToken) === 1) {
+            throw new BootFailedException('The Cloudflare API token must not contain control characters.');
+        }
+
+        if ($this->zone === '') {
+            throw new BootFailedException('The Cloudflare zone must not be empty.');
+        }
     }
 
     private function isBooted(): bool

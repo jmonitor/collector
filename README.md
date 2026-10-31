@@ -357,7 +357,7 @@ Collectors
   use Jmonitor\Collector\Cloudflare\CloudflareCollector;
 
   $collector = new CloudflareCollector(
-      apiToken: getenv('CLOUDFLARE_API_TOKEN'),
+      apiToken: getenv('CLOUDFLARE_API_TOKEN') ?: '',
       zone: 'example.com',            // zone name or zone id
       httpClient: null,               // optional PSR-18 client, discovered when null
       options: [
@@ -388,8 +388,9 @@ Collectors
   | Account › Images › Read              | `images.stored`                             |
 
   Only *Zone › Zone › Read* is required. A block whose permission is missing is reported as `forbidden` and the
-  others keep working. A rejected token or an unknown zone fails the collector at startup; a network error or a
-  Cloudflare outage at startup does not, the zone lookup is retried a minute later.
+  others keep working. An empty, malformed or rejected token, or an empty or unknown zone, fails the collector at
+  startup: it is skipped and the other collectors keep running. A network error or a Cloudflare outage at startup
+  does not, the zone lookup is retried a minute later.
 
   Cloudflare is not queried on every collection: each block is refreshed on its own interval (above) and served
   from memory in between, which keeps the token well under the Cloudflare API rate limits.
