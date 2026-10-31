@@ -385,7 +385,7 @@ Collectors
   | Zone › SSL and Certificates › Read   | `zone.certificate`                          |
   | Account › Account Analytics › Read   | `web_analytics`, `r2`, `images`             |
   | Account › Workers R2 Storage › Read  | `r2`                                        |
-  | Account › Images › Read              | `images`                                    |
+  | Account › Images › Read              | `images.stored`                             |
 
   Only *Zone › Zone › Read* is required. A block whose permission is missing is reported as `forbidden` and the
   others keep working. A rejected token or an unknown zone fails the collector at startup; a network error or a

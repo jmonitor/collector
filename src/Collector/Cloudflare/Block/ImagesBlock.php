@@ -10,8 +10,8 @@ use Jmonitor\Collector\Cloudflare\CloudflareZone;
 use Psr\Log\LoggerInterface;
 
 /**
- * Cloudflare Images. Transformations exist on the Images Free plan without storage, so a missing stats
- * endpoint only drops the stored counts.
+ * Cloudflare Images. The stored counts need their own token permission, and transformations exist on the Images
+ * Free plan without storage: a stats endpoint that is missing or forbidden only drops the stored counts.
  */
 final class ImagesBlock implements BlockInterface
 {
@@ -36,7 +36,24 @@ final class ImagesBlock implements BlockInterface
 
     public function fetch(CloudflareApi $api, CloudflareZone $zone, int $to, LoggerInterface $logger): array
     {
-        $stored = $this->storedCount($api, $zone);
+        $storedForbidden = null;
+
+        try {
+            $stored = $this->storedCount($api, $zone);
+        } catch (CloudflareException $e) {
+            if ($e->getReason() !== CloudflareException::FORBIDDEN) {
+                throw $e;
+            }
+
+            $stored = null;
+            $storedForbidden = $e;
+
+            $logger->warning('Cloudflare Images stored counts unavailable', [
+                'block' => $this->getName(),
+                'reason' => $e->getReason(),
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         $viewer = $api->graphql(self::QUERY, [
             'accountTag' => $zone->accountId,
@@ -50,6 +67,11 @@ final class ImagesBlock implements BlockInterface
         $transformations = (int) (Rows::list($node['imagesMonth'] ?? null)[0]['transformations'] ?? 0);
 
         if ($stored === null && $requests === 0 && $transformations === 0) {
+            // Without the stored counts, nothing tells an account without Images from a token that cannot see them.
+            if ($storedForbidden !== null) {
+                throw $storedForbidden;
+            }
+
             throw new CloudflareException(CloudflareException::NOT_CONFIGURED, 'Cloudflare Images is not used on the account.');
         }
 

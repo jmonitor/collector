@@ -56,6 +56,16 @@ class R2BlockTest extends TestCase
         ], self::graphqlVariables($this->http, 'R2'));
     }
 
+    public function testStorageQueryCoversManyBuckets(): void
+    {
+        $this->fetch();
+
+        $query = json_decode((string) $this->http->requests()[1]->getBody(), true)['query'];
+
+        // One row per bucket, class and ~20-minute sample over 2 h: 100 rows would only cover a handful of buckets.
+        self::assertStringContainsString('r2StorageAdaptiveGroups(limit: 1000,', $query);
+    }
+
     public function testClassifiesOperations(): void
     {
         $this->setGraphqlNode('r2Ops', [

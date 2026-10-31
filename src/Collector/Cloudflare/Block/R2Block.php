@@ -17,7 +17,7 @@ final class R2Block implements BlockInterface
 {
     private const QUERY = <<<'GRAPHQL'
         query R2($accountTag: string!, $monthStart: Time!, $to: Time!, $fromStorage: Time!) { viewer { accounts(filter: {accountTag: $accountTag}) {
-          r2Storage: r2StorageAdaptiveGroups(limit: 100, filter: {datetime_geq: $fromStorage, datetime_lt: $to}, orderBy: [datetime_DESC]) { dimensions { bucketName storageClass datetime } max { payloadSize metadataSize objectCount uploadCount } }
+          r2Storage: r2StorageAdaptiveGroups(limit: 1000, filter: {datetime_geq: $fromStorage, datetime_lt: $to}, orderBy: [datetime_DESC]) { dimensions { bucketName storageClass datetime } max { payloadSize metadataSize objectCount uploadCount } }
           r2Ops: r2OperationsAdaptiveGroups(limit: 500, filter: {datetime_geq: $monthStart, datetime_lt: $to}) { dimensions { bucketName actionType } sum { requests } }
           r2Bandwidth: r2BandwidthUsageAdaptiveGroups(limit: 100, filter: {datetime_geq: $monthStart, datetime_lt: $to}) { dimensions { bucketName } sum { bytesUpload bytesDownload } }
         } } }

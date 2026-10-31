@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Jmonitor\Tests\Collector\Cloudflare\Block;
 
 use Jmonitor\Collector\Cloudflare\Block\ImagesBlock;
+use Jmonitor\Collector\Cloudflare\CloudflareApi;
 use Jmonitor\Collector\Cloudflare\CloudflareException;
+use Jmonitor\Collector\Cloudflare\CloudflareZone;
 use Jmonitor\Tests\Collector\Cloudflare\FakeCloudflareClient;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class ImagesBlockTest extends TestCase
 {
@@ -37,12 +41,42 @@ class ImagesBlockTest extends TestCase
         ], self::graphqlVariables($this->http, 'Images'));
     }
 
-    public function testStats403IsForbiddenWithoutGraphql(): void
+    public function testStats403KeepsTheGraphqlFigures(): void
     {
         $this->http->respond('GET /accounts/{account}/images/v1/stats', 403, FakeCloudflareClient::errorBody('Unauthorized'));
 
+        self::assertSame([
+            'month' => '2025-10',
+            'unique_transformations' => 136,
+            'requests_last_24h' => 162,
+        ], $this->fetch());
+    }
+
+    public function testStats403LogsTheMissingStoredCounts(): void
+    {
+        $this->http->respond('GET /accounts/{account}/images/v1/stats', 403, FakeCloudflareClient::errorBody('Unauthorized'));
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())->method('warning');
+
+        $api = new CloudflareApi($this->http, new Psr17Factory(), 'token');
+        $zone = new CloudflareZone(FakeCloudflareClient::ZONE_ID, FakeCloudflareClient::ZONE_NAME, FakeCloudflareClient::ACCOUNT_ID);
+
+        (new ImagesBlock())->fetch($api, $zone, self::TO, $logger);
+    }
+
+    public function testStats403AndNoUsageIsForbidden(): void
+    {
+        $this->http->respond('GET /accounts/{account}/images/v1/stats', 403, FakeCloudflareClient::errorBody('Unauthorized'));
+        $this->http->respond('graphql Images', 200, ['data' => ['viewer' => ['accounts' => [['imagesRequests' => [], 'imagesMonth' => []]]]], 'errors' => null]);
+
         self::assertSame(CloudflareException::FORBIDDEN, $this->catch()->getReason());
-        self::assertNotContains('graphql Images', $this->http->routes());
+    }
+
+    public function testStats429FailsTheBlock(): void
+    {
+        $this->http->respond('GET /accounts/{account}/images/v1/stats', 429, FakeCloudflareClient::errorBody('Too many requests'));
+
+        self::assertSame(CloudflareException::RATE_LIMITED, $this->catch()->getReason());
     }
 
     public function testStats404OmitsStoredKeys(): void
