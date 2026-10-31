@@ -385,10 +385,11 @@ Collectors
   | Zone › SSL and Certificates › Read   | `zone.certificate`                          |
   | Account › Account Analytics › Read   | `web_analytics`, `r2`, `images`             |
   | Account › Workers R2 Storage › Read  | `r2`                                        |
-  | Account › Images › Read              | `images.stored`                             |
+  | Account › Images › Read              | `images`                                    |
 
   Only *Zone › Zone › Read* is required. A block whose permission is missing is reported as `forbidden` and the
-  others keep working.
+  others keep working. A rejected token or an unknown zone fails the collector at startup; a network error or a
+  Cloudflare outage at startup does not, the zone lookup is retried a minute later.
 
   Cloudflare is not queried on every collection: each block is refreshed on its own interval (above) and served
   from memory in between, which keeps the token well under the Cloudflare API rate limits.

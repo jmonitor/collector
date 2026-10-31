@@ -144,6 +144,16 @@ class CloudflareApiTest extends TestCase
         self::assertStringNotContainsString(self::TOKEN, $e->getMessage());
     }
 
+    public function testTransportMessageQuotingTheTokenIsRedacted(): void
+    {
+        $this->http->throwOn('GET /zones/{zone}', new class ('Invalid header: "Authorization: Bearer ' . self::TOKEN . '"') extends \RuntimeException implements ClientExceptionInterface {});
+
+        $e = $this->catch(fn() => $this->api->get('/zones/' . FakeCloudflareClient::ZONE_ID));
+
+        self::assertStringNotContainsString(self::TOKEN, $e->getMessage());
+        self::assertStringContainsString('Invalid header', $e->getMessage());
+    }
+
     private function catch(callable $call): CloudflareException
     {
         try {

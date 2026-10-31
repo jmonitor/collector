@@ -25,6 +25,9 @@ final class WebAnalyticsBlock implements BlockInterface
 
     private const PERIOD = 86400;
 
+    // Bounds the lookup should the API keep announcing more sites than it returns.
+    private const MAX_SITE_PAGES = 50;
+
     private const VITALS = [
         'lcp_p75_ms' => 'largestContentfulPaintP75',
         'inp_p75_ms' => 'interactionToNextPaintP75',
@@ -98,13 +101,23 @@ final class WebAnalyticsBlock implements BlockInterface
      */
     private function findSiteTag(CloudflareApi $api, CloudflareZone $zone): string
     {
-        $sites = $api->get('/accounts/' . $zone->accountId . '/rum/site_info/list')['result'] ?? [];
+        $page = 1;
 
-        foreach (Rows::list($sites) as $site) {
-            if (($site['ruleset']['zone_tag'] ?? null) === $zone->id && isset($site['site_tag'])) {
-                return (string) $site['site_tag'];
+        do {
+            $body = $api->get('/accounts/' . $zone->accountId . '/rum/site_info/list', $page === 1 ? [] : ['page' => $page]);
+            $sites = Rows::list($body['result'] ?? null);
+
+            foreach ($sites as $site) {
+                if (($site['ruleset']['zone_tag'] ?? null) === $zone->id && isset($site['site_tag'])) {
+                    return (string) $site['site_tag'];
+                }
             }
-        }
+
+            $perPage = (int) ($body['result_info']['per_page'] ?? 0);
+            $total = (int) ($body['result_info']['total_count'] ?? 0);
+            $hasMore = $sites !== [] && $perPage > 0 && $page * $perPage < $total;
+            $page++;
+        } while ($hasMore && $page <= self::MAX_SITE_PAGES);
 
         throw new CloudflareException(CloudflareException::NOT_CONFIGURED, sprintf('Web Analytics is not enabled on zone "%s".', $zone->name));
     }

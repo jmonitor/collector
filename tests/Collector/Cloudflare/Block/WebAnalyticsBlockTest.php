@@ -7,7 +7,9 @@ namespace Jmonitor\Tests\Collector\Cloudflare\Block;
 use Jmonitor\Collector\Cloudflare\Block\WebAnalyticsBlock;
 use Jmonitor\Collector\Cloudflare\CloudflareException;
 use Jmonitor\Tests\Collector\Cloudflare\FakeCloudflareClient;
+use Nyholm\Psr7\Response;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\RequestInterface;
 
 class WebAnalyticsBlockTest extends TestCase
 {
@@ -91,6 +93,24 @@ class WebAnalyticsBlockTest extends TestCase
         self::assertSame([], $data['by_host']);
         self::assertSame([null], array_unique(array_values($data['vitals'])));
         self::assertSame([null], array_unique(array_values($data['timings'])));
+    }
+
+    public function testSiteOnALaterPageIsFound(): void
+    {
+        $sites = FakeCloudflareClient::fixture('rum_sites.json')['result'];
+        $this->http->respondWith('GET /accounts/{account}/rum/site_info/list', static function (RequestInterface $request) use ($sites): Response {
+            parse_str($request->getUri()->getQuery(), $query);
+            $page = (int) ($query['page'] ?? 1);
+
+            return new Response(200, [], (string) json_encode([
+                'success' => true,
+                'errors' => [],
+                'result' => [$sites[$page - 1]],
+                'result_info' => ['page' => $page, 'per_page' => 1, 'count' => 1, 'total_count' => 2],
+            ]));
+        });
+
+        self::assertSame('fc92037b26d04910a8a043c0a2f29609', $this->fetch()['site_tag']);
     }
 
     public function testSiteListForbiddenPropagates(): void

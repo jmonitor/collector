@@ -142,6 +142,76 @@ class CloudflareCollectorTest extends TestCase
         new CloudflareCollector('', 'jmonitor.io', $this->http);
     }
 
+    public function testTokenWithATrailingNewlineIsTrimmed(): void
+    {
+        (new CloudflareCollector("token\n", FakeCloudflareClient::ZONE_ID, $this->http, [], fn(): int => $this->now))->boot();
+
+        self::assertSame('Bearer token', $this->http->requests()[0]->getHeaderLine('Authorization'));
+    }
+
+    public function testTokenWithControlCharactersIsRejected(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new CloudflareCollector("tok\nen", FakeCloudflareClient::ZONE_ID, $this->http);
+    }
+
+    public function testTransientBootFailureIsRetriedOnTheNextInterval(): void
+    {
+        $this->http->respond('GET /zones/{zone}', 503, FakeCloudflareClient::errorBody('Service unavailable'));
+        $collector = $this->collector();
+        $collector->boot();
+
+        $payload = $collector->collect();
+        self::assertNull($payload['traffic']);
+        self::assertSame(
+            ['zone' => 'error', 'traffic' => 'error', 'today' => 'error', 'web_analytics' => 'error', 'r2' => 'error', 'images' => 'error'],
+            $payload['unavailable']
+        );
+
+        $this->http->respond('GET /zones/{zone}', 200, FakeCloudflareClient::fixture('zone.json'));
+        $this->http->reset();
+
+        $this->now = self::NOW + 59;
+        $collector->collect();
+        self::assertSame([], $this->http->routes());
+
+        $this->now = self::NOW + 60;
+        self::assertSame([], $collector->collect()['unavailable']);
+    }
+
+    public function testRateLimitedBootWaitsThreeHundredSeconds(): void
+    {
+        $this->http->respond('GET /zones/{zone}', 429, FakeCloudflareClient::errorBody('Rate limited'));
+        $collector = $this->collector();
+        $collector->boot();
+
+        self::assertSame('rate_limited', $collector->collect()['unavailable']['traffic']);
+        $this->http->reset();
+
+        $this->now = self::NOW + 299;
+        $collector->collect();
+        self::assertSame([], $this->http->routes());
+
+        $this->now = self::NOW + 300;
+        $collector->collect();
+        self::assertContains('GET /zones/{zone}', $this->http->routes());
+    }
+
+    public function testNetworkFailureOnBootIsTransient(): void
+    {
+        $this->http->throwOn('GET /zones/{zone}', new class ('Could not resolve host') extends \RuntimeException implements \Psr\Http\Client\NetworkExceptionInterface {
+            public function getRequest(): \Psr\Http\Message\RequestInterface
+            {
+                return new \Nyholm\Psr7\Request('GET', 'https://api.cloudflare.com');
+            }
+        });
+        $collector = $this->collector();
+        $collector->boot();
+
+        self::assertSame('error', $collector->collect()['unavailable']['zone']);
+    }
+
     public function testCollectBootsWhenNotBootedYet(): void
     {
         $payload = $this->collector()->collect();
