@@ -17,6 +17,14 @@ final class Rows
     }
 
     /**
+     * First day of the UTC month of $timestamp, at midnight.
+     */
+    public static function monthStart(int $timestamp): int
+    {
+        return (int) gmmktime(0, 0, 0, (int) gmdate('n', $timestamp), 1, (int) gmdate('Y', $timestamp));
+    }
+
+    /**
      * @param array<string, mixed> $viewer
      *
      * @return array<string, mixed>

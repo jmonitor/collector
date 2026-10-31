@@ -6,6 +6,8 @@ namespace Jmonitor\Collector\Cloudflare;
 
 use Jmonitor\Collector\BootableCollectorInterface;
 use Jmonitor\Collector\Cloudflare\Block\BlockInterface;
+use Jmonitor\Collector\Cloudflare\Block\ImagesBlock;
+use Jmonitor\Collector\Cloudflare\Block\R2Block;
 use Jmonitor\Collector\Cloudflare\Block\TodayBlock;
 use Jmonitor\Collector\Cloudflare\Block\TrafficBlock;
 use Jmonitor\Collector\Cloudflare\Block\WebAnalyticsBlock;
@@ -106,6 +108,8 @@ class CloudflareCollector implements CollectorInterface, BootableCollectorInterf
             new TrafficBlock($this->options['lookback'], $this->options['window']),
             new TodayBlock(),
             new WebAnalyticsBlock(),
+            new R2Block(),
+            new ImagesBlock(),
         ];
     }
 
