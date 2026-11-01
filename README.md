@@ -377,25 +377,30 @@ Collectors
 
   Create an API token in the Cloudflare dashboard (My Profile → API Tokens) with these permissions:
 
-  | Permission                           | Needed for                                  |
-  |--------------------------------------|---------------------------------------------|
-  | Zone › Zone › Read                   | required: zone lookup, `zone` block         |
-  | Zone › Zone Settings › Read          | `zone.settings`                             |
-  | Zone › Analytics › Read              | `traffic`, `today`                          |
-  | Zone › SSL and Certificates › Read   | `zone.certificate`                          |
-  | Account › Account Analytics › Read   | `web_analytics`, `r2`, `images`             |
-  | Account › Workers R2 Storage › Read  | `r2`                                        |
-  | Account › Images › Read              | `images.stored`                             |
+  | Permission                           | Needed for                                           |
+  |--------------------------------------|------------------------------------------------------|
+  | Zone › Zone › Read                   | required: zone lookup, `zone` block                  |
+  | Zone › Zone Settings › Read          | `zone.settings`                                      |
+  | Zone › Analytics › Read              | `traffic`, `today`                                   |
+  | Zone › SSL and Certificates › Read   | `zone.certificate`                                   |
+  | Zone › DNS › Read                    | `zone.dns_records`                                   |
+  | Account › Account Settings › Read    | `web_analytics` (site lookup)                        |
+  | Account › Account Analytics › Read   | GraphQL queries of `web_analytics`, `r2`, `images`   |
+  | Account › Workers R2 Storage › Read  | `r2`                                                 |
+  | Account › Images › Read              | `images.stored`                                      |
 
   Only *Zone › Zone › Read* is required. A block whose permission is missing is reported as `forbidden` and the
-  others keep working. An empty, malformed or rejected token, or an empty or unknown zone, fails the collector at
-  startup: it is skipped and the other collectors keep running. A network error or a Cloudflare outage at startup
-  does not, the zone lookup is retried a minute later.
+  others keep working; a missing `zone.*` permission only drops that sub-key from the `zone` block. An empty,
+  malformed or rejected token, or an empty or unknown zone, fails the collector at startup: it is skipped and the
+  other collectors keep running. A network error or a Cloudflare outage at startup does not, the zone lookup is
+  retried a minute later.
 
   Cloudflare is not queried on every collection: each block is refreshed on its own interval (above) and served
   from memory in between, which keeps the token well under the Cloudflare API rate limits.
 
-  The `web_analytics` block needs Web Analytics enabled on the zone (Cloudflare dashboard → Web Analytics).
+  The `web_analytics` block needs both Web Analytics enabled on the zone (Cloudflare dashboard → Web Analytics) and
+  the *Account › Account Settings › Read* permission, which the site lookup requires: *Account Analytics Read*
+  alone is not enough.
   Workers, Pages, KV, D1 and DNS analytics are left out on purpose.
 
   When no client is passed and `symfony/http-client` is installed, the collector builds one with a 5-second
