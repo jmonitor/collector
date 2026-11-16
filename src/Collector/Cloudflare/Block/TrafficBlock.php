@@ -26,15 +26,24 @@ final class TrafficBlock implements BlockInterface
               avg { sampleInterval }
             }
             byCacheStatus: httpRequestsAdaptiveGroups(limit: 20, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count avg { sampleInterval } dimensions { cacheStatus } }
-            byStatus: httpRequestsAdaptiveGroups(limit: 50, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count dimensions { edgeResponseStatus } }
-            byContentType: httpRequestsAdaptiveGroups(limit: 20, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count dimensions { edgeResponseContentTypeName } }
-            byCountry: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count dimensions { clientCountryName } }
-            byHost: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count dimensions { clientRequestHTTPHost } }
-            byProtocol: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count dimensions { clientRequestHTTPProtocol } }
-            bySecurity: httpRequestsAdaptiveGroups(limit: 50, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count dimensions { securityAction securitySource } }
+            byStatus: httpRequestsAdaptiveGroups(limit: 50, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count avg { sampleInterval } dimensions { edgeResponseStatus } }
+            byContentType: httpRequestsAdaptiveGroups(limit: 20, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count avg { sampleInterval } dimensions { edgeResponseContentTypeName } }
+            byCountry: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count avg { sampleInterval } dimensions { clientCountryName } }
+            byHost: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count avg { sampleInterval } dimensions { clientRequestHTTPHost } }
+            byProtocol: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count avg { sampleInterval } dimensions { clientRequestHTTPProtocol } }
+            bySecurity: httpRequestsAdaptiveGroups(limit: 50, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count avg { sampleInterval } dimensions { securityAction securitySource } }
           } }
         }
         GRAPHQL;
+
+    /** Payload key => [query alias, grouping dimension] */
+    private const BREAKDOWNS = [
+        'by_status' => ['byStatus', 'edgeResponseStatus'],
+        'by_content_type' => ['byContentType', 'edgeResponseContentTypeName'],
+        'by_country' => ['byCountry', 'clientCountryName'],
+        'by_host' => ['byHost', 'clientRequestHTTPHost'],
+        'by_protocol' => ['byProtocol', 'clientRequestHTTPProtocol'],
+    ];
 
     private int $lookback;
 
@@ -88,7 +97,7 @@ final class TrafficBlock implements BlockInterface
      *
      * @param array<string, mixed> $node
      *
-     * @return array<int, array<string, int|float|null>>
+     * @return array<int, array<string, int|float|bool|null>>
      */
     private function minutes(array $node, int $from, int $to): array
     {
@@ -113,6 +122,7 @@ final class TrafficBlock implements BlockInterface
                 'status_4xx_ratio' => (float) ($m['ratio']['status4xx'] ?? 0),
                 'status_5xx_ratio' => (float) ($m['ratio']['status5xx'] ?? 0),
                 'origin_requests' => $o === null ? null : (int) ($o['count'] ?? 0),
+                'origin_sampled' => $o === null ? null : self::sampled([$o]),
                 // Cache hits report -1: a minute served only from cache has no origin latency.
                 'origin_response_ms_avg' => $average !== null && $average > 0 ? $average : null,
                 'origin_response_ms_p50' => Rows::floatOrNull($o['quantiles']['originResponseDurationMsP50'] ?? null),
@@ -133,30 +143,44 @@ final class TrafficBlock implements BlockInterface
         $byCacheStatus = Rows::list($node['byCacheStatus'] ?? null);
         $bySecurity = Rows::list($node['bySecurity'] ?? null);
 
-        $sampled = false;
-        foreach ($byCacheStatus as $row) {
-            if ((float) ($row['avg']['sampleInterval'] ?? 1) > 1) {
-                $sampled = true;
-            }
-        }
-
-        return [
+        $window = [
             'from' => $from,
             'to' => $to,
             // Cloudflare has fewer cache statuses than byCacheStatus's limit, so its rows cover the whole window.
             'requests' => array_sum(array_map(static fn(array $row): int => (int) ($row['count'] ?? 0), $byCacheStatus)),
-            'sampled' => $sampled,
+            'sampled' => self::sampled($byCacheStatus),
+            // Cloudflare picks a sampling rate per query, so each breakdown carries its own flag.
+            'sampled_breakdowns' => [],
             'by_cache_status' => Rows::countBy($byCacheStatus, 'cacheStatus'),
-            'by_status' => Rows::countBy(Rows::list($node['byStatus'] ?? null), 'edgeResponseStatus'),
-            'by_content_type' => Rows::countBy(Rows::list($node['byContentType'] ?? null), 'edgeResponseContentTypeName'),
-            'by_country' => Rows::countBy(Rows::list($node['byCountry'] ?? null), 'clientCountryName'),
-            'by_host' => Rows::countBy(Rows::list($node['byHost'] ?? null), 'clientRequestHTTPHost'),
-            'by_protocol' => Rows::countBy(Rows::list($node['byProtocol'] ?? null), 'clientRequestHTTPProtocol'),
-            'security' => [
-                'by_action' => Rows::countBy($bySecurity, 'securityAction'),
-                'by_source' => Rows::countBy($bySecurity, 'securitySource'),
-            ],
         ];
+
+        foreach (self::BREAKDOWNS as $key => [$alias, $dimension]) {
+            $rows = Rows::list($node[$alias] ?? null);
+            $window['sampled_breakdowns'][$key] = self::sampled($rows);
+            $window[$key] = Rows::countBy($rows, $dimension);
+        }
+
+        $window['sampled_breakdowns']['security'] = self::sampled($bySecurity);
+        $window['security'] = [
+            'by_action' => Rows::countBy($bySecurity, 'securityAction'),
+            'by_source' => Rows::countBy($bySecurity, 'securitySource'),
+        ];
+
+        return $window;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     */
+    private static function sampled(array $rows): bool
+    {
+        foreach ($rows as $row) {
+            if ((float) ($row['avg']['sampleInterval'] ?? 1) > 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
