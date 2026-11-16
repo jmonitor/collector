@@ -169,18 +169,27 @@
                             "count": 15,
                             "dimensions": {
                                 "edgeResponseStatus": 302
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         },
                         {
                             "count": 52,
                             "dimensions": {
                                 "edgeResponseStatus": 200
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         },
                         {
                             "count": 171,
                             "dimensions": {
                                 "edgeResponseStatus": 202
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         }
                     ],
@@ -189,18 +198,27 @@
                             "count": 171,
                             "dimensions": {
                                 "edgeResponseContentTypeName": "json"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         },
                         {
                             "count": 36,
                             "dimensions": {
                                 "edgeResponseContentTypeName": "html"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         },
                         {
                             "count": 15,
                             "dimensions": {
                                 "edgeResponseContentTypeName": "avif"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         }
                     ],
@@ -209,18 +227,27 @@
                             "count": 192,
                             "dimensions": {
                                 "clientCountryName": "FR"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         },
                         {
                             "count": 20,
                             "dimensions": {
                                 "clientCountryName": "DE"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         },
                         {
                             "count": 16,
                             "dimensions": {
                                 "clientCountryName": "US"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         }
                     ],
@@ -229,18 +256,27 @@
                             "count": 171,
                             "dimensions": {
                                 "clientRequestHTTPHost": "collector.jmonitor.io"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         },
                         {
                             "count": 37,
                             "dimensions": {
                                 "clientRequestHTTPHost": "jmonitor.io"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         },
                         {
                             "count": 30,
                             "dimensions": {
                                 "clientRequestHTTPHost": "dash.jmonitor.io"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         }
                     ],
@@ -249,18 +285,27 @@
                             "count": 45,
                             "dimensions": {
                                 "clientRequestHTTPProtocol": "HTTP/1.1"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         },
                         {
                             "count": 172,
                             "dimensions": {
                                 "clientRequestHTTPProtocol": "HTTP/2"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         },
                         {
                             "count": 21,
                             "dimensions": {
                                 "clientRequestHTTPProtocol": "HTTP/3"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         }
                     ],
@@ -270,6 +315,9 @@
                             "dimensions": {
                                 "securityAction": "unknown",
                                 "securitySource": "unknown"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         },
                         {
@@ -277,6 +325,9 @@
                             "dimensions": {
                                 "securityAction": "skip",
                                 "securitySource": "firewallCustom"
+                            },
+                            "avg": {
+                                "sampleInterval": 1
                             }
                         }
                     ]

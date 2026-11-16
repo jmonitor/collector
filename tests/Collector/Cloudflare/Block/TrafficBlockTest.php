@@ -55,6 +55,14 @@ class TrafficBlockTest extends BlockTestCase
             'to' => 1761917760,
             'requests' => 238,
             'sampled' => false,
+            'sampled_breakdowns' => [
+                'by_status' => false,
+                'by_content_type' => false,
+                'by_country' => false,
+                'by_host' => false,
+                'by_protocol' => false,
+                'security' => false,
+            ],
             'by_cache_status' => ['dynamic' => 207, 'hit' => 19, 'miss' => 9, 'revalidated' => 3],
             'by_status' => ['202' => 171, '200' => 52, '302' => 15],
             'by_content_type' => ['json' => 171, 'html' => 36, 'avif' => 15],
@@ -112,6 +120,19 @@ class TrafficBlockTest extends BlockTestCase
         $this->http->respond('graphql Traffic', 200, $response);
 
         self::assertTrue($this->fetch()['window']['sampled']);
+    }
+
+    public function testEachBreakdownIsFlaggedOnItsOwn(): void
+    {
+        $response = FakeCloudflareClient::fixture('graphql_traffic.json');
+        $response['data']['viewer']['zones'][0]['bySecurity'][0]['avg']['sampleInterval'] = 1.07;
+        $this->http->respond('graphql Traffic', 200, $response);
+
+        $window = $this->fetch()['window'];
+
+        self::assertFalse($window['sampled']);
+        self::assertTrue($window['sampled_breakdowns']['security']);
+        self::assertFalse($window['sampled_breakdowns']['by_country']);
     }
 
     public function testMapsAreSortedByCountDescending(): void

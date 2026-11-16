@@ -26,12 +26,12 @@ final class TrafficBlock implements BlockInterface
               avg { sampleInterval }
             }
             byCacheStatus: httpRequestsAdaptiveGroups(limit: 20, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count avg { sampleInterval } dimensions { cacheStatus } }
-            byStatus: httpRequestsAdaptiveGroups(limit: 50, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count dimensions { edgeResponseStatus } }
-            byContentType: httpRequestsAdaptiveGroups(limit: 20, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count dimensions { edgeResponseContentTypeName } }
-            byCountry: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count dimensions { clientCountryName } }
-            byHost: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count dimensions { clientRequestHTTPHost } }
-            byProtocol: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count dimensions { clientRequestHTTPProtocol } }
-            bySecurity: httpRequestsAdaptiveGroups(limit: 50, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count dimensions { securityAction securitySource } }
+            byStatus: httpRequestsAdaptiveGroups(limit: 50, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count avg { sampleInterval } dimensions { edgeResponseStatus } }
+            byContentType: httpRequestsAdaptiveGroups(limit: 20, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count avg { sampleInterval } dimensions { edgeResponseContentTypeName } }
+            byCountry: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count avg { sampleInterval } dimensions { clientCountryName } }
+            byHost: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}, orderBy: [count_DESC]) { count avg { sampleInterval } dimensions { clientRequestHTTPHost } }
+            byProtocol: httpRequestsAdaptiveGroups(limit: 10, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count avg { sampleInterval } dimensions { clientRequestHTTPProtocol } }
+            bySecurity: httpRequestsAdaptiveGroups(limit: 50, filter: {datetime_geq: $windowFrom, datetime_lt: $to, requestSource: "eyeball"}) { count avg { sampleInterval } dimensions { securityAction securitySource } }
           } }
         }
         GRAPHQL;
@@ -131,32 +131,53 @@ final class TrafficBlock implements BlockInterface
     private function window(array $node, int $from, int $to): array
     {
         $byCacheStatus = Rows::list($node['byCacheStatus'] ?? null);
+        $byStatus = Rows::list($node['byStatus'] ?? null);
+        $byContentType = Rows::list($node['byContentType'] ?? null);
+        $byCountry = Rows::list($node['byCountry'] ?? null);
+        $byHost = Rows::list($node['byHost'] ?? null);
+        $byProtocol = Rows::list($node['byProtocol'] ?? null);
         $bySecurity = Rows::list($node['bySecurity'] ?? null);
-
-        $sampled = false;
-        foreach ($byCacheStatus as $row) {
-            if ((float) ($row['avg']['sampleInterval'] ?? 1) > 1) {
-                $sampled = true;
-            }
-        }
 
         return [
             'from' => $from,
             'to' => $to,
             // Cloudflare has fewer cache statuses than byCacheStatus's limit, so its rows cover the whole window.
             'requests' => array_sum(array_map(static fn(array $row): int => (int) ($row['count'] ?? 0), $byCacheStatus)),
-            'sampled' => $sampled,
+            'sampled' => self::sampled($byCacheStatus),
+            // Cloudflare picks a sampling rate per query, so each breakdown carries its own flag.
+            'sampled_breakdowns' => [
+                'by_status' => self::sampled($byStatus),
+                'by_content_type' => self::sampled($byContentType),
+                'by_country' => self::sampled($byCountry),
+                'by_host' => self::sampled($byHost),
+                'by_protocol' => self::sampled($byProtocol),
+                'security' => self::sampled($bySecurity),
+            ],
             'by_cache_status' => Rows::countBy($byCacheStatus, 'cacheStatus'),
-            'by_status' => Rows::countBy(Rows::list($node['byStatus'] ?? null), 'edgeResponseStatus'),
-            'by_content_type' => Rows::countBy(Rows::list($node['byContentType'] ?? null), 'edgeResponseContentTypeName'),
-            'by_country' => Rows::countBy(Rows::list($node['byCountry'] ?? null), 'clientCountryName'),
-            'by_host' => Rows::countBy(Rows::list($node['byHost'] ?? null), 'clientRequestHTTPHost'),
-            'by_protocol' => Rows::countBy(Rows::list($node['byProtocol'] ?? null), 'clientRequestHTTPProtocol'),
+            'by_status' => Rows::countBy($byStatus, 'edgeResponseStatus'),
+            'by_content_type' => Rows::countBy($byContentType, 'edgeResponseContentTypeName'),
+            'by_country' => Rows::countBy($byCountry, 'clientCountryName'),
+            'by_host' => Rows::countBy($byHost, 'clientRequestHTTPHost'),
+            'by_protocol' => Rows::countBy($byProtocol, 'clientRequestHTTPProtocol'),
             'security' => [
                 'by_action' => Rows::countBy($bySecurity, 'securityAction'),
                 'by_source' => Rows::countBy($bySecurity, 'securitySource'),
             ],
         ];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     */
+    private static function sampled(array $rows): bool
+    {
+        foreach ($rows as $row) {
+            if ((float) ($row['avg']['sampleInterval'] ?? 1) > 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
