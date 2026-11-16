@@ -36,6 +36,15 @@ final class TrafficBlock implements BlockInterface
         }
         GRAPHQL;
 
+    /** Payload key => [query alias, grouping dimension] */
+    private const BREAKDOWNS = [
+        'by_status' => ['byStatus', 'edgeResponseStatus'],
+        'by_content_type' => ['byContentType', 'edgeResponseContentTypeName'],
+        'by_country' => ['byCountry', 'clientCountryName'],
+        'by_host' => ['byHost', 'clientRequestHTTPHost'],
+        'by_protocol' => ['byProtocol', 'clientRequestHTTPProtocol'],
+    ];
+
     private int $lookback;
 
     private int $window;
@@ -88,7 +97,7 @@ final class TrafficBlock implements BlockInterface
      *
      * @param array<string, mixed> $node
      *
-     * @return array<int, array<string, int|float|null>>
+     * @return array<int, array<string, int|float|bool|null>>
      */
     private function minutes(array $node, int $from, int $to): array
     {
@@ -113,6 +122,7 @@ final class TrafficBlock implements BlockInterface
                 'status_4xx_ratio' => (float) ($m['ratio']['status4xx'] ?? 0),
                 'status_5xx_ratio' => (float) ($m['ratio']['status5xx'] ?? 0),
                 'origin_requests' => $o === null ? null : (int) ($o['count'] ?? 0),
+                'origin_sampled' => $o === null ? null : self::sampled([$o]),
                 // Cache hits report -1: a minute served only from cache has no origin latency.
                 'origin_response_ms_avg' => $average !== null && $average > 0 ? $average : null,
                 'origin_response_ms_p50' => Rows::floatOrNull($o['quantiles']['originResponseDurationMsP50'] ?? null),
@@ -131,39 +141,32 @@ final class TrafficBlock implements BlockInterface
     private function window(array $node, int $from, int $to): array
     {
         $byCacheStatus = Rows::list($node['byCacheStatus'] ?? null);
-        $byStatus = Rows::list($node['byStatus'] ?? null);
-        $byContentType = Rows::list($node['byContentType'] ?? null);
-        $byCountry = Rows::list($node['byCountry'] ?? null);
-        $byHost = Rows::list($node['byHost'] ?? null);
-        $byProtocol = Rows::list($node['byProtocol'] ?? null);
         $bySecurity = Rows::list($node['bySecurity'] ?? null);
 
-        return [
+        $window = [
             'from' => $from,
             'to' => $to,
             // Cloudflare has fewer cache statuses than byCacheStatus's limit, so its rows cover the whole window.
             'requests' => array_sum(array_map(static fn(array $row): int => (int) ($row['count'] ?? 0), $byCacheStatus)),
             'sampled' => self::sampled($byCacheStatus),
             // Cloudflare picks a sampling rate per query, so each breakdown carries its own flag.
-            'sampled_breakdowns' => [
-                'by_status' => self::sampled($byStatus),
-                'by_content_type' => self::sampled($byContentType),
-                'by_country' => self::sampled($byCountry),
-                'by_host' => self::sampled($byHost),
-                'by_protocol' => self::sampled($byProtocol),
-                'security' => self::sampled($bySecurity),
-            ],
+            'sampled_breakdowns' => [],
             'by_cache_status' => Rows::countBy($byCacheStatus, 'cacheStatus'),
-            'by_status' => Rows::countBy($byStatus, 'edgeResponseStatus'),
-            'by_content_type' => Rows::countBy($byContentType, 'edgeResponseContentTypeName'),
-            'by_country' => Rows::countBy($byCountry, 'clientCountryName'),
-            'by_host' => Rows::countBy($byHost, 'clientRequestHTTPHost'),
-            'by_protocol' => Rows::countBy($byProtocol, 'clientRequestHTTPProtocol'),
-            'security' => [
-                'by_action' => Rows::countBy($bySecurity, 'securityAction'),
-                'by_source' => Rows::countBy($bySecurity, 'securitySource'),
-            ],
         ];
+
+        foreach (self::BREAKDOWNS as $key => [$alias, $dimension]) {
+            $rows = Rows::list($node[$alias] ?? null);
+            $window['sampled_breakdowns'][$key] = self::sampled($rows);
+            $window[$key] = Rows::countBy($rows, $dimension);
+        }
+
+        $window['sampled_breakdowns']['security'] = self::sampled($bySecurity);
+        $window['security'] = [
+            'by_action' => Rows::countBy($bySecurity, 'securityAction'),
+            'by_source' => Rows::countBy($bySecurity, 'securitySource'),
+        ];
+
+        return $window;
     }
 
     /**

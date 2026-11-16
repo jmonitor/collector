@@ -6,6 +6,7 @@ namespace Jmonitor\Tests\Collector\Cloudflare\Block;
 
 use Jmonitor\Collector\Cloudflare\Block\TrafficBlock;
 use Jmonitor\Tests\Collector\Cloudflare\FakeCloudflareClient;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class TrafficBlockTest extends BlockTestCase
 {
@@ -46,6 +47,7 @@ class TrafficBlockTest extends BlockTestCase
             'status_4xx_ratio' => 0.0,
             'status_5xx_ratio' => 0.0,
             'origin_requests' => 13,
+            'origin_sampled' => false,
             'origin_response_ms_avg' => 34.2,
             'origin_response_ms_p50' => 30.0,
             'origin_response_ms_p95' => 56.0,
@@ -92,6 +94,7 @@ class TrafficBlockTest extends BlockTestCase
             'status_4xx_ratio' => 0.0,
             'status_5xx_ratio' => 0.0,
             'origin_requests' => null,
+            'origin_sampled' => null,
             'origin_response_ms_avg' => null,
             'origin_response_ms_p50' => null,
             'origin_response_ms_p95' => null,
@@ -122,17 +125,42 @@ class TrafficBlockTest extends BlockTestCase
         self::assertTrue($this->fetch()['window']['sampled']);
     }
 
-    public function testEachBreakdownIsFlaggedOnItsOwn(): void
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function breakdowns(): iterable
+    {
+        yield 'status' => ['byStatus', 'by_status'];
+        yield 'content type' => ['byContentType', 'by_content_type'];
+        yield 'country' => ['byCountry', 'by_country'];
+        yield 'host' => ['byHost', 'by_host'];
+        yield 'protocol' => ['byProtocol', 'by_protocol'];
+        yield 'security' => ['bySecurity', 'security'];
+    }
+
+    #[DataProvider('breakdowns')]
+    public function testEachBreakdownIsFlaggedFromItsOwnQuery(string $alias, string $key): void
     {
         $response = FakeCloudflareClient::fixture('graphql_traffic.json');
-        $response['data']['viewer']['zones'][0]['bySecurity'][0]['avg']['sampleInterval'] = 1.07;
+        $response['data']['viewer']['zones'][0][$alias][0]['avg']['sampleInterval'] = 1.07;
         $this->http->respond('graphql Traffic', 200, $response);
 
         $window = $this->fetch()['window'];
 
         self::assertFalse($window['sampled']);
-        self::assertTrue($window['sampled_breakdowns']['security']);
-        self::assertFalse($window['sampled_breakdowns']['by_country']);
+        self::assertSame([$key], array_keys(array_filter($window['sampled_breakdowns'])));
+    }
+
+    public function testOriginMinuteIsFlaggedWhenSampled(): void
+    {
+        $response = FakeCloudflareClient::fixture('graphql_traffic.json');
+        $response['data']['viewer']['zones'][0]['origin'][0]['avg']['sampleInterval'] = 10;
+        $this->http->respond('graphql Traffic', 200, $response);
+
+        $minutes = $this->fetch()['minutes'];
+
+        self::assertTrue($minutes[0]['origin_sampled']);
+        self::assertFalse($minutes[1]['origin_sampled']);
     }
 
     public function testMapsAreSortedByCountDescending(): void

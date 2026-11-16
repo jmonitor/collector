@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- [Cloudflare Collector] `window.sampled_breakdowns`: whether Cloudflare sampled each traffic breakdown, since it picks a sampling rate per query.
+- [Cloudflare Collector] `window.sampled_breakdowns` and the per-minute `origin_sampled`: whether Cloudflare sampled each traffic breakdown and each minute's origin figures.
 
 ## [2.5.1] - 2026-10-31
 
