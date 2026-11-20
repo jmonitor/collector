@@ -7,7 +7,7 @@ This project is the PHP library installed on your server via composer that gathe
 ## Instructions
 
 - Ensure this document is edited and kept up to date following any task that modifies the information or context described herein.
-- Never prepend `cd [some path]` before commands, and never use `git -C "C:/..."` for git commands. The shell is already running at the project root — use commands directly as-is.
+- Run every command, git included, from the repository root.
 
 ### CHANGELOG
 
