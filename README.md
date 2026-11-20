@@ -10,20 +10,14 @@ This library provides the **PHP collectors** that gather metrics from your serve
 
 <table>
   <tr>
-    <th valign="top"><a href="https://github.com/jmonitor/jmonitor">jmonitor/jmonitor</a><br>&nbsp;</th>
     <th valign="top">jmonitor/collector<br><img src="https://img.shields.io/badge/you_are_here-0969da?style=flat-square" alt="you are here"></th>
     <th valign="top"><a href="https://github.com/jmonitor/jmonitor-bundle">jmonitor/jmonitor-bundle</a><br>&nbsp;</th>
+    <th valign="top"><a href="https://github.com/jmonitor/easyadmin-bundle">jmonitor/easyadmin-bundle</a><br>&nbsp;</th>
   </tr>
   <tr>
-    <td>Self-hostable backend — not needed with the cloud version</td>
     <td>The collectors — install them in the project to monitor</td>
     <td>Symfony-specific integration of the collectors</td>
-  </tr>
-  <tr>
-    <td colspan="3" align="center">
-      <a href="https://github.com/jmonitor/easyadmin-bundle">jmonitor/easyadmin-bundle</a><br>
-      Live monitoring pages inside EasyAdmin — no backend, no worker
-    </td>
+    <td>Live monitoring pages inside EasyAdmin — no backend, no worker</td>
   </tr>
   <tr>
     <td colspan="3" align="center">
@@ -53,7 +47,7 @@ This library provides the **PHP collectors** that gather metrics from your serve
 
 ### 1. Create your project
 
-Create a project on [jmonitor.io](https://jmonitor.io) — or on your self-hosted instance — and copy its API key.
+Create a project on [jmonitor.io](https://jmonitor.io) and copy its API key.
 
 ### 2. Install the library
 
@@ -408,4 +402,4 @@ Collectors
 
 ## Need help?
 - Anything about this package — installation, the worker, a collector, a missing or wrong metric: open an issue on this repo https://github.com/jmonitor/collector/issues
-- Anything about the app itself — dashboards, alerts, [dash.jmonitor.io](https://dash.jmonitor.io): open an issue on https://github.com/jmonitor/jmonitor/issues
+- Anything about the app itself — dashboards, alerts, [dash.jmonitor.io](https://dash.jmonitor.io): write to [contact@jmonitor.io](mailto:contact@jmonitor.io)
